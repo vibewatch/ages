@@ -204,7 +204,6 @@ class App {
     this.learn.onTest = (b, u) => { this.leaveForLesson(); this.lesson.startTest(b, u); };
     this.settings.onChange = (k, on) => this.atlas.setLayer(k, on);
     this.settings.onSurface = s => { this.atlas.setSurface(s); save('surface', s); };
-    this.settings.onLang = l => setLang(l);
     this.settings.onHelp = () => { this.pop(null); this.help.toggle(true); };
     this.hub.onPlay = j => this.playJourney(j);
     this.hub.onPick = w => { this.pop(null); this.toggle(w); };
@@ -232,6 +231,14 @@ class App {
     // Level 3 — popovers under the tools, one at a time (时期详情, study hall, settings), and dialogs (course picker, help).
     const hubBtn = iconBtn('grid', t('hub'), () => this.pop(this.hub.el.hidden ? 'hub' : null), 'b-hub');
     const setBtn = iconBtn('sliders', t('settings'), () => this.pop(this.settings.el.hidden ? 'settings' : null), 'b-settings');
+    const langBtn = h('button', {
+      type: 'button',
+      class: 'ib lang b-lang',
+      title: t('langTitle'),
+      'aria-label': t('langTitle'),
+      text: t('lang'),
+      onclick: () => setLang(lang === 'zh' ? 'en' : 'zh'),
+    });
     const fullBtn = iconBtn('full', t('fullscreen'), () => { if (document.fullscreenElement) void document.exitFullscreen(); else void document.documentElement.requestFullscreen?.().catch(() => {}); }, 'b-full');
     fullBtn.hidden = !document.fullscreenEnabled;
     document.addEventListener('fullscreenchange', () => fullBtn.classList.toggle('on', !!document.fullscreenElement));
@@ -246,7 +253,7 @@ class App {
       },
     };
     this.settings.render();
-    const tools = h('div', { class: 'tools' }, this.search.el, this.period.btn, h('i', { class: 'tools-sep', 'aria-hidden': 'true' }), hubBtn, setBtn);
+    const tools = h('div', { class: 'tools' }, this.search.el, this.period.btn, h('i', { class: 'tools-sep', 'aria-hidden': 'true' }), hubBtn, setBtn, langBtn);
     const pops = [this.period.view, this.hub.el, this.settings.el];
     const bar = h('div', { class: 'bar' }, tools, ...pops);
     this.brand = h('div', { class: 'brand' }, h('span', { class: 'logo', 'aria-hidden': 'true' }), h('b', { text: 'Ages' }), h('span', { class: 'brand-k' }));
@@ -614,7 +621,9 @@ class App {
     this.brand.querySelector('.brand-k')!.textContent = `${lang === 'zh' ? '长河' : 'Changhe'} · ${t('kicker')}`;
     this.brand.title = `Ages · ${t('brandSub')}`;
     const set = (cls: string, k: Parameters<typeof t>[0]) => { const el = this.root.querySelector<HTMLElement>(cls); if (el) { el.title = t(k); el.setAttribute('aria-label', t(k)); } };
-    set('.b-hub', 'hub'); set('.b-settings', 'settings'); set('.b-full', 'fullscreen');
+    set('.b-hub', 'hub'); set('.b-settings', 'settings'); set('.b-full', 'fullscreen'); set('.b-lang', 'langTitle');
+    const lb = this.root.querySelector<HTMLElement>('.b-lang');
+    if (lb) lb.textContent = t('lang');
     document.title = lang === 'zh' ? '长河 · 3D 中国历史地图' : 'Ages · 3D Atlas of Chinese History';
   }
 

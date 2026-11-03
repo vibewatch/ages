@@ -67,15 +67,16 @@ varying vec3 vWorld;
 float el(vec2 uv) { return texture2D(uElev, uv).r; }
 vec3 hex(float r, float g, float b) { return vec3(r, g, b) / 255.0; }
 
+// vivid physical-relief palette ("paper" / 地形): emerald-jade plains, warm golden hills, terracotta uplands, slate alpine ridges, crisp snow
 vec3 hypso(float h) {
-  vec3 c = hex(166.0, 184.0, 136.0);
-  c = mix(c, hex(190.0, 196.0, 148.0), smoothstep(0.0, 0.25, h));
-  c = mix(c, hex(212.0, 201.0, 155.0), smoothstep(0.25, 0.7, h));
-  c = mix(c, hex(204.0, 177.0, 133.0), smoothstep(0.7, 1.5, h));
-  c = mix(c, hex(180.0, 146.0, 108.0), smoothstep(1.5, 2.6, h));
-  c = mix(c, hex(160.0, 134.0, 110.0), smoothstep(2.6, 3.8, h));
-  c = mix(c, hex(150.0, 140.0, 128.0), smoothstep(3.8, 4.8, h));
-  c = mix(c, hex(238.0, 236.0, 230.0), smoothstep(5.0, 5.9, h));
+  vec3 c = hex(114.0, 166.0, 108.0);
+  c = mix(c, hex(146.0, 184.0, 118.0), smoothstep(0.0, 0.25, h));
+  c = mix(c, hex(208.0, 194.0, 132.0), smoothstep(0.25, 0.7, h));
+  c = mix(c, hex(204.0, 164.0, 108.0), smoothstep(0.7, 1.5, h));
+  c = mix(c, hex(176.0, 126.0, 88.0), smoothstep(1.5, 2.6, h));
+  c = mix(c, hex(144.0, 110.0, 90.0), smoothstep(2.6, 3.8, h));
+  c = mix(c, hex(128.0, 132.0, 140.0), smoothstep(3.8, 4.8, h));
+  c = mix(c, hex(246.0, 248.0, 252.0), smoothstep(5.0, 5.9, h));
   return c;
 }
 
@@ -92,8 +93,12 @@ vec3 hypsoInk(float h) {
   return c;
 }
 
+// cool porcelain-celadon blueprint palette ("plain" / 简图): crisp ivory-mist lowlands graduating to cool blue-slate highlands
 vec3 hypsoPlain(float h) {
-  return mix(hex(236.0, 231.0, 219.0), hex(214.0, 204.0, 186.0), smoothstep(0.3, 4.5, h));
+  vec3 c = hex(241.0, 245.0, 248.0);
+  c = mix(c, hex(224.0, 232.0, 238.0), smoothstep(0.2, 1.6, h));
+  c = mix(c, hex(198.0, 210.0, 222.0), smoothstep(1.6, 4.6, h));
+  return c;
 }
 
 void main() {
@@ -120,9 +125,8 @@ void main() {
   vec3 L = normalize(vec3(-0.9, 0.85, -0.8));
   float rel = dot(n, L) - L.y;
   bool ink = uStyle < 0.5, plain = uStyle > 1.5;
-  float shade = ink ? 0.97 + 1.05 * rel : plain ? 1.0 + 0.32 * rel : 0.99 + 0.55 * rel;
-  vec3 tint = mix(ink ? vec3(0.82, 0.88, 1.08) : vec3(0.95, 0.97, 1.03), ink ? vec3(1.12, 1.0, 0.84) : vec3(1.03, 1.0, 0.96), smoothstep(-0.35, 0.3, rel));
-  if (plain) tint = vec3(1.0);
+  float shade = ink ? 0.97 + 1.05 * rel : plain ? 1.0 + 0.36 * rel : 0.99 + 0.64 * rel;
+  vec3 tint = mix(ink ? vec3(0.82, 0.88, 1.08) : plain ? vec3(0.94, 0.97, 1.03) : vec3(0.92, 0.96, 1.05), ink ? vec3(1.12, 1.0, 0.84) : plain ? vec3(1.02, 1.01, 0.99) : vec3(1.05, 1.01, 0.94), smoothstep(-0.35, 0.3, rel));
 
   float hp = max(h, 0.0);
   vec3 col = (ink ? hypsoInk(hp) : plain ? hypsoPlain(hp) : hypso(hp)) * shade * tint;
@@ -130,8 +134,8 @@ void main() {
   if (land < 0.999) {
     float depth = smoothstep(0.0, 1.0, sqrt(clamp(-h / 4.5, 0.0, 1.0)));
     vec3 sea = ink ? mix(hex(34.0, 52.0, 60.0), hex(14.0, 24.0, 32.0), depth)
-      : plain ? mix(hex(214.0, 222.0, 222.0), hex(190.0, 204.0, 210.0), depth)
-      : mix(hex(172.0, 203.0, 205.0), hex(104.0, 144.0, 168.0), depth);
+      : plain ? mix(hex(194.0, 218.0, 236.0), hex(148.0, 184.0, 214.0), depth)
+      : mix(hex(124.0, 186.0, 212.0), hex(48.0, 110.0, 154.0), depth);
     float wave = sin(vWorld.x * 3.1 + uTime * 0.6) * sin(vWorld.z * 2.7 - uTime * 0.45);
     sea += (ink ? 0.012 : 0.018) * wave;
     col = mix(sea, col, land);
@@ -139,7 +143,7 @@ void main() {
 
   // rivers
   if (land > 0.001 && m.r > 0.004) {
-    col = mix(col, ink ? hex(96.0, 150.0, 170.0) : hex(88.0, 138.0, 172.0), clamp(m.r * 1.4, 0.0, 0.9) * land);
+    col = mix(col, ink ? hex(96.0, 150.0, 170.0) : plain ? hex(82.0, 140.0, 188.0) : hex(52.0, 126.0, 176.0), clamp(m.r * 1.4, 0.0, 0.9) * land);
   }
 
   // territories (cross-faded snapshots), land-masked
@@ -203,14 +207,14 @@ void main() {
 
   // ink coastline
   float coast = 1.0 - smoothstep(0.0, 0.2, abs(m.g - 0.5));
-  col = mix(col, ink ? hex(176.0, 146.0, 92.0) : hex(70.0, 92.0, 104.0), coast * (ink ? 0.55 : 0.45));
+  col = mix(col, ink ? hex(176.0, 146.0, 92.0) : plain ? hex(78.0, 108.0, 138.0) : hex(44.0, 84.0, 112.0), coast * (ink ? 0.55 : plain ? 0.5 : 0.48));
 
   // faint 10° graticule
   float lon = mix(uBounds.x, uBounds.y, vUv.x), lat = mix(uBounds.w, uBounds.z, vUv.y);
   vec2 g = abs(fract(vec2(lon, lat) / 10.0 + 0.5) - 0.5) * 10.0;
   vec2 fw = fwidth(vec2(lon, lat));
   float grid = 1.0 - smoothstep(0.0, 1.0, min(g.x / fw.x, g.y / fw.y));
-  col = mix(col, ink ? hex(201.0, 164.0, 92.0) : hex(120.0, 110.0, 90.0), grid * (ink ? 0.16 : 0.12));
+  col = mix(col, ink ? hex(201.0, 164.0, 92.0) : plain ? hex(100.0, 122.0, 146.0) : hex(92.0, 108.0, 96.0), grid * (ink ? 0.16 : 0.13));
 
   // aerial perspective; the far edges of the stage dissolve into the haze of the sky dome
   float d = distance(uCam, vWorld);
@@ -226,7 +230,7 @@ export interface Terrain {
 }
 
 /** Haze colour shared by the terrain's aerial perspective and the horizon of the sky dome. */
-export const HAZE = new THREE.Color().setHex(0xe4dccb, THREE.LinearSRGBColorSpace); // raw sRGB (shaders write sRGB)
+export const HAZE = new THREE.Color().setHex(0xdce6df, THREE.LinearSRGBColorSpace); // raw sRGB (shaders write sRGB)
 
 export type Surface = 'ink' | 'paper' | 'plain';
 export const SURFACES: Surface[] = ['paper', 'ink', 'plain'];
@@ -234,8 +238,8 @@ const raw = (hex: number) => new THREE.Color().setHex(hex, THREE.LinearSRGBColor
 /** Per map style: shader index, horizon haze and sky zenith (raw sRGB). */
 export const SURFACE: Record<Surface, { style: number; haze: THREE.Color; top: THREE.Color }> = {
   ink: { style: 0, haze: raw(0x2a251e), top: raw(0x0d0c0a) },
-  paper: { style: 1, haze: HAZE, top: raw(0xa9c3d0) },
-  plain: { style: 2, haze: raw(0xeceae4), top: raw(0xd6dde0) },
+  paper: { style: 1, haze: HAZE, top: raw(0x7caeca) },
+  plain: { style: 2, haze: raw(0xe6eef4), top: raw(0xc2d5e6) },
 };
 
 /** Builds the relief mesh and its shader. It fills the screen: the camera never shows its edges (see View.constrain). */

@@ -53,6 +53,19 @@ const GLYPH_POOL = [
   '618·唐', '960·北宋', '1271·元', '1368·明', '1644·清',
 ];
 
+const GLYPH_POOL_EN = [
+  'Nine Provinces', 'Oracle Bones', 'Bronze Inscriptions', 'Spring & Autumn', 'Silk Road', 'Grand Canal',
+  'Armillary Sphere', 'Records of the Grand Historian', 'Zizhi Tongjian', 'Chang’an', 'Luoyang', 'Kaifeng',
+  '2070 BCE · Xia', '1600 BCE · Shang', '1046 BCE · Zhou', '221 BCE · Qin', '202 BCE · Han',
+  '618 · Tang', '960 · Song', '1271 · Yuan', '1368 · Ming', '1644 · Qing',
+];
+
+const RING_GLYPHS_EN = ['N·0°', '30°', '60°', 'E·90°', '120°', '150°', 'S·180°', '210°', '240°', 'W·270°', '300°', '330°'];
+const DYN_NAMES_EN: Record<string, string> = {
+  xia: 'Xia', shang: 'Shang', zhou: 'Zhou', qin: 'Qin', han: 'Han', three_kingdoms: '3K',
+  jin: 'Jin', sui: 'Sui', tang: 'Tang', song: 'Song', yuan: 'Yuan', ming: 'Ming', qing: 'Qing',
+};
+
 const COLORS: Record<DustMote['hue'], [number, number, number]> = {
   gold: [246, 208, 118],
   amber: [214, 162, 82],
@@ -112,15 +125,31 @@ export class BootIntro {
     this.bcCapEl = this.boot?.querySelector<HTMLElement>('.bc-cap') ?? null;
     this.dynSpans = [...(this.boot?.querySelectorAll<HTMLElement>('.boot-dynasties span[data-era]') ?? [])];
 
+    if (lang === 'en') {
+      if (this.boot) this.boot.lang = 'en';
+      for (const el of [this.verseEl, this.statusEl]) if (el) el.lang = 'en';
+      const markTitle = this.boot?.querySelector<HTMLElement>('.boot-mark-title');
+      const markSub = this.boot?.querySelector<HTMLElement>('.boot-mark-sub');
+      const kicker = this.boot?.querySelector<HTMLElement>('.boot-kicker');
+      if (markTitle) markTitle.textContent = 'AGES';
+      if (markSub) markSub.textContent = '3D ATLAS';
+      if (kicker) kicker.innerHTML = '<span>HISTORICAL ATLAS</span><i>·</i><span>3D CHRONICLE SCROLL</span>';
+      const ringTexts = this.boot?.querySelectorAll<SVGTextElement>('.boot-ring-glyphs text') ?? [];
+      RING_GLYPHS_EN.forEach((t, i) => { if (ringTexts[i]) ringTexts[i].textContent = t; });
+      for (const s of this.dynSpans) {
+        const en = DYN_NAMES_EN[s.dataset.era ?? ''];
+        if (en) s.textContent = en;
+      }
+      if (this.verseEl) {
+        this.verseEl.textContent = 'Mountains and rivers unscroll · Four millennia under one celestial compass';
+      }
+    }
+
     const era = eraAt(year) ?? ERAS.find(e => e.id === 'qin')!;
     this.highlightDynasty(era);
     this.updateChronicleBadge(era, this.year);
     this.setProgress(era, 0, 1, true);
 
-    if (lang === 'en') for (const el of [this.verseEl, this.statusEl]) if (el) el.lang = 'en';
-    if (this.verseEl && lang === 'en') {
-      this.verseEl.textContent = 'Mountains and rivers unscroll · Four millennia under one celestial compass';
-    }
     if (!lowfx && this.canvas && this.boot) {
       this.initCanvas();
     }
@@ -374,7 +403,9 @@ export class BootIntro {
         const u = g.life / g.maxLife;
         const fade = Math.sin(u * Math.PI);
         g.y += g.vy * dt * (this.scattering ? 4 : 1);
-        ctx.font = `600 ${g.size}px "Noto Serif SC", "Songti SC", "STSong", serif`;
+        ctx.font = this.lang === 'en'
+          ? `600 ${g.size}px "Geist", Georgia, serif`
+          : `600 ${g.size}px "Noto Serif SC", "Songti SC", "STSong", serif`;
         ctx.fillStyle = `rgba(236, 206, 146, ${(g.maxAlpha * fade * scatterFade).toFixed(3)})`;
         ctx.fillText(g.text, g.x + px * 0.5, g.y + py * 0.5);
       }
@@ -434,7 +465,8 @@ export class BootIntro {
   }
 
   private spawnGlyph(w: number, h: number, initial: boolean): FloatingGlyph {
-    const text = GLYPH_POOL[Math.floor(Math.random() * GLYPH_POOL.length)];
+    const pool = this.lang === 'en' ? GLYPH_POOL_EN : GLYPH_POOL;
+    const text = pool[Math.floor(Math.random() * pool.length)];
     const maxLife = 4.5 + Math.random() * 4.5;
     return {
       text,
@@ -445,7 +477,7 @@ export class BootIntro {
       maxAlpha: 0.06 + Math.random() * 0.11,
       life: initial ? Math.random() * maxLife : 0,
       maxLife,
-      size: text.length > 2 ? 15 + Math.floor(Math.random() * 6) : 20 + Math.floor(Math.random() * 14),
+      size: this.lang === 'en' ? 13 + Math.floor(Math.random() * 6) : text.length > 2 ? 15 + Math.floor(Math.random() * 6) : 20 + Math.floor(Math.random() * 14),
     };
   }
 

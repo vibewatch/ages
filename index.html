@@ -89,6 +89,38 @@
           <div class="boot-status">正在展卷九州地形 · 逐朝构筑都城与风物…</div>
         </div>
       </div>
+      <script>
+        (() => {
+          try {
+            const p = new URLSearchParams(location.hash.slice(1) || location.search);
+            let l = p.get('lang');
+            if (l !== 'zh' && l !== 'en') {
+              const s = localStorage.getItem('ages:lang');
+              l = s === '"en"' ? 'en' : s === '"zh"' ? 'zh' : (navigator.language || '').toLowerCase().startsWith('zh') ? 'zh' : 'en';
+            }
+            if (l !== 'en') return;
+            document.documentElement.lang = 'en';
+            const b = document.getElementById('boot');
+            if (!b) return;
+            b.lang = 'en';
+            const q = s => b.querySelector(s);
+            const mt = q('.boot-mark-title'), ms = q('.boot-mark-sub'), k = q('.boot-kicker');
+            if (mt) mt.textContent = 'AGES';
+            if (ms) ms.textContent = '3D ATLAS';
+            if (k) k.innerHTML = '<span>HISTORICAL ATLAS</span><i>·</i><span>3D CHRONICLE SCROLL</span>';
+            const rg = b.querySelectorAll('.boot-ring-glyphs text');
+            ['N·0°', '30°', '60°', 'E·90°', '120°', '150°', 'S·180°', '210°', '240°', 'W·270°', '300°', '330°'].forEach((t, i) => { if (rg[i]) rg[i].textContent = t; });
+            const dn = { xia: 'Xia', shang: 'Shang', zhou: 'Zhou', qin: 'Qin', han: 'Han', three_kingdoms: '3K', jin: 'Jin', sui: 'Sui', tang: 'Tang', song: 'Song', yuan: 'Yuan', ming: 'Ming', qing: 'Qing' };
+            b.querySelectorAll('.boot-dynasties span[data-era]').forEach(el => { const v = dn[el.getAttribute('data-era')]; if (v) el.textContent = v; });
+            const be = q('.bc-era'), by = q('.bc-year'), bc = q('.bc-cap'), bv = q('.boot-verse'), bs = q('.boot-status');
+            if (be) be.textContent = 'Qin';
+            if (by) by.textContent = '221 BCE';
+            if (bc) bc.textContent = 'Capital · Xianyang';
+            if (bv) { bv.lang = 'en'; bv.textContent = 'Mountains and rivers unscroll · Four millennia under one celestial compass'; }
+            if (bs) { bs.lang = 'en'; bs.textContent = 'Unscrolling topographic relief · Aligning capitals & realms…'; }
+          } catch {}
+        })();
+      </script>
     </div>
     <noscript>请启用 JavaScript / Please enable JavaScript.</noscript>
     <script type="module" src="/src/client/main.ts"></script>

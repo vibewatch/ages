@@ -1,21 +1,29 @@
 import { expect, test, type Page } from '@playwright/test';
 import { markPoints, mockWikipedia, openApp, setMapPose, shot, state, watchErrors } from './helpers.ts';
 
-/** The language switch lives in the settings popover (04 语言). */
+/** The language switch is a standalone toggle button in the top-right toolbar. */
 async function switchLang(page: Page): Promise<void> {
-  await page.locator('.b-settings').click();
-  await page.locator('.settings .langs button:not(.on)').click();
-  await page.keyboard.press('Escape');
+  await page.locator('.b-lang').click();
 }
 
 test.describe('Ages atlas', () => {
   test('boots into the map and switches between English and Chinese', async ({ page }) => {
     const errs = watchErrors(page);
+    await page.addInitScript(() => {
+      document.addEventListener('DOMContentLoaded', () => {
+        (window as any).__bootText = document.getElementById('boot')?.textContent ?? '';
+      });
+    });
     await openApp(page, 'y=-221&lang=en');
+    const bootText = await page.evaluate(() => (window as any).__bootText as string);
+    expect(bootText).toContain('AGES');
+    expect(bootText).not.toMatch(/[\u4e00-\u9fff]/);
     let s = await state(page);
     expect(s).toMatchObject({ ready: true, year: -221, lang: 'en', snapshot: expect.stringMatching(/qin/) });
     await expect(page.locator('.tl-year')).toHaveText('221 BCE');
     await expect(page.locator('.brand b')).toHaveText('Ages');
+    await expect(page.locator('.tools .b-lang')).toHaveText('中');
+    await expect(page.locator('.settings .langs')).toHaveCount(0);
     await expect(page.locator('.labels .polity', { hasText: /^Qin$/ }).first()).toBeVisible();
     await shot(page, 'desktop-home-en');
 
