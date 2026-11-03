@@ -38,6 +38,7 @@ function chamfer(d: Float32Array, w: number, h: number): void {
 
 let dScratch: Float32Array | null = null;
 let edgeScratch: Float32Array | null = null;
+let sameScratch: Uint8Array | null = null;
 let histScratch = new Uint32Array(2048);
 
 /**
@@ -49,12 +50,15 @@ let histScratch = new Uint32Array(2048);
 export function growthField(a: Uint8ClampedArray, b: Uint8ClampedArray, w: number, h: number): Float32Array {
   const n = w * h;
   const out = new Float32Array(n);
+  if (!sameScratch || sameScratch.length !== n) sameScratch = new Uint8Array(n);
+  const same = sameScratch;
   // changed cells grouped by their new fill (quantised, so one watercolour fill is one group)
   const groups = new Map<number, number[]>();
   let changed = 0;
   for (let i = 0; i < n; i++) {
     const j = i * 4;
-    if (close(a, j, b, j)) continue;
+    if (close(a, j, b, j)) { same[i] = 1; continue; }
+    same[i] = 0;
     changed++;
     const k = b[j + 3] < 24 ? -1 : ((b[j] >> 4) << 8) | ((b[j + 1] >> 4) << 4) | (b[j + 2] >> 4);
     const g = groups.get(k);
@@ -69,7 +73,7 @@ export function growthField(a: Uint8ClampedArray, b: Uint8ClampedArray, w: numbe
     if (edge) return edge;
     if (!edgeScratch || edgeScratch.length !== n) edgeScratch = new Float32Array(n);
     edge = edgeScratch;
-    for (let i = 0; i < n; i++) edge[i] = close(a, i * 4, b, i * 4) ? 0 : Infinity;
+    for (let i = 0; i < n; i++) edge[i] = same[i] ? 0 : Infinity;
     chamfer(edge, w, h);
     return edge;
   };
@@ -84,8 +88,10 @@ export function growthField(a: Uint8ClampedArray, b: Uint8ClampedArray, w: numbe
     if (!own.has(k)) field = fromEdge();
     else {
       let sources = 0;
+      const sr = b[seed], sg = b[seed + 1], sb = b[seed + 2], sa = b[seed + 3];
       for (let i = 0; i < n; i++) {
-        const src = close(a, i * 4, b, seed);
+        const j = i * 4;
+        const src = Math.abs(a[j] - sr) + Math.abs(a[j + 1] - sg) + Math.abs(a[j + 2] - sb) + Math.abs(a[j + 3] - sa) < SAME;
         d[i] = src ? 0 : Infinity;
         if (src) sources++;
       }

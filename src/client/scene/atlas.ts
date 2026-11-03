@@ -52,6 +52,9 @@ interface Mark extends MapTarget {
   maxD: number;
   modelForm?: boolean;
   layout?: LayoutItem;
+  cachedBounds?: ScreenBox | null;
+  boundsEpoch?: number;
+  boundsScale?: number;
 }
 
 /** A territory under the pointer: polity id (+ per-snapshot name), its colour, tooltip lines. */
@@ -208,7 +211,7 @@ export class Atlas {
       if (fadeOut >= 0.6) { this.hiT = -1; u.uHiAmt.value = 0; }
     }
     this.frameMarks(dt);
-    if (this.layoutDirty || this.fx.boundsDirty || this.labels.dirtySize || this.camStill <= 1 || this.marks.some(m => !m.g.parent)) {
+    if (this.layoutDirty || this.fx.boundsDirty || this.labels.dirty || this.labels.dirtySize || this.camStill <= 1) {
       this.layoutDirty = false;
       this.fx.boundsDirty = false;
       this.layoutMarks();
@@ -299,6 +302,11 @@ export class Atlas {
 
   private modelBounds(m: Mark): ScreenBox | null {
     const ud = m.g.userData as SpawnState;
+    const epoch = this.view.camEpoch;
+    const baseScale = (ud.top || 0) / (ud.k || 1);
+    if (m.boundsEpoch === epoch && m.boundsScale === baseScale && m.cachedBounds !== undefined) {
+      return m.cachedBounds;
+    }
     // Include rotated scenery, its base and shadow, reserving hover growth without moving neighbours.
     const boost = 1.06 / ud.k;
     const b: ScreenBox = { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity };
@@ -344,7 +352,11 @@ export class Atlas {
       });
     }
     const canvas = this.view.canvas;
-    return clipped || b.right < 0 || b.bottom < 0 || b.left > canvas.clientWidth || b.top > canvas.clientHeight ? null : b;
+    const res = clipped || b.right < 0 || b.bottom < 0 || b.left > canvas.clientWidth || b.top > canvas.clientHeight ? null : b;
+    m.boundsEpoch = epoch;
+    m.boundsScale = baseScale;
+    m.cachedBounds = res;
+    return res;
   }
 
   private layoutMarks(): void {

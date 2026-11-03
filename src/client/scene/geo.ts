@@ -10,6 +10,7 @@ export const EXAG = 18; // vertical exaggeration
 const M_PER_UNIT = 111_000;
 
 export class Geo {
+  readonly stage: Stage;
   readonly kx: number;
   readonly lon0: number;
   readonly lat0: number;
@@ -23,7 +24,8 @@ export class Geo {
   land = new Uint8Array(0);
   rgba: Uint8Array<ArrayBufferLike> = new Uint8Array(0);
 
-  constructor(readonly stage: Stage) {
+  constructor(stage: Stage) {
+    this.stage = stage;
     const b = stage.bounds;
     this.kx = Math.cos((stage.refLat * Math.PI) / 180);
     this.lon0 = (b.west + b.east) / 2;

@@ -36,6 +36,13 @@ export interface Label {
   ty?: number;
   tw?: number;
   th?: number;
+  px?: number;
+  py?: number;
+  pz?: number;
+  camEpoch?: number;
+  posX?: number;
+  posY?: number;
+  posZ?: number;
 }
 
 export class Labels {
@@ -45,12 +52,13 @@ export class Labels {
   private hidden = new Set<string>();
   private lz = 1;
   dirtySize = true;
+  dirty = true;
 
   constructor(private view: View, host: HTMLElement) {
     this.root = document.createElement('div');
     this.root.className = 'labels';
     host.append(this.root);
-    window.addEventListener('resize', () => (this.dirtySize = true));
+    window.addEventListener('resize', () => { this.dirtySize = true; this.dirty = true; });
   }
 
   add(l: Label): Label {
@@ -58,12 +66,16 @@ export class Labels {
     this.items.push(l);
     this.root.append(l.el);
     l.el.style.visibility = 'hidden';
+    this.dirty = true;
     return l;
   }
 
   remove(l: Label): void {
     const i = this.items.indexOf(l);
-    if (i >= 0) this.items.splice(i, 1);
+    if (i >= 0) {
+      this.items.splice(i, 1);
+      this.dirty = true;
+    }
     l.el.remove();
   }
 
@@ -72,16 +84,20 @@ export class Labels {
   }
 
   setGroupVisible(group: string, on: boolean): void {
+    const wasHidden = this.hidden.has(group);
     if (on) this.hidden.delete(group); else this.hidden.add(group);
+    if (wasHidden === on) this.dirty = true;
   }
 
   /** Call after label text changes (sizes are cached). */
   remeasure(l?: Label): void {
     if (l) l.w = undefined;
     else this.dirtySize = true;
+    this.dirty = true;
   }
 
   layout(models: LayoutItem[] = []): void {
+    this.dirty = false;
     const v = this.view;
     const W = v.canvas.clientWidth, H = v.canvas.clientHeight;
     const dist = v.camera.position.distanceTo(v.controls.target);
@@ -97,13 +113,20 @@ export class Labels {
       this.dirtySize = false;
     }
     const candidates = new Map<Label, LayoutItem>();
+    const epoch = v.camEpoch;
     for (const l of this.items) {
       let show = !l.off && !this.hidden.has(l.group) && (!!l.model || !!l.pinned || (dist >= (l.minD ?? 0) && dist <= (l.maxD ?? Infinity)));
       let x = 0, y = 0;
       if (show && !(l.modelHit && l.model)) {
-        const p = v.project(l.pos, this.tmp);
-        x = l.screen?.x ?? p.x; y = l.screen?.y ?? p.y;
-        if (p.z < -1 || p.z > 1 || x < -40 || y < -40 || x > W + 40 || y > H + 40) show = false;
+        if (l.camEpoch !== epoch || l.posX !== l.pos.x || l.posY !== l.pos.y || l.posZ !== l.pos.z) {
+          const p = v.project(l.pos, this.tmp);
+          l.px = p.x; l.py = p.y; l.pz = p.z;
+          l.camEpoch = epoch;
+          l.posX = l.pos.x; l.posY = l.pos.y; l.posZ = l.pos.z;
+        }
+        x = l.screen?.x ?? l.px!; y = l.screen?.y ?? l.py!;
+        const pz = l.pz!;
+        if (pz < -1 || pz > 1 || x < -40 || y < -40 || x > W + 40 || y > H + 40) show = false;
       }
       if (show && !(l.modelHit && l.model) && l.w === undefined) {
         l.w = l.el.offsetWidth; l.h = l.el.offsetHeight;

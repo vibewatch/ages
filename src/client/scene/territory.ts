@@ -131,12 +131,14 @@ export class TerritoryPainter {
    * Paints a snapshot into a new canvas: the whole stage, or with `frame` just a box at a finer scale, where lines stay
    * thin and crisp (capped widths) while the watercolour band keeps roughly its ground width.
    */
-  paint(s: Snapshot | null, o: PaintOpts = {}, frame?: PaintFrame): HTMLCanvasElement {
-    const c = document.createElement('canvas');
-    c.width = frame?.w ?? this.W;
-    c.height = frame?.h ?? this.H;
-    // CPU-backed: the phase morph reads these pixels back, and a GPU canvas readback stalls the page (seconds on first use)
-    const ctx = c.getContext('2d', { willReadFrequently: true })!;
+  paint(s: Snapshot | null, o: PaintOpts = {}, frame?: PaintFrame, target?: HTMLCanvasElement): HTMLCanvasElement {
+    const c = target ?? document.createElement('canvas');
+    const w = frame?.w ?? this.W, h = frame?.h ?? this.H;
+    if (c.width !== w) c.width = w;
+    if (c.height !== h) c.height = h;
+    // CPU-backed for full-stage maps read back by phase morph; close-up detail frames are uploaded to WebGL only
+    const ctx = c.getContext('2d', { willReadFrequently: !frame })!;
+    if (target) ctx.clearRect(0, 0, w, h);
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
     this.frame = frame ?? null;

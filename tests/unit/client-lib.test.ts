@@ -7,8 +7,11 @@ import { bakeStaticMeshes } from '../../src/client/models/pp-kit.ts';
 import { packModel, unpackModel } from '../../src/client/models/pack.ts';
 import { animate, rig } from '../../src/client/scene/animate.ts';
 import { deploy, shape } from '../../src/client/scene/formation.ts';
+import { Geo } from '../../src/client/scene/geo.ts';
 import { declutter, type LayoutItem } from '../../src/client/scene/layout.ts';
 import { growthField } from '../../src/client/scene/morph.ts';
+import { buildTerrain } from '../../src/client/scene/terrain.ts';
+import { STAGES } from '../../src/shared/data/stage.ts';
 
 describe('shared map layout', () => {
   const item = (owner: string, x: number, prio = 10): LayoutItem => ({
@@ -259,6 +262,33 @@ describe('3D scene-graph baking and static matrix freezing', () => {
     animate(rigs, 1.5, 0);
     expect(spin.rotation.x).toBeCloseTo(1.5 * 2);
     expect(spin.matrixWorldNeedsUpdate).toBe(true);
+  });
+
+  it('chunks terrain into a 6x4 spatial grid with frozen matrices and seamless tile boundaries', () => {
+    const geo = new Geo(STAGES.china);
+    const w = 16, h = 12;
+    const rgba = new Uint8Array(w * h * 4);
+    for (let i = 0; i < w * h; i++) {
+      rgba[i * 4] = 45;
+      rgba[i * 4 + 1] = (i * 17) & 255;
+      rgba[i * 4 + 2] = i % 5 === 0 ? 255 : 0;
+      rgba[i * 4 + 3] = 255;
+    }
+    geo.setHeightmap(rgba, w, h);
+    const terrain = buildTerrain(geo, true);
+    expect(terrain.mesh.matrixAutoUpdate).toBe(false);
+    expect(terrain.mesh.children).toHaveLength(24);
+    for (const tile of terrain.mesh.children) {
+      expect(tile.matrixAutoUpdate).toBe(false);
+      expect((tile as THREE.Mesh).geometry.boundingSphere).not.toBeNull();
+    }
+    // Check that the right edge of tile (0,0) matches the left edge of tile (1,0) exactly
+    const t0 = (terrain.mesh.children[0] as THREE.Mesh).geometry.getAttribute('position') as THREE.BufferAttribute;
+    const t1 = (terrain.mesh.children[1] as THREE.Mesh).geometry.getAttribute('position') as THREE.BufferAttribute;
+    const sx = 320, x1 = Math.round(sx / 6);
+    expect(t0.getX(x1)).toBe(t1.getX(0));
+    expect(t0.getY(x1)).toBe(t1.getY(0));
+    expect(t0.getZ(x1)).toBe(t1.getZ(0));
   });
 });
 

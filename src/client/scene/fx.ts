@@ -198,6 +198,7 @@ export class Fx {
     it.obj.removeFromParent();
     for (const o of it.own) o.dispose();
     if (it.label) this.labels.remove(it.label);
+    this.boundsDirty = true;
   }
 
   /** Removes a layer (and, for 'story', finishes pending tweens so awaiting scripts unwind). */
@@ -641,7 +642,10 @@ export class Fx {
         banner.rotation.y = yaw - Math.PI / 2;
         animate(rigs, t);
       }
-      if (it.label) it.label.pos.copy(hd.pos).setY(hd.pos.y + 1.3 * z);
+      if (it.label) {
+        it.label.pos.copy(hd.pos).setY(hd.pos.y + 1.3 * z);
+        if (moving) this.boundsDirty = true;
+      }
     };
     if (o.follow) this.followWith(() => tmp);
     await this.tween(o.dur, x => { k = 0.7 * x + 0.3 * x * x * (3 - 2 * x); line.reveal(k); });
@@ -810,7 +814,10 @@ export class Fx {
           sd.flag.scale.setScalar(Math.max(0.001, s * 1.1 * fk * (1 - (lost ? Math.max(0, rout - 0.7) / 0.3 : 0))));
           animate(sd.rigs, t);
         }
-        if (sd.label) at(sd, front + gap * 3, 0, sd.label.pos).setY(c.y + 0.5 * s);
+        if (sd.label) {
+          at(sd, front + gap * 3, 0, sd.label.pos).setY(c.y + 0.5 * s);
+          this.boundsDirty = true;
+        }
         // archers loose volleys while the lines close; riflemen fire by ranks
         const foe = sd === sides[0] ? sides[1] : sides[0];
         sd.vol -= dt;
@@ -972,7 +979,10 @@ export class Fx {
         sh.wake.p.copy(sh.m.position).addScaledVector(a.dir, -0.55 * z);
         sh.wake.k = sailing ? 1 : 0.2;
       });
-      if (it.label) it.label.pos.copy(hd.pos).setY(1.3 * z);
+      if (it.label) {
+        it.label.pos.copy(hd.pos).setY(1.3 * z);
+        if (sailing) this.boundsDirty = true;
+      }
     };
     if (o.follow) this.followWith(() => tmp);
     await this.tween(o.dur, x => { k = x; line.reveal(x); });
@@ -1082,7 +1092,7 @@ export class Fx {
     const seed = Math.random() * 10;
     const r = (m.userData.radius as number | undefined) ?? 0.5, h = (m.userData.height as number | undefined) ?? 1;
     const baseR = Math.max(r * 1.3, base0 ? THREE.MathUtils.clamp(r, 0.22, 0.5) * 1.15 : 0);
-    let grow = 0, lastZ = -1, lastGrow = -1, lastVis = true;
+    let grow = 0, lastZ = -1, lastBaseZ = -1, lastGrow = -1, lastVis = true;
     const k0 = o.scale ?? 1;
     // hover / pick state shared with the atlas: `boost` is the wanted size bump (1 = none), `top` and `rad` the model's
     // current height and footprint radius in world units, `shown` whether it is standing at this zoom
@@ -1094,11 +1104,15 @@ export class Fx {
         ud.k += (ud.boost - ud.k) * Math.min(1, dt * 14);
         if (Math.abs(ud.boost - ud.k) <= 1e-4) ud.k = ud.boost;
       }
-      const z = (layer === 'story' ? sc : mapScale(this.dist)) * k0 * (layer === 'base' || layer === 'scenery' ? 0.7 : 1) * ud.k;
+      const baseZ = (layer === 'story' ? sc : mapScale(this.dist)) * k0 * (layer === 'base' || layer === 'scenery' ? 0.7 : 1);
+      const z = baseZ * ud.k;
       const vis = o.maxD === undefined || this.dist <= o.maxD;
       if (Math.abs(z - lastZ) > 1e-5 || grow !== lastGrow || vis !== lastVis) {
+        if (Math.abs(baseZ - lastBaseZ) > 1e-5 || grow !== lastGrow || vis !== lastVis) {
+          lastBaseZ = baseZ;
+          this.boundsDirty = true;
+        }
         lastZ = z; lastGrow = grow; lastVis = vis;
-        this.boundsDirty = true;
         const e = easeBack(grow);
         m.scale.setScalar(Math.max(0.001, z * e));
         m.updateMatrix();

@@ -215,6 +215,7 @@ test.describe('Ages atlas', () => {
       ].join(',');
       try {
         check(!a.view.scene.matrixAutoUpdate && !a.fx.root.matrixAutoUpdate, 'Scene and fx root must freeze auto matrix updates');
+        check(a.terrain.mesh.children.length === 24, 'Terrain must be split into 24 frustum-cullable spatial tiles');
         r.render(a.view.scene, a.view.camera);
         let forced = 0;
         const origMul = a.terrain.mesh.matrixWorld.multiplyMatrices;

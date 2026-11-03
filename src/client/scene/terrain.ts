@@ -153,12 +153,13 @@ void main() {
       vec4 td = texture2D(uTD, tu);
       // near the coast, outlines and the land mask disagree by a few km: fill such slivers from the nearest painted land
       if (td.a < 0.05 && land > 0.5 && m.g < 0.97) {
-        vec2 r = 0.03 / vec2(uTDBox.y - uTDBox.x, uTDBox.w - uTDBox.z);
+        vec2 r = 0.045 / vec2(uTDBox.y - uTDBox.x, uTDBox.w - uTDBox.z);
         vec4 acc = vec4(0.0);
         float n = 0.0;
-        for (int i = 0; i < 16; i++) {
-          float a = float(i) * 0.785398 + (i >= 8 ? 0.3927 : 0.0);
-          vec4 s = texture2D(uTD, tu + vec2(cos(a), sin(a)) * r * (i >= 8 ? 2.0 : 1.0));
+        for (int i = 0; i < 8; i++) {
+          vec2 d = i == 0 ? vec2(1.0, 0.0) : i == 1 ? vec2(-1.0, 0.0) : i == 2 ? vec2(0.0, 1.0) : i == 3 ? vec2(0.0, -1.0)
+            : i == 4 ? vec2(0.7071, 0.7071) : i == 5 ? vec2(-0.7071, 0.7071) : i == 6 ? vec2(0.7071, -0.7071) : vec2(-0.7071, -0.7071);
+          vec4 s = texture2D(uTD, tu + d * r);
           if (s.a > 0.05) { acc += vec4(s.rgb * s.a, s.a); n += 1.0; }
         }
         if (n > 0.0) td = vec4(acc.rgb / acc.a, acc.a / n);
@@ -220,7 +221,7 @@ void main() {
 }`;
 
 export interface Terrain {
-  mesh: THREE.Mesh;
+  mesh: THREE.Object3D;
   uniforms: Record<string, THREE.IUniform>;
 }
 
@@ -240,14 +241,6 @@ export const SURFACE: Record<Surface, { style: number; haze: THREE.Color; top: T
 /** Builds the relief mesh and its shader. It fills the screen: the camera never shows its edges (see View.constrain). */
 export function buildTerrain(geo: Geo, lowfx: boolean): Terrain {
   const sx = lowfx ? 320 : 540, sz = Math.round(sx * (geo.depth / geo.width));
-  const pg = new THREE.PlaneGeometry(geo.width, geo.depth, sx, sz);
-  pg.rotateX(-Math.PI / 2);
-  const pos = pg.getAttribute('position') as THREE.BufferAttribute;
-  for (let i = 0; i < pos.count; i++) {
-    const lon = geo.lon(pos.getX(i)), lat = geo.lat(pos.getZ(i));
-    pos.setY(i, heightOf(geo.elevation(lon, lat), geo.isLand(lon, lat)));
-  }
-  pg.computeBoundingSphere();
 
   // elevation (km, half float) and mask (river, land) textures at full heightmap resolution
   const N = geo.w * geo.h;
@@ -281,12 +274,44 @@ export function buildTerrain(geo: Geo, lowfx: boolean): Terrain {
     uBounds: { value: new THREE.Vector4(b.west, b.east, b.south, b.north) }, uCam: { value: new THREE.Vector3() }, uHaze: { value: HAZE.clone() }, uStyle: { value: 1 },
   };
   const mat = new THREE.ShaderMaterial({ vertexShader: VERT, fragmentShader: FRAG, uniforms, extensions: { derivatives: true } as never });
-  const mesh = new THREE.Mesh(pg, mat);
+  const mesh = new THREE.Group();
   mesh.name = 'terrain';
   mesh.matrixAutoUpdate = false;
   mesh.updateMatrix();
-  // drawn first so map ink (routes, rings) can paint over it without depth testing
-  mesh.renderOrder = INK.terrain;
+  // Split into a 6×4 spatial tile grid so off-screen terrain chunks are frustum-culled when zoomed in.
+  const TX = 6, TZ = 4;
+  for (let iz = 0; iz < TZ; iz++) {
+    const z0 = Math.round((iz * sz) / TZ), z1 = Math.round(((iz + 1) * sz) / TZ);
+    const tsz = z1 - z0;
+    for (let ix = 0; ix < TX; ix++) {
+      const x0 = Math.round((ix * sx) / TX), x1 = Math.round(((ix + 1) * sx) / TX);
+      const tsx = x1 - x0;
+      const pg = new THREE.PlaneGeometry((tsx / sx) * geo.width, (tsz / sz) * geo.depth, tsx, tsz);
+      pg.rotateX(-Math.PI / 2);
+      const pos = pg.getAttribute('position') as THREE.BufferAttribute;
+      const uv = pg.getAttribute('uv') as THREE.BufferAttribute;
+      let vi = 0;
+      for (let rz = 0; rz <= tsz; rz++) {
+        const v = (z0 + rz) / sz;
+        const z = (v - 0.5) * geo.depth;
+        const lat = geo.lat(z);
+        for (let rx = 0; rx <= tsx; rx++, vi++) {
+          const u = (x0 + rx) / sx;
+          const x = (u - 0.5) * geo.width;
+          const lon = geo.lon(x);
+          pos.setXYZ(vi, x, heightOf(geo.elevation(lon, lat), geo.isLand(lon, lat)), z);
+          uv.setXY(vi, u, 1 - v);
+        }
+      }
+      pg.computeBoundingSphere();
+      const tile = new THREE.Mesh(pg, mat);
+      tile.matrixAutoUpdate = false;
+      tile.updateMatrix();
+      // drawn first so map ink (routes, rings) can paint over it without depth testing
+      tile.renderOrder = INK.terrain;
+      mesh.add(tile);
+    }
+  }
 
   return { mesh, uniforms };
 }

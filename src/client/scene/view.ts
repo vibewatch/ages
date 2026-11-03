@@ -29,6 +29,8 @@ export class View {
   private perf = { t: 0, n: 0, good: 0 };
   /** Increments whenever the projection matrix (resize or view-offset inset) changes. */
   projVersion = 0;
+  /** Increments whenever camera pose, target, or projection matrix changes. */
+  camEpoch = 0;
   /** The canvas' CSS size, kept by resize() so per-label projection never touches the DOM. */
   private cssW = 1;
   private cssH = 1;
@@ -133,6 +135,7 @@ export class View {
     this.projScreenMatrix.multiplyMatrices(this.camera.projectionMatrix, this.camera.matrixWorldInverse);
     this.constrainDirty = true;
     this.projVersion++;
+    this.camEpoch++;
   }
 
   private stepInset(dt: number): void {
@@ -226,6 +229,7 @@ export class View {
     this.lastCamPos.copy(cam.position);
     this.lastCamQuat.copy(cam.quaternion);
     this.lastTarget.copy(t);
+    this.camEpoch++;
   }
 
   /**
@@ -269,6 +273,7 @@ export class View {
     this.camera.lookAt(tgt);
     this.camera.updateMatrixWorld();
     this.projScreenMatrix.multiplyMatrices(this.camera.projectionMatrix, this.camera.matrixWorldInverse);
+    this.camEpoch++;
   }
 
   jump(p: CamPose): void {
@@ -358,7 +363,7 @@ export class View {
     this.constrain();
     for (const h of this.hooks) h(dt, this.elapsed);
     this.sky.position.copy(this.camera.position);
-    this.renderer.render(this.scene, this.camera);
+    if (!document.hidden) this.renderer.render(this.scene, this.camera);
     this.frames++;
     this.adapt(rawDt);
   }

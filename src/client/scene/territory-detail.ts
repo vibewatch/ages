@@ -5,7 +5,7 @@ import type { View } from './view.ts';
 
 /** Closer than this camera distance borders are repainted for the area in view. */
 const DIST = 30;
-const SIZE = 2048;
+const SIZE = 1536;
 
 /**
  * Close-up borders: the stage-wide territory texture is ~4 km a pixel, so near the ground borders blur into wide
@@ -15,6 +15,7 @@ const SIZE = 2048;
 export class TerritoryDetail {
   private src: { key: string; snap: Snapshot | null; opts: PaintOpts } | null = null;
   private cur: { key: string; box: PaintFrame['box']; dist: number } | null = null;
+  private canvas: HTMLCanvasElement | null = null;
   private tex: THREE.CanvasTexture | null = null;
   private acc = 0;
   private still = 0;
@@ -51,15 +52,18 @@ export class TerritoryDetail {
     const covers = c && c.key === this.src.key && c.dist / p.dist < 1.6 && p.dist / c.dist < 1.6
       && c.box[0] <= p.lon - half / cos && c.box[1] >= p.lon + half / cos && c.box[2] <= p.lat - half && c.box[3] >= p.lat + half;
     if (covers) return;
-      const box: PaintFrame['box'] = [p.lon - R / cos, p.lon + R / cos, p.lat - R, p.lat + R];
-    const canvas = this.painter.paint(this.src.snap, this.src.opts, { box, w: SIZE, h: SIZE });
-    const tex = texture(canvas);
-    tex.generateMipmaps = false;
-    tex.minFilter = THREE.LinearFilter;
-    tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
-    this.tex?.dispose();
-    this.tex = tex;
-    this.u.uTD.value = tex;
+    const box: PaintFrame['box'] = [p.lon - R / cos, p.lon + R / cos, p.lat - R, p.lat + R];
+    this.canvas = this.painter.paint(this.src.snap, this.src.opts, { box, w: SIZE, h: SIZE }, this.canvas ?? undefined);
+    if (!this.tex) {
+      const tex = texture(this.canvas);
+      tex.generateMipmaps = false;
+      tex.minFilter = THREE.LinearFilter;
+      tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
+      this.tex = tex;
+      this.u.uTD.value = tex;
+    } else {
+      this.tex.needsUpdate = true;
+    }
     (this.u.uTDBox.value as THREE.Vector4).set(...box);
     // a moved box switches in at once; a first paint fades in
     this.cur = { key: this.src.key, box, dist: p.dist };

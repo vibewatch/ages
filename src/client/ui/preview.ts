@@ -28,6 +28,7 @@ export class Preview {
   private introAt = Infinity;
   private last = 0;
   private dirty = true;
+  private inView = true;
   private _active = false;
   get active(): boolean { return this._active; }
   set active(on: boolean) {
@@ -48,7 +49,17 @@ export class Preview {
     this.canvas = document.createElement('canvas');
     this.canvas.className = 'pv-gl';
     this.scene.matrixAutoUpdate = false;
+    this.turn.matrixAutoUpdate = false;
     this.scene.add(this.turn);
+    if (typeof IntersectionObserver !== 'undefined') {
+      new IntersectionObserver(entries => {
+        const vis = entries[0]?.isIntersecting ?? true;
+        if (vis !== this.inView) {
+          this.inView = vis;
+          if (vis) this.dirty = true;
+        }
+      }).observe(this.canvas);
+    }
     // pocket-planet's 3-point studio rig: warm key (casts the shadow), cool fill, golden rim, dim sky/ground bounce
     const key = new THREE.DirectionalLight('#fffbeb', 3.0);
     key.position.set(2.8, 4.2, 3.4);
@@ -83,6 +94,7 @@ export class Preview {
       r.toneMappingExposure = 0.95;
       r.shadowMap.enabled = !this.still;
       r.shadowMap.type = THREE.PCFShadowMap;
+      r.shadowMap.autoUpdate = false;
       this.scene.environment = outdoorEnvironment(r);
       this.scene.environmentIntensity = 0.55;
       this.renderer = r;
@@ -121,6 +133,8 @@ export class Preview {
     const k = 2.0 / Math.max(size.x, size.z, size.y * 0.85, 0.01);
     g.scale.multiplyScalar(k);
     g.position.set(-(box.min.x + box.max.x) / 2 * k, -box.min.y * k, -(box.min.z + box.max.z) / 2 * k);
+    g.updateMatrix();
+    g.matrixAutoUpdate = false;
     this.model = g;
     this.turn.add(g);
     const h = size.y * k, w = Math.hypot(size.x, size.z) * k * 0.78;
@@ -164,10 +178,14 @@ export class Preview {
     const dt = Math.min(0.1, (now - (this.last || now)) / 1000);
     if (this.model && this.active && this.introAt < 0) this.introAt = now;
     const intro = this.introAt < Infinity;
-    // cap at ~24 fps outside the intro; idle (hidden card, background tab, low-end) costs nothing
-    if (!this.active || document.hidden || (!this.dirty && !intro && (this.still || now - this.last < 40))) { if (!this.active) this.last = now; return; }
+    const spinning = !this.still && this.spin !== 0;
+    // cap at ~24 fps outside the intro; idle (hidden card, scrolled off-screen, background tab, paused drag, low-end) costs nothing
+    if (!this.active || !this.inView || !this.model || document.hidden || (!this.dirty && !intro && (!spinning || now - this.last < 40))) {
+      if (!this.active) this.last = now;
+      return;
+    }
     this.last = now;
-    if (!this.still) this.angle += dt * this.spin;
+    if (spinning) this.angle += dt * this.spin;
     let yaw = 0;
     if (intro) {
       const t = Math.min(1, (now - this.introAt) / INTRO_MS), k = 1 - (1 - t) ** 3;
@@ -175,7 +193,12 @@ export class Preview {
       yaw = -INTRO_YAW * (1 - k);
       if (t >= 1) this.introAt = Infinity;
     }
-    this.turn.rotation.y = this.angle + yaw;
+    const nextYaw = this.angle + yaw;
+    if (this.turn.rotation.y !== nextYaw || this.dirty) {
+      this.turn.rotation.y = nextYaw;
+      this.turn.updateMatrix();
+      if (!this.still && this.renderer) this.renderer.shadowMap.needsUpdate = true;
+    }
     const r = this.renderer!;
     const w = this.canvas.clientWidth, h = this.canvas.clientHeight;
     if (!w || !h) return;
