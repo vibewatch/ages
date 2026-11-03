@@ -1209,6 +1209,18 @@ function fieldTexture(): THREE.Texture {
 
 // ---------------------------------------------------------------- missiles
 
+/** Keep pending edits together even when a hidden object has not uploaded its buffer yet. */
+function updateRange(attribute: THREE.BufferAttribute, start: number, count: number): void {
+  let end = start + count;
+  for (const range of attribute.updateRanges) {
+    start = Math.min(start, range.start);
+    end = Math.max(end, range.start + range.count);
+  }
+  attribute.clearUpdateRanges();
+  attribute.addUpdateRange(start, end - start);
+  attribute.needsUpdate = true;
+}
+
 interface Missile { a: THREE.Vector3; b: THREE.Vector3; h: number; t: number; T: number; s: number; stone: boolean; hit?: () => void }
 
 /** Arrows and stones in flight on parabolic arcs (instanced; arrows point along their velocity). */
@@ -1216,26 +1228,38 @@ class Missiles {
   readonly arrows: THREE.InstancedMesh;
   readonly stones: THREE.InstancedMesh;
   private list: Missile[] = [];
+  private dirty = false;
 
   constructor() {
     const ag = new THREE.CylinderGeometry(0.012, 0.012, 1, 3).rotateX(Math.PI / 2);
     this.arrows = new THREE.InstancedMesh(ag, new THREE.MeshBasicMaterial({ color: '#efe4c8' }), 400);
     this.stones = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 0), new THREE.MeshStandardMaterial({ color: '#4a4540', roughness: 0.9, flatShading: true }), 40);
-    for (const m of [this.arrows, this.stones]) { m.count = 0; m.frustumCulled = false; }
+    for (const m of [this.arrows, this.stones]) {
+      m.count = 0; m.visible = false; m.frustumCulled = false;
+      m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    }
   }
 
   fire(kind: 'arrow' | 'stone', a: THREE.Vector3, b: THREE.Vector3, h: number, T: number, s: number, hit?: () => void): void {
     const stone = kind === 'stone';
     if (this.list.filter(m => m.stone === stone).length >= (stone ? 40 : 400)) return;
     this.list.push({ a: a.clone(), b: b.clone(), h, t: 0, T, s, stone, hit });
+    this.dirty = true;
   }
 
-  clear(): void { this.list = []; this.arrows.count = this.stones.count = 0; }
+  clear(): void {
+    this.list = [];
+    this.arrows.count = this.stones.count = 0;
+    this.arrows.visible = this.stones.visible = false;
+    this.dirty = false;
+  }
 
   private m4 = new THREE.Matrix4(); private q = new THREE.Quaternion(); private p = new THREE.Vector3(); private d = new THREE.Vector3(); private sc = new THREE.Vector3();
   private fwd = new THREE.Vector3(0, 0, 1);
 
   step(dt: number): void {
+    if (!this.list.length || (!dt && !this.dirty)) return;
+    this.dirty = false;
     let na = 0, ns = 0;
     for (const m of this.list.slice()) {
       m.t += dt;
@@ -1256,8 +1280,10 @@ class Missiles {
     }
     this.arrows.count = na;
     this.stones.count = ns;
-    this.arrows.instanceMatrix.needsUpdate = true;
-    this.stones.instanceMatrix.needsUpdate = true;
+    this.arrows.visible = na > 0;
+    this.stones.visible = ns > 0;
+    if (na) updateRange(this.arrows.instanceMatrix, 0, na * 16);
+    if (ns) updateRange(this.stones.instanceMatrix, 0, ns * 16);
   }
 }
 
@@ -1479,6 +1505,7 @@ class Pool {
   private alpha: Float32Array;
   private next = 0;
   private live = 0;
+  private dirty = false;
   private mat: THREE.ShaderMaterial;
 
   constructor(private n: number, additive: boolean) {
@@ -1495,11 +1522,13 @@ class Pool {
     g.setAttribute('position', new THREE.BufferAttribute(this.pos, 3).setUsage(THREE.DynamicDrawUsage));
     g.setAttribute('aColor', new THREE.BufferAttribute(this.col, 4).setUsage(THREE.DynamicDrawUsage));
     g.setAttribute('aSize', new THREE.BufferAttribute(this.size, 1).setUsage(THREE.DynamicDrawUsage));
+    g.setDrawRange(0, 0);
     this.mat = new THREE.ShaderMaterial({
       vertexShader: PVERT, fragmentShader: PFRAG, uniforms: { uPx: { value: 500 } },
       transparent: true, depthWrite: false, blending: additive ? THREE.AdditiveBlending : THREE.NormalBlending,
     });
     this.points = new THREE.Points(g, this.mat);
+    this.points.visible = false;
     this.points.frustumCulled = false;
     this.points.renderOrder = additive ? 7 : 6;
   }
@@ -1507,6 +1536,7 @@ class Pool {
   spawn(x: number, y: number, z: number, vx: number, vy: number, vz: number, life: number, size: number, rgb: number[], grav: number, alpha = 1): void {
     const i = this.next;
     this.next = (this.next + 1) % this.n;
+    if (this.life[i] <= 0) this.live++;
     this.pos.set([x, y, z], i * 3);
     this.vel.set([vx, vy, vz], i * 3);
     this.col.set([rgb[0], rgb[1], rgb[2], alpha], i * 4);
@@ -1515,39 +1545,50 @@ class Pool {
     this.base[i] = size;
     this.grav[i] = grav;
     this.alpha[i] = alpha;
-    this.live = Math.min(this.n, this.live + 1);
+    this.dirty = true;
   }
 
   clear(): void {
     this.life.fill(0);
     this.size.fill(0);
+    this.next = 0;
     this.live = 0;
-    (this.points.geometry.getAttribute('aSize') as THREE.BufferAttribute).needsUpdate = true;
+    this.dirty = false;
+    this.points.visible = false;
+    this.points.geometry.setDrawRange(0, 0);
+    // Cleared slots may fall inside a later draw range after the ring buffer wraps.
+    updateRange(this.points.geometry.getAttribute('aSize') as THREE.BufferAttribute, 0, this.n);
   }
 
   step(dt: number, px: number): void {
     this.mat.uniforms.uPx.value = px;
-    if (!this.live) return;
-    let any = 0;
+    if (!this.live || (!dt && !this.dirty)) return;
+    this.dirty = false;
+    let first = this.n, end = 0, drawFirst = this.n, drawEnd = 0;
+    const drag = Math.pow(0.35, dt);
     for (let i = 0; i < this.n; i++) {
-      if (this.life[i] <= 0) { this.size[i] = 0; continue; }
-      any++;
+      if (this.life[i] <= 0) continue;
+      first = Math.min(first, i); end = i + 1;
       this.life[i] -= dt;
+      if (this.life[i] <= 0) { this.size[i] = 0; this.live--; continue; }
+      drawFirst = Math.min(drawFirst, i); drawEnd = i + 1;
       const k = 1 - Math.max(0, this.life[i]) / this.max[i];
       this.vel[i * 3 + 1] -= this.grav[i] * dt;
-      const drag = Math.pow(0.35, dt);
       this.vel[i * 3] *= drag; this.vel[i * 3 + 1] *= drag; this.vel[i * 3 + 2] *= drag;
       this.pos[i * 3] += this.vel[i * 3] * dt;
       this.pos[i * 3 + 1] += this.vel[i * 3 + 1] * dt;
       this.pos[i * 3 + 2] += this.vel[i * 3 + 2] * dt;
       const smoke = this.grav[i] < 0 && this.alpha[i] < 0.9;
-      this.size[i] = this.life[i] > 0 ? this.base[i] * (smoke ? 0.6 + k * 1.6 : 1 - k * 0.6) : 0;
+      this.size[i] = this.base[i] * (smoke ? 0.6 + k * 1.6 : 1 - k * 0.6);
       this.col[i * 4 + 3] = this.alpha[i] * (k < 0.1 ? k / 0.1 : 1 - k);
     }
-    if (!any) this.live = 0;
     const g = this.points.geometry;
-    (g.getAttribute('position') as THREE.BufferAttribute).needsUpdate = true;
-    (g.getAttribute('aColor') as THREE.BufferAttribute).needsUpdate = true;
-    (g.getAttribute('aSize') as THREE.BufferAttribute).needsUpdate = true;
+    this.points.visible = this.live > 0;
+    g.setDrawRange(this.live ? drawFirst : 0, this.live ? drawEnd - drawFirst : 0);
+    if (end > first) {
+      updateRange(g.getAttribute('position') as THREE.BufferAttribute, first * 3, (end - first) * 3);
+      updateRange(g.getAttribute('aColor') as THREE.BufferAttribute, first * 4, (end - first) * 4);
+      updateRange(g.getAttribute('aSize') as THREE.BufferAttribute, first, end - first);
+    }
   }
 }

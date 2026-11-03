@@ -160,6 +160,14 @@ test.describe('Ages atlas', () => {
     await expect.poll(async () => (await state(page)).captions, { timeout: 60_000 }).toMatch(/秦|韩/);
     await expect.poll(async () => (await state(page)).fx.story, { timeout: 90_000 }).toBeGreaterThan(0);
     await shot(page, 'desktop-story-qin');
+    expect(await page.evaluate(() => {
+      const app = (window as any).__atlas;
+      return [app.atlas.view.renderer, app.card.preview.renderer].flatMap(r => {
+        const gl = r.getContext();
+        return r.info.programs.filter((p: any) => !gl.getProgramParameter(p.program, gl.LINK_STATUS))
+          .map((p: any) => gl.getProgramInfoLog(p.program));
+      });
+    })).toEqual([]);
 
     await page.keyboard.press('Space');
     await expect.poll(async () => (await state(page)).story).toBe('paused');
@@ -178,6 +186,83 @@ test.describe('Ages atlas', () => {
     await page.goto('/?lowfx=1#e=houmuwu&lang=zh');
     await expect(page.locator('.card h2')).toHaveText(/后母戊鼎/);
     await expect(page.locator('.card [data-act=play]')).toHaveCount(0);
+    expect(errs).toEqual([]);
+  });
+
+  test('only draws and uploads live effects, including after pause, expiry and pool reuse', async ({ page }) => {
+    const errs = watchErrors(page);
+    await openApp(page, 'y=-221&lang=en');
+    await page.evaluate(() => {
+      const a = (window as any).__atlas.atlas, r = a.view.renderer, gl = r.getContext();
+      const pool = new a.fx.particles.pools[0].constructor(4, true);
+      const missiles = new a.fx.missiles.constructor();
+      const scene = new a.view.scene.constructor();
+      scene.add(pool.points, missiles.arrows, missiles.stones);
+      const p = a.view.controls.target.clone();
+      const check = (ok: boolean, message: string) => { if (!ok) throw new Error(message); };
+      const spawn = (life: number) => pool.spawn(p.x, p.y + 1, p.z, 0, 0.1, 0, life, 0.1, [1, 0.6, 0.2], 0);
+      let bytes = 0, hits = 0;
+      const upload = gl.bufferSubData;
+      gl.bufferSubData = function (...args: any[]) {
+        bytes += args[2].BYTES_PER_ELEMENT * (args[4] || args[2].length - (args[3] || 0));
+        return upload.apply(this, args);
+      };
+      const draw = () => { bytes = 0; r.render(scene, a.view.camera); };
+      const step = (dt: number) => { pool.step(dt, 500); missiles.step(dt); };
+      const versions = () => [
+        ...Object.values(pool.points.geometry.attributes).map((a: any) => a.version),
+        missiles.arrows.instanceMatrix.version, missiles.stones.instanceMatrix.version,
+      ].join(',');
+      try {
+        step(0.1); draw();
+        check(r.info.render.calls === 0 && bytes === 0, 'Empty pools must not draw or upload');
+        spawn(0.2); spawn(2);
+        missiles.fire('arrow', p, p.clone().addScalar(1), 1, 0.2, 1, () => hits++);
+        missiles.fire('stone', p, p.clone().addScalar(1), 1, 0.6, 1, () => hits++);
+        step(0.05); draw(); // Allocate the buffers before checking subrange uploads.
+        step(0.05); draw();
+        check(r.info.render.points === 2, 'Only the two occupied particle slots should draw');
+        check(bytes === 2 * 32 + 2 * 64, `Expected two particles and two matrices, uploaded ${bytes} bytes`);
+        const paused = versions();
+        pool.step(0, 750); missiles.step(0); draw();
+        check(bytes === 0 && versions() === paused, 'Paused effects must reuse GPU buffers');
+        check(pool.points.material.uniforms.uPx.value === 750, 'Paused particles must still respond to projection changes');
+
+        step(0.2); draw();
+        check(hits === 1 && !missiles.arrows.visible && missiles.stones.visible, 'Expired arrows must hide and hit once');
+        check(r.info.render.points === 1 && pool.points.geometry.drawRange.start === 1, 'Expired leading particles must leave the draw range');
+        step(0.5); draw();
+        check(hits === 2 && !missiles.stones.visible && bytes === 32, 'Only the surviving particle should upload');
+
+        pool.clear(); missiles.clear(); draw();
+        check(r.info.render.calls === 0 && bytes === 0, 'Clearing effects must immediately hide them');
+        for (let i = 0; i < 6; i++) spawn(i < 4 ? 0.1 : 2);
+        step(0.2); draw();
+        check(r.info.render.points === 2 && pool.live === 2, 'Wrapping a full pool must preserve the newest particles');
+        step(3); draw();
+        check(r.info.render.calls === 0, 'An exhausted pool must stop drawing');
+        spawn(2); step(0.1); draw();
+        check(r.info.render.points === 1 && pool.points.geometry.drawRange.start === 2, 'An exhausted pool must become visible again');
+
+        // Several simulation steps can occur without rendering (for example, while the parent is hidden).
+        step(0.1); spawn(2); step(0.1);
+        const ranges = pool.points.geometry.getAttribute('position').updateRanges;
+        check(ranges.length === 1 && ranges[0].start === 6 && ranges[0].count === 6, 'Pending uploads must retain all changed slots in one range');
+        draw();
+        check(r.info.render.points === 2 && bytes === 64, 'Both pending particles must upload together');
+        step(3); draw();
+        const idle = versions();
+        step(0.1); draw();
+        check(bytes === 0 && versions() === idle && r.info.render.calls === 0, 'Expired pools must stay idle');
+        spawn(2);
+        missiles.fire('arrow', p, p.clone().addScalar(1), 1, 2, 1);
+        step(0); draw();
+        check(r.info.render.points === 1 && missiles.arrows.count === 1, 'New effects must initialize even when the clock is paused');
+      } finally {
+        gl.bufferSubData = upload;
+        for (const o of scene.children) { o.geometry.dispose(); o.material.dispose(); }
+      }
+    });
     expect(errs).toEqual([]);
   });
 
@@ -328,6 +413,7 @@ test.describe('Ages atlas', () => {
     // models carry no name plates: hovering one grows it and shows the map tooltip, a click opens its card
     await page.keyboard.press('Escape');
     await expect(card).toBeHidden();
+    await expect.poll(() => page.evaluate(() => (window as any).__atlas.atlas.view.flying), { timeout: 60_000 }).toBe(false);
     const tip = page.locator('.maptip');
     let free: { key: string; title: string; x: number; y: number } | undefined;
     await expect.poll(async () => {
