@@ -4,7 +4,9 @@ import { ERAS, RULERS } from '../../src/shared/data/eras.ts';
 import { MODEL_KINDS } from '../../src/shared/data/event-kit.ts';
 import { EVENTS, hasStory, storyOf } from '../../src/shared/data/events.ts';
 import { PLACE, PLACES, isCapital, mapName, placeExists, placeName, riverName } from '../../src/shared/data/places.ts';
-import { JOURNEYS, PEOPLE, PERSON, RIVER_LABELS, WORKS, eraIdOfDyn, personNamed, reignAt } from '../../src/shared/data/jiangshan.ts';
+import { JOURNEYS, PEOPLE, PERSON, RIVER_LABELS, WORKS, DYNASTIES, eraIdOfDyn, personNamed, reignAt } from '../../src/shared/data/jiangshan.ts';
+import { FIGURES } from '../../src/shared/data/figures.ts';
+import { EXTRA_PEOPLE } from '../../src/shared/data/journeys.ts';
 import { POLITY, POLITIES, polityMatches } from '../../src/shared/data/polities.ts';
 import { STAGES } from '../../src/shared/data/stage.ts';
 import { lifePlace, MAX_KEY, sceneryOf } from '../../src/shared/data/scenery.ts';
@@ -393,6 +395,20 @@ describe('imported jiangshan-map content', () => {
     for (const w of WORKS) {
       bilingual(w.name, w.id);
       for (const l of w.lines) for (const [lon, lat] of l) expect(inStage(lon, lat), `${w.id} ${lon},${lat}`).toBe(true);
+    }
+  });
+  it('provides rich lore for curated places, overview for eras, and biographies for curated figures', () => {
+    for (const p of PLACES.filter(x => !/^(j\d+|settlement-|pass-)/.test(x.id))) {
+      expect(p.lore, `place lore: ${p.id}`).toBeDefined();
+      bilingual(p.lore!.tag, `place lore tag: ${p.id}`);
+      bilingual(p.lore!.desc, `place lore desc: ${p.id}`);
+    }
+    for (const e of ERAS) {
+      const text = e.overview ?? DYNASTIES.find(d => eraIdOfDyn(d.id) === e.id)?.summary;
+      bilingual(text, `era overview: ${e.id}`);
+    }
+    for (const p of [...FIGURES, ...EXTRA_PEOPLE]) {
+      bilingual(p.bio, `person bio: ${p.id}`);
     }
   });
 });

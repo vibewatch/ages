@@ -17,28 +17,45 @@ const st = (year: Year, era: T, name: T, modern: T, [lon, lat]: LonLat, title: T
 const jr = (id: string, dyn: string, color: string, short: T, title: T, span: T, stops: JourneyStop[], person?: string): Journey => ({
   id, dyn, color, short: L(short), title: L(title), span: L(span), stops, ...(person ? { person } : {}),
 });
-const pp = (id: string, name: T, title: T, dyn: string, span: [Year, Year], aliases: string[] = []): Person => ({
+const pp = (id: string, name: T, title: T, dyn: string, span: [Year, Year], aliases: string[] = [], bio?: T): Person => ({
   id, name: L(name), title: L(title), dyn, span, aliases, tokens: [name[0], ...aliases],
+  ...(bio ? { bio: L(bio) } : {}),
 });
 
 /** People who only appear through these journeys (the imported list starts in the Warring States). */
 export const EXTRA_PEOPLE: Person[] = [
-  pp('pekingman', ['北京人', 'Peking Man'], ['直立人 · 周口店用火者', 'Homo erectus · fire-users of Zhoukoudian'], 'paleo', [-1_700_000, -30_000], ['北京猿人', '中国猿人']),
-  pp('huangdi', ['黄帝', 'Yellow Emperor'], ['华夏人文初祖', 'Legendary ancestor of the Huaxia'], 'neo', [-2717, -2599], ['轩辕', '轩辕氏', '有熊氏']),
-  pp('dayu', ['大禹', 'Yu the Great'], ['治水英雄 · 夏朝奠基者', 'Tamer of the Flood · founder of Xia'], 'xia', [-2123, -2025], ['禹', '夏禹', '文命']),
-  pp('fuhao', ['妇好', 'Fu Hao'], ['商王武丁之妻 · 女将军', 'Consort of King Wu Ding · general'], 'shang', [-1250, -1200], ['后母辛']),
-  pp('zhougong', ['周公', 'Duke of Zhou'], ['摄政制礼作乐', 'Regent and maker of the Zhou rites'], 'wzhou', [-1100, -1032], ['姬旦', '周公旦']),
-  pp('kongzi', ['孔子', 'Confucius'], ['至圣先师 · 儒家创始人', 'Master Kong · founder of Confucianism'], 'chunqiu', [-551, -479], ['孔丘', '仲尼', '孔夫子']),
-  pp('chonger', ['晋文公', 'Duke Wen of Jin'], ['春秋五霸之一', 'One of the Five Hegemons'], 'chunqiu', [-697, -628], ['重耳', '姬重耳']),
-  pp('wangjun', ['王濬', 'Wang Jun'], ['西晋龙骧将军 · 楼船灭吴', 'Jin admiral who sailed down to take Wu'], 'wjin', [206, 286], ['王士治']),
-  pp('faxian', ['法显', 'Faxian'], ['东晋高僧 · 《佛国记》作者', 'Pilgrim monk, author of the Foguo ji'], 'ejin', [337, 422], ['释法显']),
-  pp('jianzhen', ['鉴真', 'Jianzhen (Ganjin)'], ['东渡日本传戒的高僧', 'Monk who brought the precepts to Japan'], 'tang', [688, 763], ['鉴真和尚', '过海大师']),
-  pp('abaoji', ['耶律阿保机', 'Yelü Abaoji'], ['辽太祖', 'Emperor Taizu of Liao'], 'liao', [872, 926], ['阿保机', '辽太祖']),
-  pp('xiaochuo', ['萧绰', 'Xiao Chuo'], ['辽承天太后', 'Empress Dowager Chengtian of Liao'], 'liao', [953, 1009], ['萧太后', '萧燕燕', '承天太后']),
-  pp('yuanhao', ['李元昊', 'Li Yuanhao'], ['西夏景宗 · 开国皇帝', 'Emperor Jingzong, founder of Western Xia'], 'xixia', [1003, 1048], ['元昊', '嵬名曩霄', '夏景宗']),
-  pp('aguda', ['完颜阿骨打', 'Wanyan Aguda'], ['金太祖', 'Emperor Taizu of Jin'], 'jin', [1068, 1123], ['阿骨打', '金太祖']),
-  pp('qiuchuji', ['丘处机', 'Qiu Chuji'], ['全真道长春真人', 'Quanzhen Daoist master Changchun'], 'jin', [1148, 1227], ['长春真人', '丘长春']),
-  pp('marcopolo', ['马可·波罗', 'Marco Polo'], ['威尼斯旅行家', 'Venetian traveller'], 'yuan', [1254, 1324], ['马可波罗', '马可孛罗']),
+  pp('pekingman', ['北京人', 'Peking Man'], ['直立人 · 周口店用火者', 'Homo erectus · fire-users of Zhoukoudian'], 'paleo', [-1_700_000, -30_000], ['北京猿人', '中国猿人'],
+    ['距今约70万—20万年前生活在周口店龙骨山洞穴的直立人，会制造打制石器，掌握天然火的使用与保存，是东亚古人类演化的重要实证。', 'Homo erectus communities who lived in the caves of Dragon Bone Hill at Zhoukoudian 700,000–200,000 years ago, making chipped stone tools and keeping fire across generations.']),
+  pp('huangdi', ['黄帝', 'Yellow Emperor'], ['华夏人文初祖', 'Legendary ancestor of the Huaxia'], 'neo', [-2717, -2599], ['轩辕', '轩辕氏', '有熊氏'],
+    ['古史传说中的中原部落联盟首领，与炎帝战于阪泉、合流结盟，又于涿鹿击败蚩尤，被尊为中华“人文初祖”。', 'Legendary chieftain of the Yellow River tribal confederation who united with the Yan Emperor after Banquan and defeated Chiyou at Zhuolu, revered as the cultural ancestor of the Chinese people.']),
+  pp('dayu', ['大禹', 'Yu the Great'], ['治水英雄 · 夏朝奠基者', 'Tamer of the Flood · founder of Xia'], 'xia', [-2123, -2025], ['禹', '夏禹', '文命'],
+    ['传说以疏导之法治理黄河水患，十三年“三过家门而不入”；受舜禅让继位，涂山会盟诸侯、划定九州，奠定夏王朝基业。', 'Legendary flood-tamer who spent thirteen years dredging channels to guide the rivers to the sea, received Shun’s abdication, assembled the lords at Mount Tu and founded the Xia dynasty.']),
+  pp('fuhao', ['妇好', 'Fu Hao'], ['商王武丁之妻 · 女将军', 'Consort of King Wu Ding · general'], 'shang', [-1250, -1200], ['后母辛'],
+    ['商王武丁王后，甲骨卜辞记载她多次率万余大军征伐羌方、土方、巴方并主持大型祭祀；1976年殷墟妇好墓完好出土青铜器、玉器近两千件。', 'Queen consort of King Wu Ding of Shang, recorded in oracle-bone inscriptions as leading armies of up to 13,000 soldiers and presiding over state rituals; her intact tomb at Yinxu yielded nearly 2,000 bronzes and jades.']),
+  pp('zhougong', ['周公', 'Duke of Zhou'], ['摄政制礼作乐', 'Regent and maker of the Zhou rites'], 'wzhou', [-1100, -1032], ['姬旦', '周公旦'],
+    ['周武王之弟，武王崩后摄政辅佐成王，平定三监与武庚叛乱，营建东都洛邑，二次分封诸侯并“制礼作乐”，奠定西周宗法礼乐秩序。', 'Brother of King Wu of Zhou who served as regent for young King Cheng, crushed the Rebellion of the Three Guards, built the eastern capital at Luoyi and codified the Zhou ritual and feudal order.']),
+  pp('kongzi', ['孔子', 'Confucius'], ['至圣先师 · 儒家创始人', 'Master Kong · founder of Confucianism'], 'chunqiu', [-551, -479], ['孔丘', '仲尼', '孔夫子'],
+    ['春秋末期鲁国思想家、教育家，儒家学派创始人。核心思想为“仁”与“礼”，提倡“为政以德”，创办私学主张“有教无类”，率弟子周游列国十四年，言行载于《论语》。', 'Philosopher and educator of Lu who founded Confucianism, teaching benevolence (ren), ritual propriety (li), rule by virtue and education without class distinction; his fourteen-year journey and dialogues are preserved in the Analects.']),
+  pp('chonger', ['晋文公', 'Duke Wen of Jin'], ['春秋五霸之一', 'One of the Five Hegemons'], 'chunqiu', [-697, -628], ['重耳', '姬重耳'],
+    ['晋献公之子，因骊姬之乱流亡列国十九年，归国即位后整顿内政、尊王攘夷，前632年于城濮之战大败楚军，践土会盟成为春秋霸主。', 'Exiled prince of Jin who wandered nineteen years across the states before returning to the throne, defeating Chu at the Battle of Chengpu (632 BCE) and becoming hegemon at the Jiantu covenant.']),
+  pp('wangjun', ['王濬', 'Wang Jun'], ['西晋龙骧将军 · 楼船灭吴', 'Jin admiral who sailed down to take Wu'], 'wjin', [206, 286], ['王士治'],
+    ['西晋名将，任益州刺史时在蜀地大造连舫楼船，280年率水军顺长江东下，熔断江中铁锁，一举攻克石头城与建业，灭亡孙吴完成统一。', 'Western Jin general and governor of Yizhou who built a fleet of multi-decked warships in Sichuan and sailed down the Yangtze in 280 CE, burning Wu’s iron river chains and capturing Jianye to reunify China.']),
+  pp('faxian', ['法显', 'Faxian'], ['东晋高僧 · 《佛国记》作者', 'Pilgrim monk, author of the Foguo ji'], 'ejin', [337, 422], ['释法显'],
+    ['东晋高僧，399年以六旬高龄自长安西行求取律藏，历天竺、师子国（斯里兰卡）十四载，由海路归至青州，撰《佛国记》，是研究古代中亚、南亚与南海交通的珍贵史料。', 'Eastern Jin Buddhist monk who set out from Chang’an at past sixty in 399 CE, crossed the Pamirs to India and Sri Lanka in search of monastic codes, and returned by sea, recording his fourteen-year voyage in A Record of Buddhist Kingdoms.']),
+  pp('jianzhen', ['鉴真', 'Jianzhen (Ganjin)'], ['东渡日本传戒的高僧', 'Monk who brought the precepts to Japan'], 'tang', [688, 763], ['鉴真和尚', '过海大师'],
+    ['唐代扬州大明寺高僧，应日本学问僧邀请东渡传戒，历经十余年五次失败、双目失明，753年第六次东渡成功抵日，在奈良设坛授戒并主持建造唐招提寺，传播盛唐医药与建筑艺术。', 'Tang master of Daming Temple in Yangzhou who attempted five sea crossings to Japan over eleven years, losing his sight before succeeding on his sixth voyage in 753; he founded Tōshōdai-ji in Nara and transmitted Tang ordination, medicine and architecture.']),
+  pp('abaoji', ['耶律阿保机', 'Yelü Abaoji'], ['辽太祖', 'Emperor Taizu of Liao'], 'liao', [872, 926], ['阿保机', '辽太祖'],
+    ['契丹叠剌部首领，统一契丹八部，916年称帝建契丹国（后改辽），营建皇都临潢府（上京），创制契丹大字，实行“以国制治契丹，以汉制待汉人”的双轨统治，926年灭渤海国。', 'Leader of the Yila tribe who united the Khitan confederation, proclaimed himself emperor in 916, built the Supreme Capital at Linhuang, commissioned the Khitan large script, instituted dual nomad–Han administration and conquered Balhae in 926.']),
+  pp('xiaochuo', ['萧绰', 'Xiao Chuo'], ['辽承天太后', 'Empress Dowager Chengtian of Liao'], 'liao', [953, 1009], ['萧太后', '萧燕燕', '承天太后'],
+    ['辽景宗皇后、辽圣宗生母。圣宗年幼即位后摄政二十七年，重用韩德让、耶律休哥整顿军政，两度击退北宋北伐，1004年亲率大军南下与宋订立“澶渊之盟”，把辽朝推向全盛。', 'Empress of Liao Jingzong and regent for her young son Emperor Shengzong for twenty-seven years; backed by Han Derang and Yelü Xiuge, she defeated Song northern expeditions and concluded the 1005 Treaty of Chanyuan, bringing the Liao empire to its zenith.']),
+  pp('yuanhao', ['李元昊', 'Li Yuanhao'], ['西夏景宗 · 开国皇帝', 'Emperor Jingzong, founder of Western Xia'], 'xixia', [1003, 1048], ['元昊', '嵬名曩霄', '夏景宗'],
+    ['党项拓跋部首领，1038年在兴庆府（今银川）称帝，建国号大夏（西夏），命野利仁荣创制西夏文，仿唐宋设官定律，经三川口、好水川、定川寨三战后于1044年与北宋达成庆历和议。', 'Tangut leader who proclaimed the Great Xia (Western Xia) at Xingqing (Yinchuan) in 1038, commissioned the Tangut script, modelled his bureaucracy on Tang–Song institutions and won three major battles before concluding the 1044 peace with Song.']),
+  pp('aguda', ['完颜阿骨打', 'Wanyan Aguda'], ['金太祖', 'Emperor Taizu of Jin'], 'jin', [1068, 1123], ['阿骨打', '金太祖'],
+    ['女真完颜部首领，1114年率部起兵反辽，连克宁江州、出河店；1115年在会宁府（今哈尔滨阿城）称帝建立大金，推行猛安谋克制，命完颜希尹创制女真文，连下辽上京、中京、燕京。', 'Chieftain of the Wanyan clan who united the Jurchens against Liao in 1114, founded the Jin dynasty at Huining in 1115, organised the meng’an-mouke military-household system and captured the Liao capitals one after another.']),
+  pp('qiuchuji', ['丘处机', 'Qiu Chuji'], ['全真道长春真人', 'Quanzhen Daoist master Changchun'], 'jin', [1148, 1227], ['长春真人', '丘长春'],
+    ['王重阳弟子、全真道龙门派创始人。1220年以七十三岁高龄自山东登州启程西行，越漠北、天山、阿姆河至大雪山（兴都库什山）觐见成吉思汗，进言“敬天爱民、止杀好生”，行程记入《长春真人西游记》。', 'Disciple of Wang Chongyang and head of Quanzhen Daoism who at age seventy-two travelled over 10,000 li from Shandong across Mongolia and Central Asia to the Hindu Kush (1220–1223) to counsel Genghis Khan against slaughter.']),
+  pp('marcopolo', ['马可·波罗', 'Marco Polo'], ['威尼斯旅行家', 'Venetian traveller'], 'yuan', [1254, 1324], ['马可波罗', '马可孛罗'],
+    ['意大利威尼斯商人与旅行家，1271年随父叔沿陆上丝绸之路东行，1275年抵元上都与大都，在华游历十七载，遍访江南与西南，由泉州循海路归国，口述《马可·波罗行纪》轰动欧洲。', 'Venetian merchant-traveller who journeyed along the Silk Road to Kublai Khan’s Shangdu and Dadu (1275), spent seventeen years travelling across Yuan China, sailed home from Quanzhou and dictated The Travels of Marco Polo.']),
 ];
 
 export const EXTRA_JOURNEYS: Journey[] = [

@@ -56,7 +56,10 @@ export function eraAt(y: Year, eras: Era[] = ERAS): Era | undefined {
 }
 
 export function rulerAt(y: Year, rulers: Ruler[] = RULERS): Ruler | undefined {
+  const era = eraAt(y);
   let best: Ruler | undefined;
+  for (const r of rulers) if (y >= r.start && y <= r.end && (!era || r.era === era.id)) best = r;
+  if (best) return best;
   for (const r of rulers) if (y >= r.start && y <= r.end) best = r;
   return best;
 }

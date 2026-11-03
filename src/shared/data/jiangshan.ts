@@ -40,7 +40,7 @@ export interface Journey { id: string; dyn: string; color: string; short: I18n; 
 /** A great work: wall, canal, road or route, drawn as a line through its active years. */
 export interface Work { id: string; kind: 'wall' | 'canal' | 'road' | 'route' | 'sea' | string; name: I18n; span: [Year, Year]; summary: I18n; label: LonLat | null; lines: LonLat[][] }
 /** A historical figure; `fl` marks a span that is only their active period, `alive` a living person (span ends today). */
-export interface Person { id: string; name: I18n; title: I18n; dyn: string; span: [Year, Year]; aliases: string[]; tokens: string[]; fl?: boolean; alive?: boolean }
+export interface Person { id: string; name: I18n; title: I18n; dyn: string; span: [Year, Year]; aliases: string[]; tokens: string[]; fl?: boolean; alive?: boolean; bio?: I18n }
 export interface Dynasty { id: string; name: I18n; short: I18n; start: Year; end: Year; color: string; seat: I18n; summary: I18n }
 
 export const DYNASTIES: Dynasty[] = J.dynasties;
@@ -194,12 +194,15 @@ export function importedEvents(curated: HistEvent[]): HistEvent[] {
   return kept.map(m => {
     const kind = kindOf(m.title.zh, m.year);
     const site = m.site.zh ? m.site : undefined;
+    const title = shortTitle(m.title);
+    const people = peopleIn(m.title.zh);
+    const wiki = people?.[0] ?? (!title.zh.endsWith('…') ? title : undefined);
     return {
       id: m.id, scope: 'china', year: m.year, kind, lon: m.lon, lat: m.lat, weight: 3,
-      title: shortTitle(m.title),
+      title,
       summary: site ? { zh: `${m.title.zh}（${site.zh}）`, en: `${m.title.en} (${site.en})` } : m.title,
-      points: [], curriculum: [], model: modelOf(m.title.zh, kind, m.year), people: peopleIn(m.title.zh),
-      source: 'jiangshan', site, headline: m.title, mapChange: ('map' in m && m.map === true) || undefined,
+      points: site ? [site] : [], curriculum: [], model: modelOf(m.title.zh, kind, m.year), people,
+      wiki, source: 'jiangshan', site, headline: m.title, mapChange: ('map' in m && m.map === true) || undefined,
     } satisfies HistEvent;
   });
 }

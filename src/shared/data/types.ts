@@ -28,6 +28,8 @@ export interface Era {
   /** timeline lane: periods that overlap (e.g. 辽/北宋) sit in a second lane */
   lane?: 0 | 1;
   summary: I18n;
+  /** detailed historical overview shown on the era card when not covered by imported DYNASTIES */
+  overview?: I18n;
   capital?: string;
   wiki?: Wiki;
 }

@@ -1,5 +1,5 @@
 import { BOOKS, unitOf } from '../../shared/data/curriculum.ts';
-import { ERAS } from '../../shared/data/eras.ts';
+import { ERAS, RULERS } from '../../shared/data/eras.ts';
 import { EVENTS, hasStory } from '../../shared/data/events.ts';
 import { tr } from '../../shared/data/i18n.ts';
 import { JOURNEYS, PEOPLE, dynastyOfEra, eraIdOfDyn, journeysOf, personNamed, type Journey, type Person } from '../../shared/data/jiangshan.ts';
@@ -229,7 +229,7 @@ export class Card {
     const twin = life ? lifeEvent(life) : undefined;
     if (twin && !evs.includes(twin)) evs.unshift(twin);
     const modern = p.modern && p.modern.zh !== now.zh ? p.modern : now.zh !== p.name.zh ? p.name : undefined;
-    const wikiName = p.modern?.zh ? p.modern : p.name;
+    const wikiName = p.tier > 3 && p.modern?.zh && !p.modern.zh.includes('·') ? p.modern : p.name;
     const capYears = (p.capital ?? []).reduce((s, [a, b]) => s + Math.max(1, Math.min(b, 1949) - a), 0);
     this.setHero(placeModel(p, year), t(p.kind === 'pass' ? 'pass' : 'place'), '#c9a45c', null);
     const showNames = names.length > 1 || (names.length === 1 && names[0].name.zh !== now.zh);
@@ -258,8 +258,13 @@ export class Card {
   }
 
   private personEvents(p: Person): HistEvent[] {
-    return EVENTS.filter(e => e.people?.some(n => n.zh === p.name.zh) || p.tokens.some(tk => tk.length > 1 && e.title.zh.includes(tk)))
-      .sort((a, b) => a.year - b.year).slice(0, 16);
+    const keys = [p.name.zh, ...p.aliases, ...p.tokens].filter(k => k.length > 1);
+    const [y0, y1] = [p.span[0] - 15, p.span[1] + 30];
+    return EVENTS.filter(e =>
+      e.people?.some(n => n.zh === p.name.zh || personNamed(n.zh) === p) ||
+      p.tokens.some(tk => tk.length > 1 && (e.title.zh.includes(tk) || e.headline?.zh.includes(tk))) ||
+      (e.year >= y0 && e.year <= y1 && keys.some(k => e.summary.zh.includes(k)))
+    ).sort((a, b) => a.year - b.year).slice(0, 16);
   }
   private journeyBtn(p: Person): HTMLElement[] {
     return journeysOf(p.id).map(j => this.playJourneyBtn(j));
@@ -276,15 +281,23 @@ export class Card {
     const L = lang;
     const evs = this.personEvents(p);
     const era = ERAS.find(e => e.scope === 'china' && e.id === eraIdOfDyn(p.dyn));
+    const bio = p.bio ?? LIFE.find(x => x.person?.id === p.id && x.desc.zh !== p.title.zh)?.desc;
+    const jStops = journeysOf(p.id)[0]?.stops ?? [];
     const i = PEOPLE.indexOf(p);
     this.setHero(personModel(p), t('person'), '#b8322a', i >= 0 ? [i + 1, PEOPLE.length] : null);
     fill(this.body,
       this.title(null, tr(p.name, L), tr(p.title, L)),
       this.stats(this.lifespan(p), era ? [t('dynasty'), this.eraLink(era)] : null),
+      bio?.zh ? h('p', { class: 'sum', text: tr(bio, L) }) : null,
       p.aliases.length && L === 'zh' ? h('p', { class: 'sum', text: '又称 ' + p.aliases.join('、') }) : null,
       h('div', { class: 'acts' },
         ...this.journeyBtn(p),
         this.wikiBtn({ zh: p.name.zh, en: p.name.en }, tr(p.name, L))),
+      jStops.length ? this.sec(t('journey'), true, h('ul', { class: 'periods' },
+        ...jStops.map(s => h('li', {
+          style: 'cursor:pointer',
+          onclick: () => this.hooks.year?.(s.year),
+        }, h('span', { class: 'y', text: formatYear(s.year, L, { short: true }) }), h('span', { text: `${tr(s.name, L)}${s.title.zh && s.title.zh !== s.name.zh ? ' · ' + tr(s.title, L) : ''}` }))))) : null,
       evs.length ? this.sec(t('events'), true, this.evList(evs)) : null,
     );
   }
@@ -302,10 +315,11 @@ export class Card {
     // a figure in the people index: this one card also carries their lifespan, journey and events
     const p = l.person;
     const evs = p ? this.personEvents(p) : twin ? [twin] : [];
+    const desc = (p?.bio && tr(l.desc, L) === tr(p.title, L)) ? p.bio : l.desc;
     fill(this.body,
       this.title(null, tr(l.name, L), p ? tr(p.title, L) : null),
       this.stats(p ? this.lifespan(p) : null, era ? [t('dynasty'), this.eraLink(era)] : null),
-      tr(l.desc, L) ? h('p', { class: 'sum', text: tr(l.desc, L) }) : null,
+      tr(desc, L) ? h('p', { class: 'sum', text: tr(desc, L) }) : null,
       h('div', { class: 'acts' }, ...(p ? this.journeyBtn(p) : []), this.wikiBtn(l.wiki, tr(l.name, L))),
       evs.length ? this.sec(t(p ? 'events' : 'relEvent'), true, this.evList(evs)) : null,
       others.length ? this.sec(t('sameEra'), true, h('div', { class: 'people' }, ...others.map(x =>
@@ -357,6 +371,20 @@ export class Card {
     const cap = era.capital ? PLACE.get(era.capital) : undefined;
     const i = ERAS.indexOf(era);
     const dy = dynastyOfEra(era.name.zh);
+    const overview = era.overview ?? dy?.summary;
+    const rulers = RULERS.filter(r => r.era === era.id);
+    const LANE_RE: Record<string, RegExp> = {
+      liao: /契丹|辽|耶律|澶渊|燕云/,
+      xixia: /西夏|党项|元昊|兴庆/,
+      jin: /女真|金朝|金军|完颜|阿骨打|靖康|岳飞|绍兴和议/,
+    };
+    const evs = EVENTS.filter(e =>
+      e.scope === era.scope &&
+      e.source !== 'jiangshan' &&
+      e.year >= era.start &&
+      e.year <= era.end &&
+      (!era.lane || (LANE_RE[era.id]?.test(e.title.zh + e.summary.zh) ?? true))
+    ).sort((a, b) => a.year - b.year);
     const figures = PEOPLE.filter(p => eraIdOfDyn(p.dyn) === era.id).sort((a, b) => a.span[0] - b.span[0]);
     const journeys = JOURNEYS.filter(j => eraIdOfDyn(j.dyn) === era.id);
     const life = lifeOf(era.id).filter(x => x.kind !== 'person');
@@ -369,11 +397,17 @@ export class Card {
       this.stats([t('when'), `${formatYear(era.start, L, { short: true })} – ${formatYear(era.end, L, { short: true })}`], era.start > -5000 ? [t('duration'), t('years', { n: Math.max(1, era.end - era.start) })] : null),
       h('p', { class: 'sum', text: tr(era.summary, L) }),
       era.wiki ? h('div', { class: 'acts' }, this.wikiBtn(era.wiki, tr(era.name, L))) : null,
-      dy?.summary.zh ? this.sec(t('overview'), true, h('p', { class: 'sum', text: tr(dy.summary, L) })) : null,
+      overview?.zh ? this.sec(t('overview'), true, h('p', { class: 'sum', text: tr(overview, L) })) : null,
+      rulers.length ? this.sec(t('rulers'), true, h('ul', { class: 'periods' },
+        ...rulers.map(r => h('li', {
+          style: 'cursor:pointer',
+          onclick: () => this.hooks.year?.(Math.round((r.start + r.end) / 2)),
+        }, h('span', { class: 'y', text: this.span(r.start, r.end) }), h('b', { text: tr(r.name, L) }))))) : null,
       journeys.length ? this.sec(t('journeys'), true, h('div', { class: 'acts' }, ...journeys.map(j => this.playJourneyBtn(j)))) : null,
       figures.length ? this.sec(t('figures'), true, h('div', { class: 'people' }, ...figures.map(p => this.personChip(p.name)))) : null,
       life.length ? this.sec(t('lifeOf'), true, h('div', { class: 'people' }, ...life.map(x =>
         h('button', { type: 'button', class: `chip link life-chip k-${x.kind}`, onclick: () => this.hooks.life(x) }, tr(x.name, L))))) : null,
+      evs.length ? this.sec(t('pEvents'), true, this.evList(evs)) : null,
     );
   }
 }

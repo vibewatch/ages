@@ -149,12 +149,13 @@ export function sceneryOf(era: Era, events: HistEvent[] = EVENTS): SceneryItem[]
     const p = personNamed(n.zh) ?? personNamed(zh);
     if (!p || seen.has(p.name.zh)) continue;
     const model = bare(personModel(p));
-    // a named hero already standing as their event's landmark (玄奘西行) isn't repeated beside it
-    if (model.hero && [...life, ...marks].some(x => sameModel(x.model, model))) continue;
+    // a named hero already standing as their event's landmark (玄奘西行) or in curated life isn't repeated beside it
+    if (model.hero && ([...life, ...marks, ...people].some(x => sameModel(x.model, model)) || LIFE.some(l => sameModel(l.model, model)))) continue;
     const at = room(marks.find(m => m.event === e.id) ?? e, taken, PERSON_RINGS);
     if (!at) continue;
     taken.push(at);
     seen.add(zh);
+    seen.add(p.name.zh);
     people.push({ event: e.id, kind: 'person', ...at, model, name: p.name, person: p, level: e.weight === 1 ? 2 : 3, yaw: -0.4 });
   }
   const all = [...life, ...marks, ...people];

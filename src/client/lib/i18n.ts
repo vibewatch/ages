@@ -121,6 +121,7 @@ const S = {
   speed: { zh: '速度', en: 'Speed' },
   era: { zh: '时期', en: 'Period' },
   ruler: { zh: '在位', en: 'Ruler' },
+  rulers: { zh: '主要在位君主', en: 'Key rulers' },
   watched: { zh: '已观看', en: 'watched' },
   progress: { zh: '进度', en: 'Progress' },
   // reader
