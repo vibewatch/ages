@@ -20,7 +20,9 @@ function serviceWorker(): Plugin {
       const hash = createHash('sha256');
       for (const f of files) hash.update(f).update(readFileSync(join(outDir, f)));
       hash.update(readFileSync(join(outDir, 'index.html')));
-      const source = readFileSync(new URL('./src/client/sw.js', import.meta.url), 'utf8')
+      const worker = readFileSync(new URL('./src/client/sw.js', import.meta.url), 'utf8');
+      hash.update(worker);
+      const source = worker
         .replace('__VERSION__', hash.digest('hex').slice(0, 12))
         .replace('[/* __PRECACHE__ */]', JSON.stringify(files));
       writeFileSync(join(outDir, 'sw.js'), source);

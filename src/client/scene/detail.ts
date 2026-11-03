@@ -15,12 +15,13 @@ const BASE_EXAG = 18 * 1.4;
  * the base heights). Off with `lowfx` or when the tiles cannot be fetched; the base relief then shows as before.
  */
 export class TerrainDetail {
-  private worker = new Worker(new URL('./detail.worker.ts', import.meta.url), { type: 'module' });
+  private worker: Worker | null = null;
   private tex = new THREE.DataTexture(new Uint16Array(SIZE * SIZE), SIZE, SIZE, THREE.RedFormat, THREE.HalfFloatType);
   private cur: { box: DetailJob['box']; z: number } | null = null;
   private busy = 0;
   private pending: { box: DetailJob['box']; z: number } | null = null;
   private seq = 0;
+  private retryAt = 0;
   private acc = 0;
   private still = 0;
   private last = { lon: 0, lat: 0, dist: 0 };
@@ -32,10 +33,28 @@ export class TerrainDetail {
     t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
     u.uDet.value = t;
     this.baseKm = ((geo.stage.bounds.north - geo.stage.bounds.south) / geo.h) * 111;
-    this.worker.onmessage = (ev: MessageEvent<DetailResult>) => this.done(ev.data);
+    try {
+      this.worker = new Worker(new URL('./detail.worker.ts', import.meta.url), { type: 'module' });
+    } catch (err) {
+      console.warn('Terrain detail unavailable; using the base relief.', err);
+      return;
+    }
+    const worker = this.worker;
+    worker.onmessage = (ev: MessageEvent<DetailResult>) => this.done(ev.data);
     // a worker that cannot load or crashes: keep the base relief and stop asking for detail
-    this.worker.onerror = ev => { ev.preventDefault(); this.worker.terminate(); this.busy = -1; };
+    worker.onerror = ev => { ev.preventDefault(); this.disableWorker(ev.message); };
+    worker.onmessageerror = () => this.disableWorker(new Error('worker message could not be decoded'));
+    window.addEventListener('online', () => { this.retryAt = 0; });
     view.onFrame(dt => this.tick(dt));
+  }
+
+  private disableWorker(reason: unknown): void {
+    if (!this.worker) return;
+    console.warn('Terrain detail worker failed; using the base relief.', reason);
+    this.worker.terminate();
+    this.worker = null;
+    this.busy = -1;
+    this.pending = null;
   }
 
   /** Half-size (degrees of latitude) of the box worth detailing at camera distance `dist`. */
@@ -62,14 +81,15 @@ export class TerrainDetail {
     const moved = Math.abs(p.lon - l.lon) > R * 0.03 || Math.abs(p.lat - l.lat) > R * 0.03 || Math.abs(p.dist / (l.dist || 1) - 1) > 0.03;
     this.last = { lon: p.lon, lat: p.lat, dist: p.dist };
     this.still = moved ? 0 : this.still + 0.25;
-    if (p.dist > DETAIL_DIST || this.busy || this.still < 0.25) return;
+    if (!this.worker || p.dist > DETAIL_DIST || this.busy || this.still < 0.25 || performance.now() < this.retryAt) return;
     const w = this.want(p.lon, p.lat, p.dist), c = this.cur;
     const half = R * 0.5, cos = Math.cos((p.lat * Math.PI) / 180);
     const covers = c && c.z === w.z && c.box[0] <= p.lon - half / cos && c.box[1] >= p.lon + half / cos && c.box[2] <= p.lat - half && c.box[3] >= p.lat + half;
     if (covers) return;
     this.busy = ++this.seq;
     this.pending = w;
-    this.worker.postMessage({ id: this.busy, box: w.box, z: w.z, size: SIZE } satisfies DetailJob);
+    try { this.worker.postMessage({ id: this.busy, box: w.box, z: w.z, size: SIZE } satisfies DetailJob); }
+    catch (err) { this.disableWorker(err); }
   }
 
   private done(r: DetailResult): void {
@@ -77,7 +97,8 @@ export class TerrainDetail {
     this.busy = 0;
     const w = this.pending!;
     this.pending = null;
-    if (!r.data) return; // offline or missing tiles: keep what we have
+    if (!r.data) { this.retryAt = performance.now() + 10_000; return; }
+    this.retryAt = 0;
     this.tex.image.data = r.data;
     this.tex.needsUpdate = true;
     const [W, E, S, N] = w.box, u = this.u;

@@ -33,7 +33,7 @@ It is an original 3D re-imagining inspired by [jiangshan-map](https://github.com
 * **No anachronistic names**: the map only prints a place name in the years it was actually used (e.g. 西安 only from 1369, 上海 from 1292, 北京 from 1403); before that it shows the period name (长安, 汴京, 燕京 …) or nothing.
 * **Map styles**: paper (light relief, default), ink (dark) and plain.
 * **Shareable deep links**: `#e=<event>`, `#y=<year>`, `#p=<place>`, `#person=<id>`, `#life=<id>`, `#j=<journey>` (kept in the address bar while the journey plays), `#lesson=<id>`, `&lang=zh|en`. The same keys also work in the query string (`?year=1415`). Every card has a share button: the system share sheet on phones, a copied link elsewhere.
-* **Installable and offline**: a web app manifest and a service worker (`src/client/sw.js`, versioned per build) let the app be installed, and after the first visit it reloads without a network; only Wikipedia, finer terrain and music need one.
+* **Installable and offline**: a web app manifest and a service worker (`src/client/sw.js`, versioned per build) let the app be installed. Once its complete offline cache has installed, it reloads without a network; only Wikipedia, finer terrain and music need one. An incomplete update leaves the previous offline version in place; a complete update activates after existing app tabs close.
 * **Quality setting**: Settings › 03 offers 高画质 / 省电流畅 (battery saver: coarser terrain, DPR 1, no antialiasing), remembered on the device; the renderer also lowers its resolution on its own when the frame rate drops.
 
 ## Quick start
@@ -43,7 +43,7 @@ npm run dev            # http://localhost:5174
 npm run build          # typecheck + production build → dist/
 npm run preview        # serve dist/ on http://localhost:4173
 ```
-The app is fully static: deploy `dist/` to any static host. Pushes to `main` publish to GitHub Pages via `.github/workflows/pages.yml` (built with `BASE_PATH=/ages/`); `.github/workflows/ci.yml` typechecks, unit-tests, builds and runs the Playwright suite on every push and pull request. Only the Wikipedia reader needs network access, and it calls the public MediaWiki API directly from the browser.
+The app is fully static: deploy `dist/` to any static host. Pushes to `main` publish to GitHub Pages via `.github/workflows/pages.yml` (built with `BASE_PATH=/ages/`); `.github/workflows/ci.yml` typechecks, unit-tests, builds and runs the Playwright suite on every push and pull request. Wikipedia, fine terrain tiles and music require network access; Wikipedia calls the public MediaWiki API directly from the browser.
 
 ## URL flags
 | Flag | Effect |
@@ -64,7 +64,7 @@ npm test               # Vitest: data integrity, timeline/search/quiz logic, mod
 npm run test:e2e       # Playwright (desktop + mobile); see below for headless Linux
 npm run test:all
 ```
-WebGL in containers needs a display and SwiftShader. Run `xvfb-run -a npx playwright test`. The e2e suite saves the screenshots in `docs/assets/screenshots/`.
+WebGL in containers needs a display and SwiftShader. Run `xvfb-run -a npx playwright test`. The e2e suite saves screenshots in `docs/assets/screenshots/`; set `AGES_SCREENSHOTS_DIR` to write them elsewhere.
 
 ## Project layout
 ```

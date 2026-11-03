@@ -1,13 +1,20 @@
 /** Small localStorage wrapper (silently in-memory when storage is unavailable, e.g. private mode). */
 const mem = new Map<string, string>();
+const unsaved = new Set<string>();
 const KEY = 'ages:';
 
 /** A saved value, or `d` when there is none or it is not of the default's kind (or fails `ok`): a stale or foreign
  * value under our key (another app on the same origin, an older version) must never break start-up. */
 export function load<T>(k: string, d: T, ok?: (v: unknown) => boolean): T {
+  let raw = mem.get(k);
+  if (!unsaved.has(k)) {
+    try {
+      raw = localStorage.getItem(KEY + k) ?? undefined;
+      if (raw === undefined) mem.delete(k); else mem.set(k, raw);
+    } catch { /* use the in-memory copy */ }
+  }
+  if (raw == null) return d;
   try {
-    const raw = localStorage.getItem(KEY + k) ?? mem.get(k);
-    if (raw == null) return d;
     const v: unknown = JSON.parse(raw);
     if (ok) return ok(v) ? v as T : d;
     if (d == null) return v as T;
@@ -22,7 +29,7 @@ const strings = (v: string[]): string[] => v.filter(x => typeof x === 'string');
 export function save(k: string, v: unknown): void {
   const s = JSON.stringify(v);
   mem.set(k, s);
-  try { localStorage.setItem(KEY + k, s); } catch { /* ignore */ }
+  try { localStorage.setItem(KEY + k, s); unsaved.delete(k); } catch { unsaved.add(k); }
 }
 
 /** Learning progress: events whose story was watched, events marked as learned, and the course's best scores. */

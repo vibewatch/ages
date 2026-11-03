@@ -299,7 +299,7 @@ function camel(p: THREE.Object3D, at: V3, yaw: number, s: number, phase: number,
   drop(b, sg, [0, 0.38, -0.3], [0, 0.3, -0.3], 0.012, 0.008);
   if (load) {
     // Saddle blanket in the dip between the humps; bales slung low on the flanks so both humps stay visible
-    vblob(b, blanket, 0, 0.6, 0.01, 0.13, 0.055, 0.075, (x, y, z) => (Math.sin(z * 120) > 0.5 ? '#a08a5c' : Math.abs(x) > 0.11 ? sh(blanket, 0.7) : blanket), [0, 0, 0], 11);
+    vblob(b, blanket, 0, 0.6, 0.01, 0.13, 0.055, 0.075, (x, _y, z) => (Math.sin(z * 120) > 0.5 ? '#a08a5c' : Math.abs(x) > 0.11 ? sh(blanket, 0.7) : blanket), [0, 0, 0], 11);
     for (const sx of [-1, 1]) {
       rbox(b, sx > 0 ? '#c9b18a' : '#8f6a45', sx * 0.15, 0.47, 0.01, 0.07, 0.11, 0.12, 0.025);
       for (const dz of [-0.035, 0.045]) box(b, '#5b4330', sx * 0.15, 0.47, 0.01 + dz, 0.074, 0.114, 0.008);
@@ -480,4 +480,3 @@ export const H_JOURNEYS: Record<string, Builder> = {
     tube(gp, [hand, sag(hand, a), a], 0.0025, 0.0025, '#3a2a1a', 4);
   },
 };
-

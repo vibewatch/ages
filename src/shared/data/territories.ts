@@ -68,13 +68,9 @@ const QINGHAI: C = [[96.5, 35.5], [93.5, 36.2], [90.5, 37.0], [90.5, 38.3], [94.
   [101.0, 34.0], [100.5, 33.0], [99.0, 34.5]];
 const TARIM: C = [[75.0, 38.0], [74.5, 40.0], [76.5, 41.0], [80.0, 42.3], [84.0, 43.2], [88.0, 43.5], [91.5, 43.0], [94.5, 41.5], [93.8, 40.0],
   [93.0, 38.5], [88.0, 37.0], [83.0, 36.2], [79.0, 36.2], [76.5, 37.0]];
-const XINJIANG: C = [...KP, ...KZ, [87.8, 49.2], [88.6, 48.2], [90.0, 47.8], [91.0, 46.6], [90.9, 45.3], [93.0, 45.0], [95.4, 44.3], [96.4, 42.8],
-  [94.5, 41.5], [93.8, 40.0], [93.0, 38.5], [90.5, 37.0], [86.0, 36.2], [82.0, 35.8], [79.5, 35.6], [77.8, 35.5]];
 const MONGOLIA: C = [[87.8, 49.2], ...MONGOLIA_N_NO_TUVA.slice(1), ...rev(MN)];
 const KOREA: C = [[124.3, 39.9], [125.8, 40.9], [126.8, 41.7], [128.1, 42.0], [129.3, 42.4], [130.0, 42.9], [130.7, 42.3], [131.5, 41.0],
   [130.0, 37.0], [129.8, 34.6], [126.0, 33.0], [124.8, 34.5], [124.5, 37.8]];
-const KOREA_N: C = [[124.3, 39.9], [125.8, 40.9], [126.8, 41.7], [128.1, 42.0], [129.3, 42.4], [130.0, 42.9], [130.7, 42.3], [131.5, 41.0],
-  [129.0, 38.6], [126.8, 38.0], [124.5, 37.8]];
 const KOREA_S: C = [[124.5, 37.8], [126.8, 38.0], [129.0, 38.6], [130.0, 37.0], [129.8, 34.6], [126.0, 33.0], [124.8, 34.5]];
 const JAPAN: C = [[129.0, 31.0], [131.5, 30.5], [136.0, 33.2], [140.5, 34.8], [141.6, 38.0], [142.5, 41.0], [146.0, 43.5], [145.5, 45.8],
   [141.3, 45.8], [139.5, 42.0], [139.3, 40.0], [136.0, 37.0], [132.5, 35.5], [129.5, 34.0]];
@@ -876,12 +872,6 @@ export const SNAPSHOTS: Snapshot[] = [
   ...CURATED.filter(s => s.id === 'war1940').map(s => ({ ...s, end: 1945 })),
   ...CURATED.filter(s => s.year >= 1949),
 ].sort((a, b) => a.year - b.year);
-
-/** Curated schematic snapshots (also used as a fallback while imported shapes load). */
-export const SCHEMATIC = CURATED;
-
-/** Reusable outlines for stories and tests. */
-export const OUTLINES = { modern: MODERN, taiwan: TAIWAN, hainan: HAINAN, korea: KOREA, koreaN: KOREA_N, japan: JAPAN, xinjiang: XINJIANG, tibet: TIBET };
 
 /** The snapshot shown for `year`: the latest whose year ≤ `year` (earliest snapshot before it; none in deep prehistory). */
 export function snapshotAt(year: number, list: Snapshot[] = SNAPSHOTS): Snapshot | null {

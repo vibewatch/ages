@@ -42,10 +42,3 @@ export function outdoorEnvironment(renderer: THREE.WebGLRenderer): THREE.Texture
   cache.set(renderer, tex);
   return tex;
 }
-
-const qUp = new THREE.Quaternion(), Y = new THREE.Vector3(0, 1, 0);
-/** Points the environment's "up" along `up` (the local vertical where the models stand). */
-export function orientEnvironment(scene: THREE.Scene, up: THREE.Vector3): void {
-  // the renderer samples with the transpose of this rotation, i.e. world → environment
-  scene.environmentRotation.setFromQuaternion(qUp.setFromUnitVectors(Y, up));
-}

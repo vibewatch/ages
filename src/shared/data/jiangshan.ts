@@ -31,8 +31,6 @@ interface Raw {
 }
 const J = RAW as unknown as Raw;
 
-export const SOURCE = J.source;
-
 export interface JourneyStop {
   year: Year; era: I18n; name: I18n; modern: I18n; lon: number; lat: number; via?: LonLat[]; from?: LonLat;
   title: I18n; desc: I18n; quote?: I18n;
@@ -80,12 +78,6 @@ export function personNamed(zh: string): Person | undefined {
 }
 /** The imported dynasty record for an era band (matched by its Chinese name). */
 export const dynastyOfEra = (nameZh: string): Dynasty | undefined => DYNASTIES.find(d => d.name.zh === nameZh);
-
-export const dynastyAt = (y: Year): Dynasty | undefined => {
-  let best: Dynasty | undefined;
-  for (const d of DYNASTIES) if (y >= d.start && y <= d.end) best = d;
-  return best;
-};
 
 // ------------------------------------------------------------------ polities and snapshots
 

@@ -1,6 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 
-export const SHOTS = 'docs/assets/screenshots';
+export const SHOTS = process.env.AGES_SCREENSHOTS_DIR ?? 'docs/assets/screenshots';
 
 export interface AppState {
   ready: boolean; year: number; lang: 'zh' | 'en'; event: string | null; era: string | null;

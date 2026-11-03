@@ -671,7 +671,7 @@ export function figure(p: THREE.Object3D, o: FigureOpts): FigureAnchors {
     }
     box(body, '#3f3f46', 0, hy + hr * 0.07, hr * 0.99, hr * 0.16, hr * 0.03, hr * 0.03);
   }
-  hairFor(body, o.hairStyle ?? 'short', hair, hy, hr, u);
+  hairFor(body, o.hairStyle ?? 'short', hair, hy, hr);
   beardFor(body, o.beard ?? 'none', o.beardColor ?? hair, hy, hr, u);
   const topY = hy + hr * 1.2;
   hatFor(body, o.hat ?? 'none', o.hatColor ?? '#1f2937', hy, hr, u, o.hatBadge, o.feathers);
@@ -688,7 +688,7 @@ export function figure(p: THREE.Object3D, o: FigureOpts): FigureAnchors {
   };
 }
 
-function hairFor(p: THREE.Object3D, s: HairStyle, c: string, hy: number, hr: number, u: number): void {
+function hairFor(p: THREE.Object3D, s: HairStyle, c: string, hy: number, hr: number): void {
   if (s === 'bald') { ellip(p, c, 0, hy - hr * 0.1, -hr * 0.3, hr * 1.02, hr * 0.6, hr * 0.8); return; }
   if (s === 'queue') {
     // Qing 辫子: front shaved, hair on the crown and back gathered into a long braid

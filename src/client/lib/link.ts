@@ -8,16 +8,20 @@ export interface LinkState { event?: string; place?: string; person?: string; li
 
 export function readLink(hash = location.hash, search = typeof location === 'undefined' ? '' : location.search): LinkState {
   const out: LinkState = {};
-  for (const p of [new URLSearchParams(search), new URLSearchParams(hash.replace(/^#/, ''))]) {
+  for (const [i, p] of [new URLSearchParams(search), new URLSearchParams(hash.replace(/^#/, ''))].entries()) {
     const e = p.get('e') ?? p.get('event'), pl = p.get('p') ?? p.get('place'), pe = p.get('person'), li = p.get('life'), j = p.get('j') ?? p.get('journey'), le = p.get('lesson');
     const y = p.get('y') ?? p.get('year'), l = p.get('lang');
+    const year = y && /^-?\d+$/.test(y) ? Number(y) : null;
+    if (i && (e || pl || pe || li || j || le || (year !== null && Number.isSafeInteger(year)))) {
+      delete out.event; delete out.place; delete out.person; delete out.life; delete out.journey; delete out.lesson;
+    }
     if (e) out.event = e;
     if (pl) out.place = pl;
     if (pe) out.person = pe;
     if (li) out.life = li;
     if (j) out.journey = j;
     if (le) out.lesson = le;
-    if (y && /^-?\d+$/.test(y)) out.year = parseInt(y, 10);
+    if (year !== null && Number.isSafeInteger(year)) out.year = year;
     if (l === 'zh' || l === 'en') out.lang = l;
   }
   return out;

@@ -38,7 +38,13 @@ export function tToYear(t: number): Year {
 }
 
 /** There is no year 0: snap it to 1 CE so dates read naturally. */
-export const normYear = (y: Year): Year => (y === 0 ? 1 : Math.round(y));
+export const normYear = (y: Year): Year => {
+  const rounded = Math.round(y);
+  return rounded === 0 ? 1 : rounded;
+};
+
+/** A whole year within the supported timeline. */
+export const clampYear = (y: Year): Year => normYear(Math.max(YEAR_MIN, Math.min(YEAR_MAX, y)));
 
 /** The era for a year (lane 0 preferred; ties go to the later era so a boundary year shows the new dynasty). */
 export function eraAt(y: Year, eras: Era[] = ERAS): Era | undefined {
@@ -48,9 +54,6 @@ export function eraAt(y: Year, eras: Era[] = ERAS): Era | undefined {
   }
   return best ?? eras.find(e => y >= e.start && y <= e.end);
 }
-
-/** All eras covering a year, including second-lane ones (e.g. 辽 alongside 北宋). */
-export const erasAt = (y: Year, eras: Era[] = ERAS): Era[] => eras.filter(e => y >= e.start && y <= e.end);
 
 export function rulerAt(y: Year, rulers: Ruler[] = RULERS): Ruler | undefined {
   let best: Ruler | undefined;

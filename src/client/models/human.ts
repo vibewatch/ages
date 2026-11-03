@@ -343,33 +343,3 @@ export function passerby(p: THREE.Object3D, x: number, y: number, z: number, h: 
     sleeve: o.sleeve ?? ((k * 23) % 3 < 1 ? 0.4 : 1), detail: o.detail ?? (h < 0.03 ? 'min' : 'lo'), ...o,
   } as HumanOpts);
 }
-
-/**
- * A passerby baked into a triangle soup (`pos` xyz per vertex, `col` rgb per vertex) for builders that merge a whole
- * scene into one vertex-coloured mesh.
- */
-export function humanSoup(pos: number[], col: number[], x: number, y: number, z: number, h: number, seed: number, o: Partial<HumanOpts> = {}): void {
-  soupOf(pos, col, g => passerby(g, x, y, z, h, seed, o));
-}
-
-/** Bake whatever `build` adds to a scratch group into a vertex-coloured triangle soup. */
-export function soupOf(pos: number[], col: number[], build: (g: THREE.Group) => void): void {
-  const tmp = new THREE.Group();
-  build(tmp);
-  tmp.updateMatrixWorld(true);
-  const v = new THREE.Vector3(), c = new THREE.Color();
-  tmp.traverse(ob => {
-    const m = ob as THREE.Mesh;
-    if (!m.isMesh) return;
-    const geo = m.geometry, P = geo.attributes.position, C = geo.attributes.color as THREE.BufferAttribute | undefined;
-    const base = (m.material as THREE.MeshStandardMaterial).color;
-    const n = geo.index ? geo.index.count : P.count;
-    for (let i = 0; i < n; i++) {
-      const k = geo.index ? geo.index.getX(i) : i;
-      v.fromBufferAttribute(P, k).applyMatrix4(m.matrixWorld);
-      pos.push(v.x, v.y, v.z);
-      if (C) c.setRGB(C.getX(k), C.getY(k), C.getZ(k)).multiply(base); else c.copy(base);
-      col.push(c.r, c.g, c.b);
-    }
-  });
-}

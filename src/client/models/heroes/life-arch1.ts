@@ -244,7 +244,7 @@ function seated(p: THREE.Object3D, x: number, y: number, z: number, s: number, c
   // crossed legs: one broad lap with rounded knees, the right sole upturned on top
   const L: [number, number, number][] = [[0, 0.3, 0.14], [0.05, 0.335, 0.165], [0.11, 0.31, 0.15], [0.16, 0.22, 0.115], [0.172, 0.15, 0.09]];
   skin(gs, L.map(([yy, hw, hd]) => oval(0, u(yy), u(0.07), u(hw), u(hd), 20, 0.75)), c, {
-    caps: true, flat: true, paint: (px, py, pz) => (Math.floor((pz / s) * 30 + Math.abs(px / s) * 8) % 2 ? shade(c, 0.94) : c),
+    caps: true, flat: true, paint: (px, _py, pz) => (Math.floor((pz / s) * 30 + Math.abs(px / s) * 8) % 2 ? shade(c, 0.94) : c),
   });
   ellip(gs, lt, u(0.09), u(0.155), u(0.15), u(0.07), u(0.018), u(0.034), 0.25);
   const T: [number, number, number, number][] = [[0.12, 0.17, 0.1, 0.01], [0.22, 0.16, 0.1, 0.012], [0.32, 0.17, 0.098, 0.01], [0.4, 0.19, 0.092, 0.004], [0.455, 0.2, 0.082, -0.004], [0.495, 0.17, 0.07, -0.01], [0.522, 0.1, 0.058, -0.01], [0.535, 0.046, 0.046, -0.004], [0.57, 0.044, 0.044, 0]];

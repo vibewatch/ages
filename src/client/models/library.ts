@@ -32,8 +32,9 @@ interface Job {
   resolve: (g: THREE.Group) => void;
   reject: (e: Error) => void;
 }
+interface Slot { w: Worker; busy: Job | null }
 const queue: Job[] = [];
-let slots: { w: Worker; busy: Job | null }[] | null = null;
+let slots: Slot[] | null = null;
 let nextId = 1;
 let broken = typeof Worker === 'undefined';
 
@@ -54,28 +55,44 @@ function enqueue(job: Job): void {
   queue.splice(idx, 0, job);
 }
 
-function pool() {
+function disableWorkers(reason: unknown): void {
+  if (broken) return;
+  broken = true;
+  console.warn('Model workers unavailable; building models on the main thread.', reason);
+  const jobs = queue.splice(0);
+  for (const slot of slots ?? []) {
+    if (slot.busy) jobs.push(slot.busy);
+    slot.busy = null;
+    slot.w.terminate();
+  }
+  slots = [];
+  for (const job of jobs) job.reject(new Error('worker failed', { cause: reason }));
+}
+
+function pool(): Slot[] {
   if (slots) return slots;
+  if (broken) return [];
   const n = Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) - 1));
   slots = [];
-  for (let i = 0; i < n; i++) {
-    const slot = { w: new Worker(new URL('./build.worker.ts', import.meta.url), { type: 'module' }), busy: null as Job | null };
-    slot.w.onmessage = (e: MessageEvent<{ id: number; ok: boolean; model?: PackedModel; err?: string }>) => {
-      const job = slot.busy;
-      slot.busy = null;
-      if (job?.id === e.data.id) {
+  try {
+    for (let i = 0; i < n; i++) {
+      const slot: Slot = { w: new Worker(new URL('./build.worker.ts', import.meta.url), { type: 'module' }), busy: null };
+      slot.w.onmessage = (e: MessageEvent<{ id: number; ok: boolean; model?: PackedModel; err?: string }>) => {
+        const job = slot.busy;
+        if (!job || job.id !== e.data.id) return;
+        slot.busy = null;
         if (e.data.ok) { try { job.resolve(unpackModel(e.data.model!)); } catch (err) { job.reject(err as Error); } } else job.reject(new Error(e.data.err));
-      }
-      pump();
-    };
-    slot.w.onerror = ev => {
-      ev.preventDefault();
-      broken = true;
-      const jobs = [...(slot.busy ? [slot.busy] : []), ...queue.splice(0)];
-      slot.busy = null;
-      for (const j of jobs) j.reject(new Error('worker failed'));
-    };
-    slots.push(slot);
+        pump();
+      };
+      slot.w.onerror = ev => {
+        ev.preventDefault();
+        disableWorkers(new Error(ev.message || 'model worker crashed'));
+      };
+      slot.w.onmessageerror = () => disableWorkers(new Error('model worker message could not be decoded'));
+      slots.push(slot);
+    }
+  } catch (err) {
+    disableWorkers(err);
   }
   return slots;
 }
@@ -83,7 +100,7 @@ function pump() {
   for (const s of pool()) {
     if (s.busy || !queue.length) continue;
     s.busy = queue.shift()!;
-    s.w.postMessage({ id: s.busy.id, recipe: s.busy.recipe });
+    try { s.w.postMessage({ id: s.busy.id, recipe: s.busy.recipe }); } catch (err) { disableWorkers(err); break; }
   }
 }
 const viaWorker = (key: string, recipe: ModelRecipe, priority: number, tag: string) => new Promise<THREE.Group>((resolve, reject) => {
@@ -117,10 +134,11 @@ export function prototype(recipe: ModelRecipe, opts: boolean | BuildOpts = false
     p = (broken ? Promise.reject(new Error('no workers')) : viaWorker(key, recipe, priority, tag))
       .catch(err => {
         if ((err as Error)?.message === 'cancelled') throw err;
+        if (!broken) console.warn('Model worker build failed; building on the main thread.', err);
         return onMain(recipe);
       })
-      .then(g => { touchProto(key, g); waits.delete(key); return g; })
-      .catch(err => { waits.delete(key); throw err; });
+      .then(g => { touchProto(key, g); if (waits.get(key) === p) waits.delete(key); return g; })
+      .catch(err => { if (waits.get(key) === p) waits.delete(key); throw err; });
     waits.set(key, p);
   }
   return p;
@@ -174,11 +192,21 @@ const warmed = new Set<string>();
  * the main thread only when there are no workers.
  */
 export function warmHeroes(refs: Iterable<unknown>): void {
-  const fresh = [...refs].filter((r): r is string => !!parseHero(r) && !warmed.has(parseHero(r)!.pack));
+  const fresh: string[] = [];
+  for (const ref of refs) {
+    if (typeof ref !== 'string') continue;
+    const hero = parseHero(ref);
+    if (!hero || warmed.has(hero.pack)) continue;
+    warmed.add(hero.pack);
+    fresh.push(ref);
+  }
   if (!fresh.length) return;
-  for (const r of fresh) warmed.add(parseHero(r)!.pack);
   if (broken) { void loadHeroesFor(fresh); return; }
-  for (const s of pool()) s.w.postMessage({ warm: fresh });
+  const workers = pool();
+  if (broken) { void loadHeroesFor(fresh); return; }
+  for (const s of workers) {
+    try { s.w.postMessage({ warm: fresh }); } catch (err) { disableWorkers(err); void loadHeroesFor(fresh); break; }
+  }
 }
 
 /**
@@ -199,4 +227,3 @@ export async function prefetchEraModels(recipes: ModelRecipe[], eraId: string): 
 }
 
 export const ready = (recipe: ModelRecipe): boolean => protos.has(keyOf(recipe));
-export const backlog = () => queue.length + (slots?.filter(s => s.busy).length ?? 0);

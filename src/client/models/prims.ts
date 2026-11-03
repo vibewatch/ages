@@ -100,20 +100,6 @@ export function fbm(x: number, y: number, z: number, oct = 4): number {
   for (let i = 0; i < oct; i++) { s += a * vnoise(x * f, y * f, z * f); n += a; a *= 0.5; f *= 2.03; }
   return s / n;
 }
-/** 3D Worley cell distances [F1, F2] — giraffe patches, turtle scutes, cobblestones. */
-export function worley(x: number, y: number, z: number): [number, number] {
-  const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z);
-  let f1 = 9, f2 = 9;
-  for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) for (let k = -1; k <= 1; k++) {
-    const cx = xi + i + hash3(xi + i, yi + j, zi + k);
-    const cy = yi + j + hash3(yi + j + 17, zi + k, xi + i);
-    const cz = zi + k + hash3(zi + k + 31, xi + i, yi + j);
-    const d = Math.hypot(x - cx, y - cy, z - cz);
-    if (d < f1) { f2 = f1; f1 = d; } else if (d < f2) f2 = d;
-  }
-  return [f1, f2];
-}
-
 /** Per-face painter: receives the face centroid & normal in the mesh's local space; returns a color or null for the base color. */
 export type Paint = (x: number, y: number, z: number, nx: number, ny: number, nz: number) => string | null;
 

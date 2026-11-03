@@ -8,7 +8,7 @@ import { distKm, gradeWhere, locatePoints, makeLocateQuiz, makeQuiz, periodQuest
 import { CHRONICLE, chapterAt, currentEntry, phaseAt, previousSnap, stepStop } from '../../src/shared/lib/chronicle.ts';
 import { SNAPSHOTS } from '../../src/shared/data/territories.ts';
 import { search } from '../../src/shared/lib/search.ts';
-import { ANCHORS, eraAt, formatYear, rulerAt, tToYear, ticks, yearToT } from '../../src/shared/lib/timeline.ts';
+import { ANCHORS, clampYear, eraAt, formatYear, rulerAt, tToYear, ticks, yearToT } from '../../src/shared/lib/timeline.ts';
 
 describe('timeline', () => {
   it('maps years monotonically onto [0,1] and back', () => {
@@ -20,6 +20,13 @@ describe('timeline', () => {
     }
     for (const [y, t] of ANCHORS) { expect(yearToT(y)).toBeCloseTo(t); expect(tToYear(t)).toBe(y); }
     for (const y of [-1046, -221, 220, 960, 1644, 1911, 1978]) expect(Math.abs(tToYear(yearToT(y)) - y)).toBeLessThanOrEqual(1);
+  });
+  it('clamps external years to the timeline and avoids year zero', () => {
+    expect(clampYear(-2_000_000)).toBe(-1_700_000);
+    expect(clampYear(3000)).toBe(2025);
+    expect(clampYear(0)).toBe(1);
+    expect(clampYear(-0.2)).toBe(1);
+    expect(clampYear(0.2)).toBe(1);
   });
   it('finds eras and rulers', () => {
     expect(eraAt(-221)?.id).toBe('qin');

@@ -7,15 +7,11 @@ import {
 // East-Asian timber kit shared by the Ages builders (adapted from pocket-planet's heroes/china.ts).
 // Front faces +z, base at y=0.
 
-let activePlaceYear: number | undefined;
 let activePlaceEra: string | undefined;
 
-export function setPlaceEraContext(year?: number, era?: string): void {
-  activePlaceYear = year;
+export function setPlaceEraContext(era?: string): void {
   activePlaceEra = era;
 }
-export function getPlaceEraYear(): number | undefined { return activePlaceYear; }
-export function getPlaceEraId(): string | undefined { return activePlaceEra; }
 
 interface EraTimberStyle {
   roof: string;
@@ -580,4 +576,3 @@ export function placePagodaOct(
   ellip(p, goldC, x, y + Math.max(0.007, topR * 0.32), z, topR * 0.78, Math.max(0.006, topR * 0.34), topR * 0.78);
   gourd(p, x, y + Math.max(0.01, topR * 0.45), z, Math.max(0.014, topR * 0.92), goldC);
 }
-

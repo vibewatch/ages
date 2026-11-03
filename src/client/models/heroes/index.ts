@@ -40,16 +40,13 @@ export function loadPack(id: string): Promise<Pack> {
       loaded.set(id, pack);
       loading.delete(id);
       return pack;
+    }).catch(err => {
+      loading.delete(id);
+      throw err;
     });
     loading.set(id, p);
   }
   return p;
-}
-
-/** True when the recipe needs no hero or its pack is already in memory. */
-export function heroReady(ref: unknown): boolean {
-  const h = parseHero(ref);
-  return !h || loaded.has(h.pack);
 }
 
 /** Resolves once the hero pack for `ref` (if any) is loaded. Unknown packs resolve too (generic fallback). */

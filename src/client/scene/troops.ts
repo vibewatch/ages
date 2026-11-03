@@ -80,7 +80,7 @@ function kit(e: Era): Kit {
   }
 }
 
-function trooper(g: THREE.Group, e: Era, k: Kit, o: Partial<HumanOpts> & { h: number }) {
+function trooper(g: THREE.Group, k: Kit, o: Partial<HumanOpts> & { h: number }) {
   return human(g, 0, 0, 0, {
     top: TEAM, bottom: k.bottom, skin: SKIN, hair: '#1c1714', hat: k.hat, hatStyle: k.hatStyle, hatBadge: k.hatBadge,
     armor: k.armor, armorTrim: k.armorTrim, badge: k.badge, shoes: k.boots, detail: 'lo', build: 1.08, ...o,
@@ -89,7 +89,7 @@ function trooper(g: THREE.Group, e: Era, k: Kit, o: Partial<HumanOpts> & { h: nu
 
 function spearman(g: THREE.Group, e: Era): void {
   const k = kit(e), h = 0.8;
-  const r = trooper(g, e, k, { h, pose: 'walk', phase: 0.15 });
+  const r = trooper(g, k, { h, pose: 'walk', phase: 0.15 });
   const [hx, hy, hz] = r.handR;
   rod(g, [hx, hy - h * 0.4, hz - 0.04], [hx, hy + h * 0.72, hz + 0.06], h * 0.012, WOOD, 4);
   cone(g, STEEL, hx, hy + h * 0.72, hz + 0.06, h * 0.022, h * 0.09, 4);
@@ -106,12 +106,12 @@ function spearman(g: THREE.Group, e: Era): void {
 function archer(g: THREE.Group, e: Era): void {
   const k = kit(e), h = 0.8;
   if (k.missile === 'crossbow') {
-    const r = trooper(g, e, k, { h, pose: 'stand', hands: [[-0.04, 0.6, 0.2], [0.05, 0.56, 0.12]] });
+    const r = trooper(g, k, { h, pose: 'stand', hands: [[-0.04, 0.6, 0.2], [0.05, 0.56, 0.12]] });
     const [hx, hy, hz] = r.handL;
     box(g, WOOD, hx + 0.03, hy, hz - 0.06, h * 0.02, h * 0.02, h * 0.3);
     tube(g, [[hx + 0.03 - h * 0.17, hy, hz - 0.02], [hx + 0.03, hy, hz + 0.05], [hx + 0.03 + h * 0.17, hy, hz - 0.02]], h * 0.009, h * 0.007, WOOD, { radial: 4, sub: 2 });
   } else {
-    const r = trooper(g, e, k, { h, pose: 'stand', hands: [[-0.02, 0.66, 0.3], [0.04, 0.62, 0.06]] });
+    const r = trooper(g, k, { h, pose: 'stand', hands: [[-0.02, 0.66, 0.3], [0.04, 0.62, 0.06]] });
     const [lx, ly, lz] = r.handL;
     tube(g, [[lx, ly - h * 0.28, lz - 0.04], [lx, ly, lz + 0.05], [lx, ly + h * 0.28, lz - 0.04]], h * 0.01, h * 0.008, WOOD, { radial: 4, sub: 3 });
   }
@@ -122,7 +122,7 @@ function archer(g: THREE.Group, e: Era): void {
 /** Rifleman at port arms with a fixed bayonet. */
 function rifleman(g: THREE.Group, e: Era): void {
   const k = kit(e), h = 0.8;
-  const r = trooper(g, e, k, { h, pose: 'walk', phase: 0.2, hands: [[-0.06, 0.55, 0.16], [0.07, 0.42, 0.1]] });
+  const r = trooper(g, k, { h, pose: 'walk', phase: 0.2, hands: [[-0.06, 0.55, 0.16], [0.07, 0.42, 0.1]] });
   const [lx, ly, lz] = r.handL, [rx, ry, rz] = r.handR;
   const d = new THREE.Vector3(lx - rx, ly - ry, lz - rz).normalize();
   const a: [number, number, number] = [rx - d.x * 0.08, ry - d.y * 0.08, rz - d.z * 0.08];
@@ -217,9 +217,6 @@ export function unitGeometry(type: UnitType, era: Era): THREE.BufferGeometry {
   if (!geo) cache.set(key, (geo = bake(gr => BUILD[type](gr, era), SCALE[type])));
   return geo;
 }
-export const soldierGeometry = (era: Era = 'suitang'): THREE.BufferGeometry => unitGeometry('spear', era);
-export const riderGeometry = (era: Era = 'suitang'): THREE.BufferGeometry => unitGeometry('horse', era);
-
 /** Vertex-coloured standard material whose instance colour tints only the `team` parts. */
 export function troopMaterial(): THREE.MeshStandardMaterial {
   const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.75, metalness: 0.05, transparent: true });

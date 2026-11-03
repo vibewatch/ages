@@ -25,9 +25,6 @@ export function eraOf(y: Year): Era {
 export const chariotAge = (y: Year): boolean => y < -307;
 /** Rifles replace spears and bows from the Opium War on. */
 export const gunAge = (y: Year): boolean => y >= 1840;
-/** Crossbows (弩) were the signature missile weapon of Qin/Han and Song armies. */
-export const crossbowAge = (e: Era): boolean => e === 'qinhan' || e === 'song';
-
 export const FORMATION_NAME: Record<Formation, I18n> = {
   line: { zh: '横阵', en: 'line' },
   column: { zh: '长蛇阵', en: 'column' },
@@ -35,15 +32,6 @@ export const FORMATION_NAME: Record<Formation, I18n> = {
   wings: { zh: '鹤翼阵', en: 'crane wings' },
   square: { zh: '方阵', en: 'square' },
   circle: { zh: '圆阵', en: 'circle' },
-};
-
-export const TROOP_NAME: Record<Troops, I18n> = {
-  foot: { zh: '步兵', en: 'infantry' },
-  horse: { zh: '骑兵', en: 'cavalry' },
-  mixed: { zh: '步骑', en: 'combined arms' },
-  archer: { zh: '弓弩手', en: 'archers' },
-  chariot: { zh: '战车', en: 'chariots' },
-  gun: { zh: '火枪兵', en: 'riflemen' },
 };
 
 /** The usual formation of a troop mix: cavalry strike in a wedge, combined arms spread their wings, infantry hold a line. */

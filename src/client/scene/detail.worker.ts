@@ -22,15 +22,21 @@ function tile(z: number, x: number, y: number): Promise<Int16Array | null> {
       const r = await fetch(`${URL_T}/${key}.png`);
       if (!r.ok) return null;
       const bmp = await createImageBitmap(await r.blob(), { colorSpaceConversion: 'none', premultiplyAlpha: 'none' });
-      const c = new OffscreenCanvas(256, 256).getContext('2d', { willReadFrequently: true })!;
-      c.drawImage(bmp, 0, 0);
-      const d = c.getImageData(0, 0, 256, 256).data;
-      const out = new Int16Array(65536);
-      for (let i = 0; i < 65536; i++) out[i] = Math.max(-32000, Math.min(32000, d[i * 4] * 256 + d[i * 4 + 1] + d[i * 4 + 2] / 256 - 32768));
-      return out;
+      try {
+        const c = new OffscreenCanvas(256, 256).getContext('2d', { willReadFrequently: true })!;
+        c.drawImage(bmp, 0, 0);
+        const d = c.getImageData(0, 0, 256, 256).data;
+        const out = new Int16Array(65536);
+        for (let i = 0; i < 65536; i++) out[i] = Math.max(-32000, Math.min(32000, d[i * 4] * 256 + d[i * 4 + 1] + d[i * 4 + 2] / 256 - 32768));
+        return out;
+      } finally {
+        bmp.close();
+      }
     } catch { return null; }
   })();
   cache.set(key, p);
+  const pending = p;
+  void pending.then(result => { if (!result && cache.get(key) === pending) cache.delete(key); });
   while (cache.size > MAX_TILES) cache.delete(cache.keys().next().value!);
   return p;
 }

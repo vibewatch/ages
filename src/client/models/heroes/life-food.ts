@@ -329,7 +329,7 @@ const lf_forage: Builder = gp => {
 // ---------------------------------------------------------------------------------------------------------
 const RED = '#a65a38', INK = '#2a1a12';
 /** Banpo basin interior painter: two faces (up = −z) and two net-fish, rim dashes. */
-const banpo: Paint = (x, y, z, nx, ny, nz) => {
+const banpo: Paint = (x, _y, z, nx, ny, nz) => {
   const r = Math.hypot(x, z);
   if (ny > 0.8 && r > 0.165) return Math.floor(((ang(x, z) + Math.PI) / TAU) * 32) % 4 === 0 ? INK : null;
   const inside = nx * x + nz * z < -0.0001 * r || (ny > 0.95 && r < 0.15);
@@ -563,7 +563,7 @@ function jue(p: THREE.Object3D, x: number, y: number, z: number, ry: number, s =
 function sealedJar(p: THREE.Object3D, x: number, z: number, s: number, seal: string): void {
   const j = grp(p, x, Y, z, 0, s);
   const jo: [number, number][] = [[0.07, 0], [0.11, 0.04], [0.135, 0.12], [0.125, 0.19], [0.08, 0.235], [0.065, 0.25]];
-  plathe(j, [[0, 0], ...dense(jo, 0.02), [0, 0.25]], '#6a4630', (xx, y, zz) => (y < 0.06 ? '#9a6a46' : Math.abs(y - 0.17) < 0.004 || Math.abs(y - 0.1) < 0.003 ? '#4e3220' : null), 0, 0, 0, 30, 0.45);
+  plathe(j, [[0, 0], ...dense(jo, 0.02), [0, 0.25]], '#6a4630', (_xx, y, _zz) => (y < 0.06 ? '#9a6a46' : Math.abs(y - 0.17) < 0.004 || Math.abs(y - 0.1) < 0.003 ? '#4e3220' : null), 0, 0, 0, 30, 0.45);
   plathe(j, [[0, 0.272], [0.04, 0.268], [0.07, 0.255], [0.082, 0.24], [0.078, 0.232], [0, 0.24]], seal, (xx, y, zz) => (hash3(Math.floor(xx * 300), Math.floor(y * 300), Math.floor(zz * 300)) > 0.7 ? shade(seal, 0.85) : null), 0, 0, 0, 20, 1);
 }
 const lf_wine: Builder = gp => {
@@ -707,7 +707,7 @@ function zongzi(p: THREE.Object3D, x: number, y: number, z: number, s: number, r
   }
 }
 const BW = '#f4f6f8', COB = '#2a4b9a';
-const bwPaint = (rimR: number): Paint => (x, y, z) => {
+const bwPaint = (rimR: number): Paint => (x, _y, z) => {
   const r = Math.hypot(x, z), a = ang(x, z);
   if (r > rimR * 0.9) return Math.sin(a * 24) > 0.2 ? COB : null;
   if (r > rimR * 0.82) return null;
@@ -733,7 +733,7 @@ const lf_zongzi: Builder = gp => {
   box(T, LQR, 0, 0.05, 0, 0.226, 0.0006, 0.106);
   box(T, LQ, 0, 0.0505, 0, 0.21, 0.0008, 0.09);
   for (const sx of [-1, 1]) { box(T, LQ, sx * 0.1, 0, 0, 0.012, 0.042, 0.1); box(T, LQ, sx * 0.1, 0, 0, 0.03, 0.006, 0.11); }
-  const dp = (x: number, z: number, R: number) => { plathe(T, [[0, 0], [R * 0.7, 0], [R, 0.012], [R * 0.95, 0.013], [R * 0.66, 0.004], [0, 0.004]], LQ, (px, py, pz) => { const r = Math.hypot(px, pz); return r > R * 0.88 || Math.abs(r - R * 0.5) < 0.002 ? LQR : null; }, x, ty - Y, z, 28, 0.25); return ty - Y + 0.004; };
+  const dp = (x: number, z: number, R: number) => { plathe(T, [[0, 0], [R * 0.7, 0], [R, 0.012], [R * 0.95, 0.013], [R * 0.66, 0.004], [0, 0.004]], LQ, (px, _py, pz) => { const r = Math.hypot(px, pz); return r > R * 0.88 || Math.abs(r - R * 0.5) < 0.002 ? LQR : null; }, x, ty - Y, z, 28, 0.25); return ty - Y + 0.004; };
   const py = dp(-0.04, 0, 0.055);
   const ring: [number, number, number][] = [[-0.022, 0.012, 0.3], [0.0, 0.026, 1.2], [0.022, 0.01, 2.0], [-0.012, -0.018, 0.8], [0.018, -0.018, 2.6]];
   for (const [x, z, ry] of ring) zongzi(T, -0.04 + x, py, z, 0.42, ry, 0, '#5c7440');
@@ -844,7 +844,7 @@ const lf_tofu: Builder = gp => {
   el(P2, '#7d786e', 0, 0.14, 0, 0.055, 0.035, 0.045, 0.4);
   // tray of cut cubes and a knife
   const T = grp(gp, 0.24, Y, 0.18, 0.3, 0.6);
-  vessel(T, [[0.12, 0], [0.13, 0.025]], 0.006, '#c8a468', (px, py, pz) => (Math.sin(ang(px, pz) * 40) > 0.6 ? '#a8844c' : null), 0, 0, 0, 32);
+  vessel(T, [[0.12, 0], [0.13, 0.025]], 0.006, '#c8a468', (px, _py, pz) => (Math.sin(ang(px, pz) * 40) > 0.6 ? '#a8844c' : null), 0, 0, 0, 32);
   for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) if (!(i === 2 && j === 0)) rbox(T, i === 1 && j === 1 ? '#f3eedc' : TOFU, -0.05 + i * 0.05, 0.007, -0.05 + j * 0.05, 0.044, 0.04, 0.044, 0.005, (i + j) * 0.04);
   box(T, '#5e5a50', 0.06, 0.007, -0.055, 0.06, 0.002, 0.024, 0.3);
   rod(T, [0.0, 0.009, -0.07], [-0.04, 0.009, -0.085], 0.006, '#5a3a22', 6);
@@ -1059,7 +1059,7 @@ const lf_hubing: Builder = gp => {
   sack(gp, -0.3, -0.18, 0.6, 0.4, '#d8d0c0', '#c4b89e');
   sack(gp, -0.2, -0.27, 0.5, 1.2, '#d4c8ac', '#a89068');
   const Wj = grp(gp, 0.3, Y, -0.04, 0, 0.6);
-  vessel(Wj, dense([[0.04, 0], [0.065, 0.05], [0.06, 0.1], [0.035, 0.13], [0.04, 0.14]], 0.012), 0.005, '#7a5a3e', (px, py, pz) => (Math.abs(py - 0.09) < 0.004 ? '#4e3626' : null), 0, 0, 0, 22, 0.4);
+  vessel(Wj, dense([[0.04, 0], [0.065, 0.05], [0.06, 0.1], [0.035, 0.13], [0.04, 0.14]], 0.012), 0.005, '#7a5a3e', (_px, py, _pz) => (Math.abs(py - 0.09) < 0.004 ? '#4e3626' : null), 0, 0, 0, 22, 0.4);
   fill(Wj, '#3a4a4e', 0, 0.12, 0, 0.034, 16, 0.05);
   fuse(gp);
 };
@@ -1321,7 +1321,7 @@ const lf_tangyuan: Builder = gp => {
   bowl(T, -0.07, 0, 0.02, 0.04, 4);
   bowl(T, 0.0, 0, 0.035, 0.032, 3);
   const Tr = grp(T, 0.06, 0, -0.01);
-  vessel(Tr, [[0.042, 0], [0.046, 0.008]], 0.002, '#a8884e', (px, py, pz) => (Math.sin(ang(px, pz) * 40) > 0.6 ? '#8a6c3a' : null), 0, 0, 0, 28, 0.9);
+  vessel(Tr, [[0.042, 0], [0.046, 0.008]], 0.002, '#a8884e', (px, _py, pz) => (Math.sin(ang(px, pz) * 40) > 0.6 ? '#8a6c3a' : null), 0, 0, 0, 28, 0.9);
   for (let i = 0; i < 10; i++) { const a = i * 2.4, rr = 0.008 + (i % 4) * 0.009; tangyuan(Tr, Math.cos(a) * rr, 0.009, Math.sin(a) * rr, 0.008); }
   const Sp = grp(T, -0.02, 0, -0.04);
   vessel(Sp, [[0.01, 0], [0.016, 0.008], [0.018, 0.012]], 0.0015, QB, null, 0, 0, 0, 18, 0.15);
@@ -1633,7 +1633,7 @@ const lf_feast: Builder = gp => {
   for (const [dx, dz, R, w, f, k] of D) dish(gp, dx, ty, tz + dz, R, w, f, k);
   const bn = grp(gp, -0.06, ty, tz + 0.075);
   vessel(bn, dense([[0.01, 0], [0.016, 0.008], [0.019, 0.02]], 0.004), 0.002, IMP, null, 0, 0, 0, 20, 0.25);
-  heap(bn, 0, 0.016, 0, 0.016, 0.008, '#ece4d0', (px, py, pz) => (Math.sin(px * 900 + pz * 400) > 0.3 ? '#dcd0b6' : null));
+  heap(bn, 0, 0.016, 0, 0.016, 0.008, '#ece4d0', (px, _py, pz) => (Math.sin(px * 900 + pz * 400) > 0.3 ? '#dcd0b6' : null));
   plathe(bn, [[0, 0.015], [0.008, 0.014], [0.022, 0.005], [0.022, 0.002], [0, 0.011]], IMP, null, 0.026, -0.003, 0.0, 20, 0.25);
   bn.children[bn.children.length - 1].rotation.z = 0.25;
   for (const cx of [-0.16, 0.06, 0.18]) { vessel(gp, [[0.005, 0], [0.009, 0.008], [0.01, 0.011]], 0.0012, BW, null, cx, ty, tz + 0.085, 14, 0.2); chopsticks(gp, cx + 0.03, ty, tz + 0.085, 1.4, '#d8ccaa', 0.05); }

@@ -6,7 +6,7 @@ import { reignAt, regionalReignsAt } from '../../shared/data/jiangshan.ts';
 import { STOPS, stepStop } from '../../shared/lib/chronicle.ts';
 import { realmArea } from '../../shared/data/areas.ts';
 import { SNAPSHOTS } from '../../shared/data/territories.ts';
-import { eraAt, formatYear, normYear, rulerAt, tToYear, ticks, yearToT, YEAR_MAX, YEAR_MIN } from '../../shared/lib/timeline.ts';
+import { clampYear, eraAt, formatYear, normYear, rulerAt, tToYear, ticks, yearToT, YEAR_MAX, YEAR_MIN } from '../../shared/lib/timeline.ts';
 import { lang, t } from '../lib/i18n.ts';
 import { h, iconBtn, setIcon } from './dom.ts';
 
@@ -219,7 +219,7 @@ export class Timeline {
 
   /** Sets the year (from the user when `emit`, otherwise from the app). */
   set(y: Year, final: boolean, emit = true): void {
-    y = normYear(Math.max(tToYear(0), Math.min(tToYear(1), y)));
+    y = clampYear(y);
     const changed = y !== this.year;
     this.year = y;
     this.render();
@@ -264,6 +264,5 @@ export class Timeline {
     this.select(this.selected);
   }
 }
-
 
 

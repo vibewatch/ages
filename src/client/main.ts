@@ -4,10 +4,11 @@ import type { Lang } from '../shared/data/i18n.ts';
 import { PLACE } from '../shared/data/places.ts';
 import type { Era, HistEvent, Lesson, Place, Wiki, Year } from '../shared/data/types.ts';
 import type { Hit } from '../shared/lib/search.ts';
+import { clampYear } from '../shared/lib/timeline.ts';
 import { lang, onLang, setLang, t } from './lib/i18n.ts';
 import { readLink, writeLink } from './lib/link.ts';
 import { canSpeak, speak } from './lib/speech.ts';
-import { load, Progress } from './lib/storage.ts';
+import { load, Progress, save } from './lib/storage.ts';
 import { Atlas } from './scene/atlas.ts';
 import { StoryPlayer } from './story/player.ts';
 import { Caption } from './ui/caption.ts';
@@ -18,7 +19,6 @@ import { LessonView } from './ui/lesson.ts';
 import { LESSON } from '../shared/data/lessons/index.ts';
 import { Help, HubMenu, SettingsMenu } from './ui/menus.ts';
 import { SURFACES, type Surface } from './scene/terrain.ts';
-import { save } from './lib/storage.ts';
 import { journeyStory } from '../shared/data/stories.ts';
 import { JOURNEYS, PERSON, type Journey, type Person } from '../shared/data/jiangshan.ts';
 import { LIFE, type LifeItem } from '../shared/data/life.ts';
@@ -85,7 +85,7 @@ class App {
     const ev = link.event ? EVENT.get(link.event) : undefined;
     const linkPlace = link.place ? PLACE.get(link.place) : undefined;
     const linkPerson = link.person ? PERSON.get(link.person) : undefined;
-    const year: Year = ev?.year ?? link.year ?? (linkPerson ? Math.round((linkPerson.span[0] + linkPerson.span[1]) / 2) : undefined) ?? load<number>('year', -221);
+    const year: Year = clampYear(ev?.year ?? link.year ?? (linkPerson ? Math.round((linkPerson.span[0] + linkPerson.span[1]) / 2) : undefined) ?? load<number>('year', -221));
     const intro = new BootIntro(year, lang, lowfx);
     this.atlas.onEraProgress = (era, done, total) => intro.setProgress(era, done, total);
     await this.atlas.init(year, lang);
@@ -285,22 +285,29 @@ class App {
       const l = readLink();
       if (l.lang && l.lang !== lang) setLang(l.lang);
       if (l.event && l.event !== this.card.event?.id) { const ev = EVENT.get(l.event); if (ev) this.openEvent(ev); }
-      else if (l.place && l.place !== this.card.place?.p.id) { const p = PLACE.get(l.place); if (p) this.openPlace(p); }
+      else if (l.place) {
+        const p = PLACE.get(l.place);
+        if (p) {
+          if (l.year != null && l.year !== this.timeline.year) { this.timeline.set(l.year, true, false); this.atlas.setYear(this.timeline.year); }
+          if (p.id !== this.card.place?.p.id || l.year != null) this.openPlace(p);
+        }
+      }
       else if (l.person && l.person !== this.card.person?.id) { const p = PERSON.get(l.person); if (p) this.openPerson(p); }
       else if (l.life && l.life !== this.card.life?.id) { const x = LIFE.find(i => i.id === l.life); if (x) this.openLife(x); }
       else if (l.lesson && l.lesson !== this.lesson.id) { const x = LESSON.get(l.lesson); if (x) this.startLesson(x); }
       else if (l.journey) { const j = JOURNEYS.find(x => x.id === l.journey); if (j) void this.playJourney(j); }
       else if (!l.event && !l.place && !l.person && !l.life && l.year != null) {
         this.timeline.set(l.year, true, false);
-        this.atlas.setYear(l.year);
+        this.atlas.setYear(this.timeline.year);
         this.closeCard();
       }
     });
   }
 
   private saveYear(y: Year): void {
-    try { localStorage.setItem('ages:year', String(y)); } catch { /* ignore */ }
-    if (!this.card.event) writeLink({ year: y, lang });
+    save('year', y);
+    if (this.card.place) writeLink({ place: this.card.place.p.id, year: y, lang });
+    else if (!this.card.event) writeLink({ year: y, lang });
   }
 
   /** Opens one toolbar popover (or none): 时期详情, the study hall and settings are mutually exclusive. */
@@ -563,7 +570,14 @@ class App {
     this.music.relabel();
     this.caption.relabel();
     const journey = this.player.state !== 'idle' ? readLink().journey : undefined;
-    writeLink(journey ? { journey, lang: l } : this.card.event ? { event: this.card.event.id, lang: l } : this.lesson.open && this.lesson.id && !this.lesson.id.startsWith('test:') ? { lesson: this.lesson.id, lang: l } : { year: this.timeline.year, lang: l });
+    const subject = journey ? { journey }
+      : this.card.event ? { event: this.card.event.id }
+      : this.card.place ? { place: this.card.place.p.id, year: this.timeline.year }
+      : this.card.person ? { person: this.card.person.id }
+      : this.card.life ? { life: this.card.life.id }
+      : this.lesson.open && this.lesson.id && !this.lesson.id.startsWith('test:') ? { lesson: this.lesson.id }
+      : { year: this.timeline.year };
+    writeLink({ ...subject, lang: l });
   }
 
   /** Fits the side panel between the headline and the line key, and tells the camera how much of the screen it (or the
@@ -638,7 +652,10 @@ function fatal(msg: string, retry: boolean): void {
 
 // offline support (production builds only; see src/client/sw.js)
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
-  addEventListener('load', () => { navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => {}); });
+  addEventListener('load', () => {
+    navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`)
+      .catch(err => console.warn('Offline support could not be registered.', err));
+  });
 }
 
 const root = document.getElementById('app')!;

@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { readLink } from '../../src/client/lib/link.ts';
+import { load, save } from '../../src/client/lib/storage.ts';
 import { articleUrl, parseExtract } from '../../src/client/lib/wikipedia.ts';
 import { deploy, shape } from '../../src/client/scene/formation.ts';
 import { declutter, type LayoutItem } from '../../src/client/scene/layout.ts';
@@ -93,6 +94,64 @@ describe('deep links', () => {
     expect(readLink('#person=sushi', '')).toEqual({ person: 'sushi' });
     expect(readLink('', '?j=xuanzang&lang=en')).toEqual({ journey: 'xuanzang', lang: 'en' });
     expect(readLink('#e=chibi', '?year=208')).toEqual({ event: 'chibi', year: 208 });
+  });
+
+  it('lets a hash subject or year replace a different legacy query subject', () => {
+    expect(readLink('#p=kaifeng&y=1100&lang=en', '?event=qin_unify&lang=zh')).toEqual({
+      place: 'kaifeng', year: 1100, lang: 'en',
+    });
+    expect(readLink('#person=sushi', '?place=kaifeng&year=1100')).toEqual({ person: 'sushi', year: 1100 });
+    expect(readLink('#y=1405', '?event=qin_unify')).toEqual({ year: 1405 });
+    expect(readLink('#lang=en', '?event=qin_unify')).toEqual({ event: 'qin_unify', lang: 'en' });
+  });
+
+  it('ignores years outside the safe integer range', () => {
+    expect(readLink(`#y=${'9'.repeat(400)}`, '')).toEqual({});
+    expect(readLink('#y=9007199254740992', '')).toEqual({});
+  });
+});
+
+describe('storage fallback', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('reads in-memory values when localStorage is unavailable', () => {
+    vi.stubGlobal('localStorage', {
+      getItem: () => { throw new Error('storage blocked'); },
+      setItem: () => { throw new Error('storage blocked'); },
+    });
+    save('blocked-storage-test', { count: 2 });
+    expect(load('blocked-storage-test', { count: 0 })).toEqual({ count: 2 });
+  });
+
+  it('prefers an unsaved value when a full store still contains an older value', () => {
+    vi.stubGlobal('localStorage', {
+      getItem: () => JSON.stringify('old'),
+      setItem: () => { throw new Error('quota exceeded'); },
+    });
+    save('quota-storage-test', 'new');
+    expect(load('quota-storage-test', 'default')).toBe('new');
+  });
+
+  it('reads changes from storage after a successful write', () => {
+    const data = new Map<string, string>();
+    let readable = true;
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => {
+        if (!readable) throw new Error('storage blocked');
+        return data.get(key) ?? null;
+      },
+      setItem: (key: string, value: string) => data.set(key, value),
+    });
+    save('shared-storage-test', 'first');
+    data.set('ages:shared-storage-test', JSON.stringify('from another tab'));
+    expect(load('shared-storage-test', '')).toBe('from another tab');
+    readable = false;
+    expect(load('shared-storage-test', '')).toBe('from another tab');
+    readable = true;
+    data.delete('ages:shared-storage-test');
+    expect(load('shared-storage-test', 'default')).toBe('default');
+    readable = false;
+    expect(load('shared-storage-test', 'default')).toBe('default');
   });
 });
 

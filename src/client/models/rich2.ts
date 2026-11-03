@@ -1297,7 +1297,7 @@ const cz1 = (gp: THREE.Group, launch: boolean) => {
   for (const s of [-1, 1]) for (const t of [-1, 1]) box(gp, '#6c7176', rx + s * 0.045, pt, rz + t * 0.045, 0.014, 0.03, 0.014);
   const by = pt + 0.06;
   const prof: [number, number][] = [[R * 0.85, -0.012], [R, 0], [R, 0.477], [R * 0.97, 0.49], [R * 0.97, 0.5], [R, 0.51], [R, 0.69], [R * 0.93, 0.715], [R * 0.72, 0.75], [R * 0.42, 0.78], [R * 0.12, 0.797], [0, 0.8]];
-  plathe(gp, prof, '#eeede8', (x, y, z) => {
+  plathe(gp, prof, '#eeede8', (_x, y, _z) => {
     if (y > 0.477 && y < 0.51) return '#3a3c40';
     if (Math.abs(y - 0.69) < 0.004) return '#3a3c40';
     if (Math.abs(y - 0.25) < 0.003) return '#c8ccd0';

@@ -357,7 +357,7 @@ export function buildFresh(recipe: ModelRecipe): THREE.Group {
   const hero = heroBuilder(recipe.hero);
   const rich = hero ?? (recipe.kind === 'person' ? personModel : RICH[recipe.kind]);
   const mPlaceEra = typeof recipe.style === 'string' ? /(?:^|\|)place:([^|]+)\|era:([^|]+)$/.exec(recipe.style) : null;
-  if (mPlaceEra) setPlaceEraContext(typeof recipe.year === 'number' ? recipe.year : undefined, mPlaceEra[2]);
+  if (mPlaceEra) setPlaceEraContext(mPlaceEra[2]);
   try {
     if (rich) {
       if (hero) {
@@ -373,7 +373,7 @@ export function buildFresh(recipe: ModelRecipe): THREE.Group {
       inner.scale.setScalar(KIT_SCALE * (typeof recipe.scale === 'number' ? recipe.scale : 1));
     } else (BUILDERS[recipe.kind] as LiteBuilder ?? FALLBACK)(inner, recipe);
   } finally {
-    if (mPlaceEra) setPlaceEraContext(undefined, undefined);
+    if (mPlaceEra) setPlaceEraContext();
   }
   bakeAnimated(root);
   bakeStaticMeshes(root);

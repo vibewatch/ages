@@ -415,7 +415,7 @@ export const H_ROUTES2: Record<string, Builder> = {
     // oxygen-enriched coaches over the roof of the world — up to 5,072 m at Tanggula Pass
     // Ref: CR NJ2 (GE C38AChi, 2006) in dark green with yellow waist stripes and nose; 25T plateau coaches (Bombardier Sifang) in green/yellow.
     const sp = new Soup(), grn = '#24493a', yel = '#d4ae3a', glass = '#1b2630';
-    const stripe = (z: number, y: number, nx: number) => (Math.abs(nx) > 0.6 && y > 0.068 && y < 0.08 ? yel : null);
+    const stripe = (_z: number, y: number, nx: number) => (Math.abs(nx) > 0.6 && y > 0.068 && y < 0.08 ? yel : null);
     diesel(sp, 0.248, 0.5, { body: grn, roof: '#5d6560', glass, front: yel, ys: [0.068, 0.08], livery: (z, y, nx) => stripe(z, y, nx) ?? (Math.abs(nx) > 0.6 && z > 0.5 - 0.06 + (y - 0.046) * 0.9 && y > 0.046 ? yel : null) });
     diesel(sp, -0.012, 0.236, { body: grn, roof: '#5d6560', glass, front: yel, ys: [0.068, 0.08], livery: stripe });
     // Green V on the yellow nose, headlights, number board

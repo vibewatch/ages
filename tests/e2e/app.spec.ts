@@ -95,6 +95,61 @@ test.describe('Ages atlas', () => {
     expect(errs).toEqual([]);
   });
 
+  test('preserves place deep links across language changes and conflicting legacy query parameters', async ({ page }) => {
+    await openApp(page, 'p=kaifeng&y=1100&lang=en', 'lowfx=1&event=qin_unify');
+    await expect(page.locator('.card h2')).toHaveText('Bianjing');
+    expect((await state(page)).year).toBe(1100);
+
+    await switchLang(page);
+    await expect(page).toHaveURL(/#p=kaifeng&y=1100&lang=zh$/);
+    await page.evaluate(() => { location.hash = '#p=kaifeng&y=1200&lang=zh'; });
+    await expect.poll(async () => (await state(page)).year).toBe(1200);
+    await expect(page.locator('.card h2')).toHaveText('汴梁');
+    await page.reload();
+    await expect.poll(() => page.evaluate(() => !!(window as any).__atlas?.ready), { timeout: 120_000 }).toBe(true);
+    await expect(page.locator('.card h2')).toHaveText('汴梁');
+    expect((await state(page)).year).toBe(1200);
+  });
+
+  test('builds models on the main thread when workers are blocked', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('ages:quality', '"high"');
+      Object.defineProperty(window, 'Worker', {
+        configurable: true,
+        value: class { constructor() { throw new Error('workers blocked'); } },
+      });
+    });
+    await openApp(page, 'e=qin_unify&lang=en', '');
+    await expect(page.locator('.nogl')).toHaveCount(0);
+    await expect(page.locator('.card h2')).toBeVisible();
+    await expect.poll(async () => (await state(page)).fx.event, { timeout: 90_000 }).toBeGreaterThan(0);
+  });
+
+  test('keeps the base terrain usable when posting to its detail worker fails', async ({ page }) => {
+    const errs = watchErrors(page);
+    await page.addInitScript(() => {
+      localStorage.setItem('ages:quality', '"high"');
+      sessionStorage.setItem('detail-posted', 'no');
+      sessionStorage.setItem('detail-terminated', 'no');
+      window.Worker = new Proxy(window.Worker, {
+        construct(target, args) {
+          if (String(args[0]).includes('detail.worker-')) {
+            return {
+              postMessage() { sessionStorage.setItem('detail-posted', 'yes'); throw new Error('terrain post blocked'); },
+              terminate() { sessionStorage.setItem('detail-terminated', 'yes'); },
+            };
+          }
+          return Reflect.construct(target, args);
+        },
+      });
+    });
+    await openApp(page, 'y=1405&lang=en', '');
+    await setMapPose(page, { lon: 110, lat: 34, dist: 12, tilt: 0.8 });
+    await expect.poll(() => page.evaluate(() => sessionStorage.getItem('detail-posted'))).toBe('yes');
+    await expect.poll(() => page.evaluate(() => sessionStorage.getItem('detail-terminated'))).toBe('yes');
+    expect(errs).toEqual([]);
+  });
+
   test('plays an animated story with captions, pause and stop', async ({ page }) => {
     const errs = watchErrors(page);
     await openApp(page, 'e=qin_unify&lang=zh');
@@ -290,7 +345,8 @@ test.describe('Ages atlas', () => {
     await page.mouse.click(free!.x, free!.y);
     await expect(card.locator('h2')).toHaveText(free!.title);
     await expect(tip).toBeHidden();
-    // event pins are kind badges: hovering one shows its title in the same tooltip (re-picked while the camera settles on the card)
+    // event pins are kind badges: hovering one shows its title in the same tooltip
+    await expect.poll(() => page.evaluate(() => (window as any).__atlas.atlas.view.flying)).toBe(false);
     await expect.poll(async () => {
       const pinId = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.labels .pin[data-id][aria-pressed=false]')].find(el => {
         const r = el.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 3;
@@ -303,7 +359,9 @@ test.describe('Ages atlas', () => {
       return await tip.isVisible() && (await tip.locator('b').textContent()) === await pin.getAttribute('aria-label');
     }, { timeout: 30_000 }).toBe(true);
     // the tooltip never rides along with a moving map: any camera motion clears the hover
+    const cameraX = await page.evaluate(() => (window as any).__atlas.atlas.view.camera.position.x as number);
     await page.evaluate(() => { const v = (window as any).__atlas.atlas.view; v.camera.position.x += 0.5; v.controls.target.x += 0.5; });
+    await expect.poll(() => page.evaluate(x => Math.abs((window as any).__atlas.atlas.view.camera.position.x - x), cameraX)).toBeGreaterThan(0.1);
     await expect(tip).toBeHidden();
     expect(errs).toEqual([]);
   });
