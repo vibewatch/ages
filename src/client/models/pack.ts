@@ -161,6 +161,10 @@ export function unpackModel(pm: PackedModel): THREE.Group {
     o.castShadow = !!(f & 1); o.receiveShadow = !!(f & 2); o.visible = !(f & 4); o.frustumCulled = !(f & 8);
     if (n.ro) o.renderOrder = n.ro;
     if (n.c) for (const c of n.c) o.add(build(c));
+    if (n !== pm.root) {
+      o.updateMatrix();
+      o.matrixAutoUpdate = false;
+    }
     return o;
   };
   const root = build(pm.root);

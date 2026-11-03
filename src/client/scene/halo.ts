@@ -19,6 +19,7 @@ export class Halo {
     this.add(0, 0.96, color, disc);
     this.add(0.96, 1, color, 0.95);
     this.obj.visible = false;
+    this.obj.matrixAutoUpdate = false;
   }
 
   private add(r0: number, r1: number, color: string, alpha: number): void {
@@ -27,6 +28,7 @@ export class Halo {
     const mesh = new THREE.Mesh(g, mat);
     mesh.renderOrder = INK.halo;
     mesh.frustumCulled = false;
+    mesh.matrixAutoUpdate = false;
     this.obj.add(mesh);
     this.parts.push({ mesh, mat, alpha });
   }
@@ -35,16 +37,23 @@ export class Halo {
   get radius(): number { return this.r; }
 
   place(x: number, z: number, r: number): void {
+    const y = Math.max(0, this.geo.height(this.geo.lon(x), this.geo.lat(z))) + 0.01;
+    if (this.obj.position.x === x && this.obj.position.y === y && this.obj.position.z === z && this.r === r) return;
     this.r = r;
-    this.obj.position.set(x, Math.max(0, this.geo.height(this.geo.lon(x), this.geo.lat(z))) + 0.01, z);
+    this.obj.position.set(x, y, z);
+    this.obj.scale.setScalar(r);
+    this.obj.updateMatrix();
   }
 
   tick(dt: number): void {
+    if (!this.on && this.k <= 0.01) {
+      if (this.k !== 0 || this.obj.visible) { this.k = 0; this.obj.visible = false; }
+      return;
+    }
     this.k += ((this.on ? 1 : 0) - this.k) * Math.min(1, dt * 10);
     this.obj.visible = this.k > 0.01;
     if (!this.obj.visible) return;
     for (const p of this.parts) {
-      p.mesh.scale.setScalar(this.r);
       p.mat.opacity = p.alpha * this.k;
     }
   }
@@ -89,15 +98,24 @@ export class Beam {
     this.obj = new THREE.Mesh(g, this.mat);
     this.obj.frustumCulled = false;
     this.obj.visible = false;
+    this.obj.matrixAutoUpdate = false;
   }
 
   /** Stands the beam at world x/z for a ring of radius r. */
   place(x: number, z: number, r: number): void {
-    this.obj.position.set(x, Math.max(0, this.geo.height(this.geo.lon(x), this.geo.lat(z))), z);
-    this.obj.scale.set(r * 0.14, r * 6, r * 0.14);
+    const y = Math.max(0, this.geo.height(this.geo.lon(x), this.geo.lat(z)));
+    const sx = r * 0.14, sy = r * 6;
+    if (this.obj.position.x === x && this.obj.position.y === y && this.obj.position.z === z && this.obj.scale.x === sx && this.obj.scale.y === sy) return;
+    this.obj.position.set(x, y, z);
+    this.obj.scale.set(sx, sy, sx);
+    this.obj.updateMatrix();
   }
 
   tick(dt: number): void {
+    if (!this.on && this.k <= 0.01) {
+      if (this.k !== 0 || this.obj.visible) { this.k = 0; this.obj.visible = false; }
+      return;
+    }
     this.k += ((this.on ? 1 : 0) - this.k) * Math.min(1, dt * 6);
     this.obj.visible = this.k > 0.01;
     this.mat.uniforms.uAlpha.value = 0.6 * this.k;

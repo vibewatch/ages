@@ -71,12 +71,13 @@ export class TerrainDetail {
   }
 
   private tick(dt: number): void {
-    const p = this.view.pose();
-    const on = this.cur && p.dist <= DETAIL_DIST ? 1 : 0;
+    const dist = this.view.camera.position.distanceTo(this.view.controls.target);
+    const on = this.cur && dist <= DETAIL_DIST ? 1 : 0;
     const k = this.u.uDetOn;
-    k.value += (on - k.value) * Math.min(1, dt * 3);
+    if (k.value !== on) k.value += (on - k.value) * Math.min(1, dt * 3);
     if ((this.acc += dt) < 0.25) return;
     this.acc = 0;
+    const p = this.view.pose();
     const R = TerrainDetail.reach(p.dist), l = this.last;
     const moved = Math.abs(p.lon - l.lon) > R * 0.03 || Math.abs(p.lat - l.lat) > R * 0.03 || Math.abs(p.dist / (l.dist || 1) - 1) > 0.03;
     this.last = { lon: p.lon, lat: p.lat, dist: p.dist };

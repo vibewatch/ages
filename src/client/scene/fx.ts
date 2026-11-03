@@ -55,6 +55,7 @@ function setModelLod(obj: THREE.Object3D, far: boolean): void {
   obj.traverse(o => {
     const mesh = o as THREE.Mesh;
     if (!mesh.isMesh) return;
+    if (mesh.userData.lodHide) mesh.visible = !far;
     const ud = mesh.geometry.userData as { lod?: [number, number]; near?: [number, number] };
     const range = far ? ud.lod : ud.near;
     if (range) mesh.geometry.setDrawRange(range[0], range[1]);
@@ -134,6 +135,7 @@ export class Fx {
 
   constructor(private view: View, private geo: Geo, private labels: Labels) {
     this.root.name = 'fx';
+    this.root.matrixAutoUpdate = false;
     view.scene.add(this.root);
     this.particles = new Particles();
     this.root.add(this.particles.add, this.particles.norm, this.missiles.arrows, this.missiles.stones);
@@ -153,14 +155,15 @@ export class Fx {
     }
     const sdt = this.paused ? 0 : dt * this.speed;
     this.clock += sdt;
-    for (const tw of this.tweens.slice()) {
-      tw.t = Math.min(tw.dur, tw.t + sdt);
-      tw.fn(tw.dur > 0 ? tw.t / tw.dur : 1);
-      if (tw.t >= tw.dur) { this.tweens.splice(this.tweens.indexOf(tw), 1); tw.done(); }
+    if (this.tweens.length) {
+      for (const tw of this.tweens.slice()) {
+        tw.t = Math.min(tw.dur, tw.t + sdt);
+        tw.fn(tw.dur > 0 ? tw.t / tw.dur : 1);
+        if (tw.t >= tw.dur) { this.tweens.splice(this.tweens.indexOf(tw), 1); tw.done(); }
+      }
     }
     for (const it of this.items) it.update?.(sdt, t, this.s);
     this.stepFollow(sdt);
-    this.view.constrain();
     this.missiles.step(sdt);
     this.particles.step(sdt, this.view.renderer.getPixelRatio() * this.view.canvas.clientHeight * 0.5 * this.view.camera.projectionMatrix.elements[5]);
   }
@@ -540,6 +543,7 @@ export class Fx {
   /** A permanent great work drawn at a fixed scale: wall (3D ramparts with towers), canal, road or sea route. */
   work(o: { lines: LonLat[][]; kind: string; label?: string; labelAt?: LonLat | null }, layer: Layer = 'works'): void {
     const g = new THREE.Group();
+    g.matrixAutoUpdate = false;
     const it = this.add({ layer, obj: g, own: [] });
     const s = 0.55;
     for (const line of o.lines) {
@@ -551,6 +555,8 @@ export class Fx {
         const tower = new THREE.BoxGeometry(0.12 * s, 0.22 * s, 0.12 * s).translate(0, 0.11 * s, 0);
         const mat = new THREE.MeshStandardMaterial({ color: WORK.wall.c, roughness: 0.9, flatShading: true });
         const segs = new THREE.InstancedMesh(seg, mat, n), towers = new THREE.InstancedMesh(tower, mat, Math.ceil(n / 5));
+        segs.matrixAutoUpdate = false;
+        towers.matrixAutoUpdate = false;
         const q = new THREE.Quaternion(), v = new THREE.Vector3(), one = new THREE.Vector3(1, 1, 1), m = new THREE.Matrix4(), up = new THREE.Vector3(0, 1, 0);
         let ti = 0;
         for (let i = 0; i < n; i++) {
@@ -561,6 +567,8 @@ export class Fx {
           if (i % 5 === 0 && ti < towers.count) towers.setMatrixAt(ti++, m);
         }
         towers.count = ti;
+        segs.computeBoundingSphere();
+        if (ti > 0) towers.computeBoundingSphere();
         g.add(segs, towers);
         it.own.push(seg, tower, mat);
       } else {
@@ -568,6 +576,7 @@ export class Fx {
         const style = WORK[o.kind as keyof typeof WORK] ?? WORK.road;
         const rb = this.ribbon(path, style.w, style.c, style.a);
         rb.reveal(1);
+        rb.mesh.matrixAutoUpdate = false;
         g.add(rb.mesh);
         it.own.push(rb.mesh.geometry, rb.mat);
       }
@@ -1001,14 +1010,16 @@ export class Fx {
   }
 
   private follow: (() => THREE.Vector3) | null = null;
+  private followVec = new THREE.Vector3();
   /** While set, the camera target glides after the given point (marching armies, fleets). */
   followWith(get: (() => THREE.Vector3) | null): void { this.follow = get; }
   private stepFollow(dt: number): void {
     if (!this.follow || this.paused || this.view.flying) return;
     const p = this.follow(), t = this.view.controls.target;
-    const d = new THREE.Vector3(p.x - t.x, 0, p.z - t.z).multiplyScalar(1 - Math.exp(-dt * 1.8));
+    const d = this.followVec.set(p.x - t.x, 0, p.z - t.z).multiplyScalar(1 - Math.exp(-dt * 1.8));
     t.add(d);
     this.view.camera.position.add(d);
+    this.view.constrain();
   }
 
   /** Spawns a model rising out of the ground with a blob shadow and an optional label. */
@@ -1029,10 +1040,14 @@ export class Fx {
     const base = this.geo.pos(o.lon, o.lat, 0);
     if (!this.geo.isLand(o.lon, o.lat)) base.y = Math.max(-0.02, this.geo.height(o.lon, o.lat));
     g.position.copy(base);
+    g.updateMatrix();
+    g.matrixAutoUpdate = false;
     const sh = new THREE.Mesh(this.shadowGeo, this.shadowMat);
     sh.position.y = 0.006;
     sh.renderOrder = 2;
     sh.visible = false;
+    sh.updateMatrix();
+    sh.matrixAutoUpdate = false;
     g.add(sh);
     const it = this.add({ layer, obj: g, own: [] });
     let base0: THREE.Mesh | null = null;
@@ -1045,6 +1060,8 @@ export class Fx {
       base0 = new THREE.Mesh(this.baseRing, rmat);
       base0.renderOrder = INK.ring;
       base0.visible = false;
+      base0.updateMatrix();
+      base0.matrixAutoUpdate = false;
       g.add(base0);
     }
     if (o.label) {
@@ -1057,7 +1074,9 @@ export class Fx {
     if (!this.items.includes(it)) return null;
     g.visible = !this.hidden.has(layer);
     m.rotation.y = o.yaw ?? (Math.random() - 0.5) * 0.6;
-    if (this.farLod) setModelLod(m, true);
+    m.updateMatrix();
+    m.matrixAutoUpdate = false;
+    setModelLod(m, this.farLod);
     g.add(m);
     const rigs = rig(m);
     const seed = Math.random() * 10;
@@ -1082,8 +1101,13 @@ export class Fx {
         this.boundsDirty = true;
         const e = easeBack(grow);
         m.scale.setScalar(Math.max(0.001, z * e));
+        m.updateMatrix();
         sh.scale.setScalar(Math.max(0.001, z * r * 2.6 * Math.min(1, grow * 2)));
-        if (base0) base0.scale.setScalar(Math.max(0.001, z * THREE.MathUtils.clamp(r, 0.22, 0.5) * 1.15 * Math.min(1, grow * 2)));
+        sh.updateMatrix();
+        if (base0) {
+          base0.scale.setScalar(Math.max(0.001, z * THREE.MathUtils.clamp(r, 0.22, 0.5) * 1.15 * Math.min(1, grow * 2)));
+          base0.updateMatrix();
+        }
         m.visible = sh.visible = vis;
         if (base0) base0.visible = vis;
         ud.top = h * z * e; ud.rad = r * z; ud.shown = vis; ud.z = z;
@@ -1235,7 +1259,7 @@ class Missiles {
     this.arrows = new THREE.InstancedMesh(ag, new THREE.MeshBasicMaterial({ color: '#efe4c8' }), 400);
     this.stones = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 0), new THREE.MeshStandardMaterial({ color: '#4a4540', roughness: 0.9, flatShading: true }), 40);
     for (const m of [this.arrows, this.stones]) {
-      m.count = 0; m.visible = false; m.frustumCulled = false;
+      m.count = 0; m.visible = false; m.frustumCulled = false; m.matrixAutoUpdate = false;
       m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     }
   }
@@ -1432,60 +1456,62 @@ class Particles {
 
   step(dt: number, px: number): void {
     const [A, N] = this.pools;
-    for (const e of this.emitters.slice()) {
-      if (e.stop) { this.emitters.splice(this.emitters.indexOf(e), 1); continue; }
-      e.age += dt;
-      const s = e.scale();
-      const r = () => (Math.random() - 0.5) * 2;
-      e.acc += dt;
-      switch (e.kind) {
-        case 'battle':
-          while (e.acc > 0.03) {
-            e.acc -= 0.03;
-            const ox = r() * 0.5 * s, oz = r() * 0.5 * s;
-            for (let i = 0; i < 4; i++) A.spawn(e.p.x + ox, e.p.y + 0.05 * s, e.p.z + oz, r() * 0.6 * s, (0.5 + Math.random()) * 0.9 * s, r() * 0.6 * s, 0.5, 0.09 * s, Math.random() < 0.5 ? [1, 0.75, 0.2] : [1, 0.35, 0.1], 1.4);
-            if (Math.random() < 0.5) N.spawn(e.p.x + ox, e.p.y + 0.05 * s, e.p.z + oz, r() * 0.05 * s, 0.25 * s, r() * 0.05 * s, 2.2, 0.35 * s, [0.35, 0.32, 0.3], -0.05, 0.55);
-          }
-          break;
-        case 'fire':
-          while (e.acc > 0.02) {
-            e.acc -= 0.02;
-            A.spawn(e.p.x + r() * 0.35 * s, e.p.y, e.p.z + r() * 0.35 * s, r() * 0.05 * s, (0.4 + Math.random() * 0.4) * s, r() * 0.05 * s, 0.9, 0.22 * s, Math.random() < 0.6 ? [1, 0.5, 0.1] : [1, 0.85, 0.3], -0.1);
-            if (Math.random() < 0.25) N.spawn(e.p.x + r() * 0.2 * s, e.p.y + 0.3 * s, e.p.z + r() * 0.2 * s, r() * 0.06 * s, 0.35 * s, r() * 0.06 * s, 2.6, 0.4 * s, [0.25, 0.22, 0.2], -0.04, 0.5);
-          }
-          break;
-        case 'smoke':
-          while (e.acc > 0.06) {
-            e.acc -= 0.06;
-            N.spawn(e.p.x + r() * 0.25 * s, e.p.y, e.p.z + r() * 0.25 * s, r() * 0.06 * s, 0.3 * s, r() * 0.06 * s, 3.2, 0.45 * s, [0.45, 0.42, 0.4], -0.02, 0.5);
-          }
-          break;
-        case 'dust':
-          while (e.acc > 0.05) {
-            e.acc -= 0.05;
-            if (e.k <= 0) continue;
-            N.spawn(e.p.x + r() * 0.25 * s, e.p.y + 0.02 * s, e.p.z + r() * 0.25 * s, r() * 0.08 * s, 0.12 * s, r() * 0.08 * s, 2.0, 0.42 * s, [0.72, 0.62, 0.46], -0.02, 0.42);
-          }
-          break;
-        case 'wake':
-          while (e.acc > 0.07) {
-            e.acc -= 0.07;
-            if (e.k <= 0.3 && Math.random() > e.k) continue;
-            N.spawn(e.p.x + r() * 0.04 * s, e.p.y, e.p.z + r() * 0.04 * s, r() * 0.05 * s, 0, r() * 0.05 * s, 2.4, 0.16 * s, [0.97, 0.98, 1], 0, 0.6);
-          }
-          break;
-        case 'firework':
-          while (e.acc > 0.45) {
-            e.acc -= 0.45;
-            const c = new THREE.Color(e.color && Math.random() < 0.4 ? e.color : new THREE.Color().setHSL(Math.random(), 0.9, 0.6));
-            const cx = e.p.x + r() * 0.8 * s, cy = e.p.y + (1.2 + Math.random() * 0.8) * s, cz = e.p.z + r() * 0.8 * s;
-            for (let i = 0; i < 70; i++) {
-              const th = Math.random() * Math.PI * 2, ph = Math.acos(r());
-              const v = (0.7 + Math.random() * 0.3) * 0.9 * s;
-              A.spawn(cx, cy, cz, Math.sin(ph) * Math.cos(th) * v, Math.cos(ph) * v, Math.sin(ph) * Math.sin(th) * v, 1.3, 0.09 * s, [c.r, c.g, c.b], 0.9);
+    if (this.emitters.length) {
+      for (const e of this.emitters.slice()) {
+        if (e.stop) { this.emitters.splice(this.emitters.indexOf(e), 1); continue; }
+        e.age += dt;
+        const s = e.scale();
+        const r = () => (Math.random() - 0.5) * 2;
+        e.acc += dt;
+        switch (e.kind) {
+          case 'battle':
+            while (e.acc > 0.03) {
+              e.acc -= 0.03;
+              const ox = r() * 0.5 * s, oz = r() * 0.5 * s;
+              for (let i = 0; i < 4; i++) A.spawn(e.p.x + ox, e.p.y + 0.05 * s, e.p.z + oz, r() * 0.6 * s, (0.5 + Math.random()) * 0.9 * s, r() * 0.6 * s, 0.5, 0.09 * s, Math.random() < 0.5 ? [1, 0.75, 0.2] : [1, 0.35, 0.1], 1.4);
+              if (Math.random() < 0.5) N.spawn(e.p.x + ox, e.p.y + 0.05 * s, e.p.z + oz, r() * 0.05 * s, 0.25 * s, r() * 0.05 * s, 2.2, 0.35 * s, [0.35, 0.32, 0.3], -0.05, 0.55);
             }
-          }
-          break;
+            break;
+          case 'fire':
+            while (e.acc > 0.02) {
+              e.acc -= 0.02;
+              A.spawn(e.p.x + r() * 0.35 * s, e.p.y, e.p.z + r() * 0.35 * s, r() * 0.05 * s, (0.4 + Math.random() * 0.4) * s, r() * 0.05 * s, 0.9, 0.22 * s, Math.random() < 0.6 ? [1, 0.5, 0.1] : [1, 0.85, 0.3], -0.1);
+              if (Math.random() < 0.25) N.spawn(e.p.x + r() * 0.2 * s, e.p.y + 0.3 * s, e.p.z + r() * 0.2 * s, r() * 0.06 * s, 0.35 * s, r() * 0.06 * s, 2.6, 0.4 * s, [0.25, 0.22, 0.2], -0.04, 0.5);
+            }
+            break;
+          case 'smoke':
+            while (e.acc > 0.06) {
+              e.acc -= 0.06;
+              N.spawn(e.p.x + r() * 0.25 * s, e.p.y, e.p.z + r() * 0.25 * s, r() * 0.06 * s, 0.3 * s, r() * 0.06 * s, 3.2, 0.45 * s, [0.45, 0.42, 0.4], -0.02, 0.5);
+            }
+            break;
+          case 'dust':
+            while (e.acc > 0.05) {
+              e.acc -= 0.05;
+              if (e.k <= 0) continue;
+              N.spawn(e.p.x + r() * 0.25 * s, e.p.y + 0.02 * s, e.p.z + r() * 0.25 * s, r() * 0.08 * s, 0.12 * s, r() * 0.08 * s, 2.0, 0.42 * s, [0.72, 0.62, 0.46], -0.02, 0.42);
+            }
+            break;
+          case 'wake':
+            while (e.acc > 0.07) {
+              e.acc -= 0.07;
+              if (e.k <= 0.3 && Math.random() > e.k) continue;
+              N.spawn(e.p.x + r() * 0.04 * s, e.p.y, e.p.z + r() * 0.04 * s, r() * 0.05 * s, 0, r() * 0.05 * s, 2.4, 0.16 * s, [0.97, 0.98, 1], 0, 0.6);
+            }
+            break;
+          case 'firework':
+            while (e.acc > 0.45) {
+              e.acc -= 0.45;
+              const c = new THREE.Color(e.color && Math.random() < 0.4 ? e.color : new THREE.Color().setHSL(Math.random(), 0.9, 0.6));
+              const cx = e.p.x + r() * 0.8 * s, cy = e.p.y + (1.2 + Math.random() * 0.8) * s, cz = e.p.z + r() * 0.8 * s;
+              for (let i = 0; i < 70; i++) {
+                const th = Math.random() * Math.PI * 2, ph = Math.acos(r());
+                const v = (0.7 + Math.random() * 0.3) * 0.9 * s;
+                A.spawn(cx, cy, cz, Math.sin(ph) * Math.cos(th) * v, Math.cos(ph) * v, Math.sin(ph) * Math.sin(th) * v, 1.3, 0.09 * s, [c.r, c.g, c.b], 0.9);
+              }
+            }
+            break;
+        }
       }
     }
     for (const p of this.pools) p.step(dt, px);
@@ -1530,6 +1556,7 @@ class Pool {
     this.points = new THREE.Points(g, this.mat);
     this.points.visible = false;
     this.points.frustumCulled = false;
+    this.points.matrixAutoUpdate = false;
     this.points.renderOrder = additive ? 7 : 6;
   }
 

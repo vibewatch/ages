@@ -35,12 +35,13 @@ export class TerritoryDetail {
   private static reach(dist: number): number { return Math.max(1.2, dist * 0.8); }
 
   private tick(dt: number): void {
-    const p = this.view.pose();
+    const dist = this.view.camera.position.distanceTo(this.view.controls.target);
     const k = this.u.uTDOn;
-    const on = this.cur && p.dist <= DIST ? 1 : 0;
-    k.value += (on - k.value) * Math.min(1, dt * 4);
+    const on = this.cur && dist <= DIST ? 1 : 0;
+    if (k.value !== on) k.value += (on - k.value) * Math.min(1, dt * 4);
     if ((this.acc += dt) < 0.2) return;
     this.acc = 0;
+    const p = this.view.pose();
     const R = TerritoryDetail.reach(p.dist), l = this.last;
     const moved = Math.abs(p.lon - l.lon) > R * 0.03 || Math.abs(p.lat - l.lat) > R * 0.03 || Math.abs(p.dist / (l.dist || 1) - 1) > 0.03;
     this.last = { lon: p.lon, lat: p.lat, dist: p.dist };

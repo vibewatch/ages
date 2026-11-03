@@ -224,11 +224,30 @@ export class Atlas {
   }
 
   private static onMap(m: MapTarget): boolean {
-    return Atlas.live(m) || [m.label, m.nameLabel].some(l => l?.shown && l.el.isConnected);
+    return Atlas.live(m) || !!(m.label.shown && m.label.el.isConnected) || !!(m.nameLabel?.shown && m.nameLabel.el.isConnected);
   }
 
   private isSelected(m: MapTarget): boolean {
-    return m.key === this.selKey || this.marks.some(mark => mark.key === m.key && mark.aliases?.includes(this.selKey ?? ''));
+    const sel = this.selKey;
+    if (!sel) return false;
+    if (m.key === sel) return true;
+    if ('aliases' in m) return !!(m as Mark).aliases?.includes(sel);
+    return this.marks.some(mark => mark.key === m.key && mark.aliases?.includes(sel));
+  }
+
+  private findSelectedTarget(): MapTarget | undefined {
+    const sel = this.selKey;
+    if (!sel) return undefined;
+    if (sel.startsWith('place:')) {
+      const p = this.places.get(sel.slice(6));
+      if (p && Atlas.onMap(p)) return p;
+    } else if (sel.startsWith('event:')) {
+      const e = this.pins.get(sel.slice(6));
+      if (e && Atlas.onMap(e)) return e;
+    }
+    for (const m of this.places.values()) if (this.isSelected(m) && Atlas.onMap(m)) return m;
+    for (const m of this.pins.values()) if (this.isSelected(m) && Atlas.onMap(m)) return m;
+    return undefined;
   }
 
   private resolveTarget(target: MapTarget): MapTarget {
@@ -298,8 +317,7 @@ export class Atlas {
     const min = mdl?.userData.min as [number, number, number] | undefined;
     const max = mdl?.userData.max as [number, number, number] | undefined;
     if (mdl && min && max) {
-      m.g.updateWorldMatrix(true, false);
-      mdl.updateWorldMatrix(false, false);
+      m.g.updateMatrixWorld();
       const mw = mdl.matrixWorld;
       for (let i = 0; i < 8; i++) {
         v.set(i & 1 ? max[0] : min[0], i & 2 ? max[1] : min[1], i & 4 ? max[2] : min[2]).applyMatrix4(mw);
@@ -361,7 +379,7 @@ export class Atlas {
         l.el.classList.toggle('model-hit', model);
         l.el.style.width = ''; l.el.style.height = '';
         l.tw = undefined; l.th = undefined;
-        this.labels.remeasure();
+        this.labels.remeasure(l);
       }
       setAttr(l.el, 'aria-pressed', selected ? 'true' : 'false');
       m.g.visible = false;
@@ -390,7 +408,7 @@ export class Atlas {
       const l = target.label, modeled = !!l.model;
       if (l.el.classList.contains('modeled') !== modeled) {
         l.el.classList.toggle('modeled', modeled);
-        this.labels.remeasure();
+        this.labels.remeasure(l);
       }
     }
     this.labels.layout(models);
@@ -407,6 +425,8 @@ export class Atlas {
   }
 
   private camMoving(): boolean { return this.camStill === 0; }
+
+  private frameVec = new THREE.Vector3();
 
   /** Halos, hover growth and the tooltip follow their objects every frame (models grow as the camera zooms). */
   private frameMarks(dt: number): void {
@@ -433,7 +453,7 @@ export class Atlas {
     const h = this.hover;
     if (h && 'target' in h && (!Atlas.onMap(h.target) || this.storyMode || this.pickHandler)) this.setHover(null);
     const minR = this.fx.s * 0.42;
-    const v = new THREE.Vector3();
+    const v = this.frameVec;
     const hv = this.hover;
     if (hv) {
       let lift = 0;
@@ -456,7 +476,7 @@ export class Atlas {
     this.hoverHalo.on = !!hv && 'target' in hv && Atlas.live(hv.target) && !this.isSelected(hv.target) && !this.storyMode;
     // the selection ring sits under the open card's object, or at its spot on the map
     const sm = this.selKey ? this.marks.find(m => this.isSelected(m) && Atlas.onMap(m)) : undefined;
-    const target = sm ?? (this.selKey ? [...this.places.values(), ...this.pins.values()].find(m => this.isSelected(m) && Atlas.onMap(m)) : undefined);
+    const target = sm ?? this.findSelectedTarget();
     if (sm && !Atlas.live(sm)) {
       this.selHalo.place(sm.label.pos.x, sm.label.pos.z, minR * 0.9);
     } else if (sm) {

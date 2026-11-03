@@ -214,6 +214,21 @@ test.describe('Ages atlas', () => {
         missiles.arrows.instanceMatrix.version, missiles.stones.instanceMatrix.version,
       ].join(',');
       try {
+        check(!a.view.scene.matrixAutoUpdate && !a.fx.root.matrixAutoUpdate, 'Scene and fx root must freeze auto matrix updates');
+        r.render(a.view.scene, a.view.camera);
+        let forced = 0;
+        const origMul = a.terrain.mesh.matrixWorld.multiplyMatrices;
+        a.terrain.mesh.matrixWorld.multiplyMatrices = function (...args: any[]) {
+          forced++;
+          return origMul.apply(this, args);
+        };
+        try {
+          r.render(a.view.scene, a.view.camera);
+        } finally {
+          a.terrain.mesh.matrixWorld.multiplyMatrices = origMul;
+        }
+        check(forced === 0, 'Static terrain mesh must not recompute matrixWorld on subsequent renders');
+
         step(0.1); draw();
         check(r.info.render.calls === 0 && bytes === 0, 'Empty pools must not draw or upload');
         spawn(0.2); spawn(2);

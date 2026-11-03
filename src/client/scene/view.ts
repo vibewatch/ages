@@ -55,19 +55,21 @@ export class View {
     c.zoomToCursor = true;
     c.addEventListener('start', () => this.cancelFlight());
 
+    this.scene.matrixAutoUpdate = false;
     this.scene.add(this.sky);
 
     // studio-style lighting for the miniatures (the terrain shader does its own hillshade and ignores these):
     // a warm key from the front-left over the camera's shoulder (the default view looks north), a cool fill from
     // the other side, a rim from behind, and the procedural sky environment for soft light and real reflections
-    this.scene.add(new THREE.HemisphereLight('#eef4ff', '#5a4c38', 0.9));
+    const hemi = new THREE.HemisphereLight('#eef4ff', '#5a4c38', 0.9);
     const key = new THREE.DirectionalLight('#fff4e0', 2.8);
     key.position.set(-24, 46, 34);
     const fill = new THREE.DirectionalLight('#c7d6ff', 0.9);
     fill.position.set(30, 22, 18);
     const rim = new THREE.DirectionalLight('#ffe7b0', 1.1);
     rim.position.set(6, 30, -40);
-    this.scene.add(key, fill, rim);
+    this.scene.add(hemi, key, fill, rim);
+    for (const l of [hemi, key, fill, rim]) { l.updateMatrix(); l.matrixAutoUpdate = false; }
     this.scene.environment = outdoorEnvironment(this.renderer);
     this.scene.environmentIntensity = 0.7;
     this.renderer.toneMapping = THREE.NeutralToneMapping;
@@ -128,6 +130,7 @@ export class View {
     const { x, y } = this.inset;
     if (Math.abs(x) < 0.5 && Math.abs(y) < 0.5) this.camera.clearViewOffset();
     else this.camera.setViewOffset(w, h, x, y, w, h);
+    this.projScreenMatrix.multiplyMatrices(this.camera.projectionMatrix, this.camera.matrixWorldInverse);
     this.constrainDirty = true;
     this.projVersion++;
   }
@@ -146,6 +149,10 @@ export class View {
   private ndc = [[-1, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [1, 1], [0, 1]] as const;
   private ndcVec = new THREE.Vector2();
   private hit = new THREE.Vector3();
+  private tmpVec = new THREE.Vector3();
+  private tmpSph = new THREE.Spherical();
+  private tiltSph = new THREE.Spherical();
+  private projScreenMatrix = new THREE.Matrix4();
   private lastCamPos = new THREE.Vector3(Infinity, Infinity, Infinity);
   private lastCamQuat = new THREE.Quaternion();
   private lastTarget = new THREE.Vector3(Infinity, Infinity, Infinity);
@@ -169,7 +176,7 @@ export class View {
     const W = g.width / 2 - EDGE_FADE * g.kx, D = g.depth / 2 - EDGE_FADE;
     const hadOffset = Math.abs(this.inset.x) >= 0.5 || Math.abs(this.inset.y) >= 0.5;
     if (hadOffset) cam.clearViewOffset();
-    const sph = new THREE.Spherical().setFromVector3(cam.position.clone().sub(t));
+    const sph = this.tmpSph.setFromVector3(this.tmpVec.subVectors(cam.position, t));
     const rotated = Math.abs(sph.theta) > 1e-4;
     if (rotated) {
       cam.position.set(t.x, sph.radius * Math.cos(sph.phi), t.z + sph.radius * Math.sin(sph.phi));
@@ -215,6 +222,7 @@ export class View {
     }
     this.clampTilt(W, D);
     cam.updateMatrixWorld();
+    this.projScreenMatrix.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
     this.lastCamPos.copy(cam.position);
     this.lastCamQuat.copy(cam.quaternion);
     this.lastTarget.copy(t);
@@ -226,9 +234,11 @@ export class View {
    */
   private clampTilt(W: number, D: number): void {
     const t = this.controls.target, cam = this.camera;
-    const sph = new THREE.Spherical().setFromVector3(cam.position.clone().sub(t));
+    const sph = this.tmpSph.setFromVector3(this.tmpVec.subVectors(cam.position, t));
+    const ts = this.tiltSph;
     const at = (phi: number): boolean => {
-      cam.position.setFromSpherical(new THREE.Spherical(sph.radius, phi, sph.theta)).add(t);
+      ts.set(sph.radius, phi, sph.theta);
+      cam.position.setFromSpherical(ts).add(t);
       cam.lookAt(t);
       cam.updateMatrixWorld();
       for (const nx of [-1, 0, 1]) {
@@ -249,16 +259,16 @@ export class View {
   /** Current pose as lon/lat/dist/tilt/heading. */
   pose(): Required<CamPose> {
     const t = this.controls.target;
-    const off = this.camera.position.clone().sub(t);
-    const s = new THREE.Spherical().setFromVector3(off);
+    const s = this.tmpSph.setFromVector3(this.tmpVec.subVectors(this.camera.position, t));
     return { lon: this.geo.lon(t.x), lat: this.geo.lat(t.z), dist: s.radius, tilt: s.phi, heading: s.theta };
   }
 
   private apply(p: Required<CamPose>): void {
-    const tgt = new THREE.Vector3(this.geo.x(p.lon), 0, this.geo.z(p.lat));
-    this.controls.target.copy(tgt);
-    this.camera.position.copy(tgt).add(new THREE.Vector3().setFromSpherical(new THREE.Spherical(p.dist, p.tilt, p.heading)));
+    const tgt = this.controls.target.set(this.geo.x(p.lon), 0, this.geo.z(p.lat));
+    this.camera.position.setFromSpherical(this.tmpSph.set(p.dist, p.tilt, p.heading)).add(tgt);
     this.camera.lookAt(tgt);
+    this.camera.updateMatrixWorld();
+    this.projScreenMatrix.multiplyMatrices(this.camera.projectionMatrix, this.camera.matrixWorldInverse);
   }
 
   jump(p: CamPose): void {
@@ -323,14 +333,14 @@ export class View {
   /** lon/lat under a client-space point, or null. */
   pick(clientX: number, clientY: number): [number, number] | null {
     const r = this.canvas.getBoundingClientRect();
-    const ndc = new THREE.Vector2(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1);
-    this.raycaster.setFromCamera(ndc, this.camera);
+    this.ndcVec.set(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1);
+    this.raycaster.setFromCamera(this.ndcVec, this.camera);
     return this.geo.pick(this.raycaster.ray);
   }
 
   /** Projects a world point to CSS pixels in the canvas; z > 1 means behind the camera. */
   project(v: THREE.Vector3, out: THREE.Vector3 = new THREE.Vector3()): THREE.Vector3 {
-    out.copy(v).project(this.camera);
+    out.copy(v).applyMatrix4(this.projScreenMatrix);
     out.x = (out.x * 0.5 + 0.5) * this.cssW;
     out.y = (-out.y * 0.5 + 0.5) * this.cssH;
     return out;
@@ -338,7 +348,8 @@ export class View {
 
   private frame(): void {
     const now = performance.now() / 1000;
-    const dt = this.last < 0 ? 0 : Math.min(0.25, now - this.last);
+    const rawDt = this.last < 0 ? 0 : now - this.last;
+    const dt = Math.min(0.25, rawDt);
     this.last = now;
     this.elapsed += dt;
     this.stepInset(dt);
@@ -349,7 +360,7 @@ export class View {
     this.sky.position.copy(this.camera.position);
     this.renderer.render(this.scene, this.camera);
     this.frames++;
-    this.adapt(dt);
+    this.adapt(rawDt);
   }
 
   /**
@@ -358,9 +369,9 @@ export class View {
    * browsers keep a fixed scale so screenshots stay comparable.
    */
   private adapt(dt: number): void {
-    if (dt <= 0 || dt > 0.2 || document.hidden || navigator.webdriver) return;
+    if (dt <= 0 || dt > 1 || document.hidden || navigator.webdriver) return;
     const p = this.perf;
-    p.t += dt; p.n++;
+    p.t += Math.min(dt, 0.5); p.n++;
     if (p.t < 2) return;
     const avg = p.t / p.n;
     p.t = 0; p.n = 0;

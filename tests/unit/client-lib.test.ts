@@ -1,7 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import * as THREE from 'three';
 import { readLink } from '../../src/client/lib/link.ts';
 import { load, save } from '../../src/client/lib/storage.ts';
 import { articleUrl, parseExtract } from '../../src/client/lib/wikipedia.ts';
+import { bakeStaticMeshes } from '../../src/client/models/pp-kit.ts';
+import { packModel, unpackModel } from '../../src/client/models/pack.ts';
+import { animate, rig } from '../../src/client/scene/animate.ts';
 import { deploy, shape } from '../../src/client/scene/formation.ts';
 import { declutter, type LayoutItem } from '../../src/client/scene/layout.ts';
 import { growthField } from '../../src/client/scene/morph.ts';
@@ -200,3 +204,61 @@ describe('border morph', () => {
     expect(f[5]).toBe(1);
   });
 });
+
+describe('3D scene-graph baking and static matrix freezing', () => {
+  it('merges nested static emissive meshes, marks tiny detail meshes for LOD hide, prunes empty groups, and freezes child matrices', () => {
+    const root = new THREE.Group();
+    const inner = new THREE.Group();
+    inner.scale.setScalar(1.4);
+    root.add(inner);
+
+    const baseMat = new THREE.MeshStandardMaterial({ color: '#886644' });
+    const glowMat = new THREE.MeshStandardMaterial({ color: '#ffaa22', emissive: '#ff8800', emissiveIntensity: 0.6 });
+    const tinyMat = new THREE.MeshStandardMaterial({ color: '#22aaff', transparent: true, opacity: 0.5 });
+
+    const sub = new THREE.Group();
+    inner.add(sub);
+    sub.add(new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2), baseMat));
+    sub.add(new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), glowMat));
+    const glow2 = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), glowMat);
+    glow2.position.set(0.5, 0, 0);
+    sub.add(glow2);
+    const tiny = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.01, 0.01), tinyMat);
+    inner.add(tiny);
+
+    bakeStaticMeshes(root);
+
+    // Empty sub-group was pruned after its static and emissive meshes were merged into root
+    expect(inner.children).not.toContain(sub);
+    // Tiny unmerged transparent detail mesh is tagged for far-LOD hiding
+    expect(tiny.userData.lodHide).toBe(true);
+    // The two nested glowMat meshes were merged into a single mesh
+    let glowCount = 0;
+    root.traverse(o => {
+      if ((o as THREE.Mesh).isMesh && (o as THREE.Mesh).material === glowMat) glowCount++;
+      if (o !== root) expect(o.matrixAutoUpdate).toBe(false);
+    });
+    expect(glowCount).toBe(1);
+
+    const unpacked = unpackModel(packModel(root).model);
+    unpacked.traverse(o => {
+      if (o !== unpacked) expect(o.matrixAutoUpdate).toBe(false);
+    });
+  });
+
+  it('updates local matrices on animated rig parts when matrixAutoUpdate is false', () => {
+    const root = new THREE.Group();
+    const spin = new THREE.Group();
+    spin.name = 'spin';
+    spin.matrixAutoUpdate = false;
+    root.add(spin);
+
+    const rigs = rig(root);
+    expect(rigs).toHaveLength(1);
+    spin.matrixWorldNeedsUpdate = false;
+    animate(rigs, 1.5, 0);
+    expect(spin.rotation.x).toBeCloseTo(1.5 * 2);
+    expect(spin.matrixWorldNeedsUpdate).toBe(true);
+  });
+});
+

@@ -293,7 +293,7 @@ export function bakeStaticMeshes(gp: THREE.Group): void {
         const [rough, metal] = m.userData.autoPbr && !hasVC ? inferPbr(m.color) : [m.roughness ?? 0.66, m.metalness ?? 0];
         append(isDetail(mesh) ? b.detail : b.main, mesh, m.color, rough, metal, !!m.userData.autoPbr && hasVC);
         toRemove.push(mesh);
-      } else if (m && !Array.isArray(m) && mesh.parent === gp && !mesh.geometry.morphAttributes.position) {
+      } else if (m && !Array.isArray(m) && !mesh.geometry.morphAttributes.position) {
         let l = extra.get(m);
         if (!l) extra.set(m, (l = []));
         l.push(mesh);
@@ -354,8 +354,23 @@ export function bakeStaticMeshes(gp: THREE.Group): void {
     merged.receiveShadow = first.receiveShadow;
     merged.frustumCulled = meshes.every(x => x.frustumCulled);
     if (!pair.main.pos.length) merged.userData.lodHide = true;
-    for (const x of meshes) gp.remove(x);
+    for (const x of meshes) x.parent?.remove(x);
     gp.add(merged);
   }
+
+  const pruneEmpty = (o: THREE.Object3D) => {
+    for (let i = o.children.length - 1; i >= 0; i--) {
+      const c = o.children[i];
+      pruneEmpty(c);
+      if (!(c as THREE.Mesh).isMesh && c.children.length === 0) o.remove(c);
+    }
+  };
+  pruneEmpty(gp);
+  gp.traverse(o => {
+    if (o !== gp) {
+      o.updateMatrix();
+      o.matrixAutoUpdate = false;
+    }
+  });
 }
 

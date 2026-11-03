@@ -49,9 +49,11 @@ export function animate(rigs: Rig[], t: number, seed = 0): void {
           const k = (t * 0.35 + i / o.children.length + seed) % 1;
           c.position.set(Math.sin(k * 5 + i) * size * 0.6, k * size * 7, Math.cos(k * 4 + i) * size * 0.4);
           c.scale.setScalar(size * (0.6 + k * 2.2) * (k > 0.85 ? (1 - k) / 0.15 : 1));
+          c.updateMatrix();
         });
         break;
       }
     }
+    if (r.kind !== 'smoke') o.updateMatrix();
   }
 }

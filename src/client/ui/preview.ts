@@ -42,15 +42,18 @@ export class Preview {
     }
   }
 
+  private sizeVec = new THREE.Vector2();
+
   constructor(private still: boolean) {
     this.canvas = document.createElement('canvas');
     this.canvas.className = 'pv-gl';
+    this.scene.matrixAutoUpdate = false;
     this.scene.add(this.turn);
     // pocket-planet's 3-point studio rig: warm key (casts the shadow), cool fill, golden rim, dim sky/ground bounce
     const key = new THREE.DirectionalLight('#fffbeb', 3.0);
     key.position.set(2.8, 4.2, 3.4);
-    key.castShadow = true;
-    key.shadow.mapSize.set(1024, 1024);
+    key.castShadow = !still;
+    key.shadow.mapSize.set(512, 512);
     const c = key.shadow.camera;
     c.left = c.bottom = -2.2; c.right = c.top = 2.2; c.near = 1; c.far = 12;
     key.shadow.normalBias = 0.01;
@@ -59,24 +62,26 @@ export class Preview {
     fill.position.set(-3.2, 1.8, -2.0);
     const rim = new THREE.DirectionalLight('#fde68a', 0.9);
     rim.position.set(0.5, 2.5, -3.5);
-    this.scene.add(key, fill, rim, new THREE.HemisphereLight('#e0f2fe', '#2a2219', 0.35));
+    const hemi = new THREE.HemisphereLight('#e0f2fe', '#2a2219', 0.35);
+    this.scene.add(key, fill, rim, hemi);
     // models bring their own base; an invisible floor only catches a soft contact shadow
     const floor = new THREE.Mesh(new THREE.CircleGeometry(2.4, 48).rotateX(-Math.PI / 2), new THREE.ShadowMaterial({ opacity: 0.18 }));
-    floor.receiveShadow = true;
+    floor.receiveShadow = !still;
     this.scene.add(floor);
+    for (const o of [key, fill, rim, hemi, floor]) { o.updateMatrix(); o.matrixAutoUpdate = false; }
     this.bindDrag();
   }
 
   private ensure(): THREE.WebGLRenderer | null {
     if (this.renderer) return this.renderer;
     try {
-      const r = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true, alpha: true });
-      r.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      const r = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: !this.still, alpha: true, powerPreference: this.still ? 'low-power' : 'default' });
+      r.setPixelRatio(this.still ? 1 : Math.min(window.devicePixelRatio || 1, 2));
       r.debug.checkShaderErrors = import.meta.env.DEV;
       r.outputColorSpace = THREE.SRGBColorSpace;
       r.toneMapping = THREE.NeutralToneMapping;
       r.toneMappingExposure = 0.95;
-      r.shadowMap.enabled = true;
+      r.shadowMap.enabled = !this.still;
       r.shadowMap.type = THREE.PCFShadowMap;
       this.scene.environment = outdoorEnvironment(r);
       this.scene.environmentIntensity = 0.55;
@@ -174,7 +179,7 @@ export class Preview {
     const r = this.renderer!;
     const w = this.canvas.clientWidth, h = this.canvas.clientHeight;
     if (!w || !h) return;
-    const s = r.getSize(new THREE.Vector2());
+    const s = r.getSize(this.sizeVec);
     if (s.x !== w || s.y !== h) { r.setSize(w, h, false); this.cam.aspect = w / h; this.cam.updateProjectionMatrix(); }
     r.render(this.scene, this.cam);
     this.dirty = false;
