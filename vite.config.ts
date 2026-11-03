@@ -15,7 +15,7 @@ function serviceWorker(): Plugin {
       const files = readdirSync(outDir, { recursive: true, withFileTypes: true })
         .filter(d => d.isFile())
         .map(d => relative(outDir, join(d.parentPath, d.name)).split(sep).join('/'))
-        .filter(f => f !== 'sw.js' && f !== 'index.html' && !f.endsWith('.map'))
+        .filter(f => f !== 'sw.js' && f !== 'index.html' && f !== 'CNAME' && f !== '.nojekyll' && !f.endsWith('.map'))
         .sort();
       const hash = createHash('sha256');
       for (const f of files) hash.update(f).update(readFileSync(join(outDir, f)));
@@ -38,12 +38,13 @@ export default defineConfig({
   preview: { port: 4173 },
   build: {
     target: 'es2022',
-    chunkSizeWarningLimit: 1200,
+    chunkSizeWarningLimit: 1350,
     rollupOptions: {
       output: {
         manualChunks: id => {
           if (id.includes('/node_modules/three/')) return 'three';
-          if (id.includes('/src/shared/data/jiangshan') || id.includes('/src/shared/data/lessons')) return 'atlas-chronicle';
+          if (id.includes('/src/shared/data/lessons')) return 'atlas-lessons';
+          if (id.includes('/src/shared/data/jiangshan')) return 'atlas-chronicle';
           if (id.includes('/src/shared/data/')) return 'atlas-data';
           return undefined;
         },
