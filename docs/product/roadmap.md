@@ -1,16 +1,14 @@
 # Roadmap
 
-## Next round: make the existing atlas easier to learn from
+## Completed round: make the existing atlas easier to learn from
 
-The app already has bilingual event/figure/place cards, courses, quizzes, stories, journeys and offline support.
-Prioritize connecting those capabilities rather than adding more isolated content or another renderer.
-These are proposed features, not implemented functionality.
+The app connects bilingual event/figure/place cards, courses, quizzes, stories, journeys and offline support with three core learning workflows (now implemented):
 
-| Order | Feature | First release scope | Completion criteria |
+| Order | Feature | Scope | Status |
 |---|---|---|---|
-| 1 | Sources and historical uncertainty | Add structured references and approximate/disputed-date notes to core curriculum event cards and territorial phase details; distinguish curated, imported and schematic material. Pilot Qin unification, the Tang period and modern boundary snapshots. | References are visible in both UI languages, bundled notes work offline, and coverage checks flag missing metadata. Never imply that a teaching boundary or disputed ancient date is exact. |
-| 2 | Compare two periods | Let students choose two existing territorial snapshots and toggle A/B on one fixed camera, with dates, capitals, area change and a short explanation. Extend the existing ghost-border layer; defer split-screen rendering. | A shareable link restores both snapshots; comparisons work on phones and offline without a second WebGL renderer. Area differences are labelled approximate and use compatible data. |
-| 3 | Continue learning and review mistakes | Resume the last lesson step; save missed question IDs and offer a short review session using existing explanations and event links. Keep progress local, with versioned export/import and a reset action. | Reload resumes the right lesson/language; retaking a question does not inflate completion; invalid or outdated imports fail safely; no account is required. |
+| 1 | Sources and historical uncertainty | Structured references (`src/shared/data/sources.ts`), primary historiography citations, and approximate/disputed-date & boundary notes on event cards (`[data-testid="card-sources"]`) and territorial phase details (`[data-testid="period-sources"]`), distinguishing curated, imported and schematic material. | Implemented |
+| 2 | Compare two periods | Students can choose any two territorial snapshots (`[data-testid="period-compare"]`) and toggle/swap A/B on the shared 3D camera, with dates, capitals, approximate area delta, dashed ghost-border overlay, and shareable `#cmp=` deep links. | Implemented |
+| 3 | Continue learning and review mistakes | Resumes the last unfinished lesson step (`resume-lesson`), saves missed event IDs for a dedicated mistake-review quiz (`review-mistakes`) with post-answer explanations and event card links, and provides versioned local progress export/import/reset (`progress-backup`). | Implemented |
 
 ### Suggested delivery
 

@@ -4,16 +4,17 @@
  */
 import type { Lang } from '../../shared/data/types.ts';
 
-export interface LinkState { event?: string; place?: string; person?: string; life?: string; journey?: string; lesson?: string; year?: number; lang?: Lang }
+export interface LinkState { event?: string; place?: string; person?: string; life?: string; journey?: string; lesson?: string; year?: number; compare?: number; lang?: Lang }
 
 export function readLink(hash = location.hash, search = typeof location === 'undefined' ? '' : location.search): LinkState {
   const out: LinkState = {};
   for (const [i, p] of [new URLSearchParams(search), new URLSearchParams(hash.replace(/^#/, ''))].entries()) {
     const e = p.get('e') ?? p.get('event'), pl = p.get('p') ?? p.get('place'), pe = p.get('person'), li = p.get('life'), j = p.get('j') ?? p.get('journey'), le = p.get('lesson');
-    const y = p.get('y') ?? p.get('year'), l = p.get('lang');
+    const y = p.get('y') ?? p.get('year'), cmp = p.get('cmp') ?? p.get('compare'), l = p.get('lang');
     const year = y && /^-?\d+$/.test(y) ? Number(y) : null;
+    const compare = cmp && /^-?\d+$/.test(cmp) ? Number(cmp) : null;
     if (i && (e || pl || pe || li || j || le || (year !== null && Number.isSafeInteger(year)))) {
-      delete out.event; delete out.place; delete out.person; delete out.life; delete out.journey; delete out.lesson;
+      delete out.event; delete out.place; delete out.person; delete out.life; delete out.journey; delete out.lesson; delete out.compare;
     }
     if (e) out.event = e;
     if (pl) out.place = pl;
@@ -22,6 +23,7 @@ export function readLink(hash = location.hash, search = typeof location === 'und
     if (j) out.journey = j;
     if (le) out.lesson = le;
     if (year !== null && Number.isSafeInteger(year)) out.year = year;
+    if (compare !== null && Number.isSafeInteger(compare)) out.compare = compare;
     if (l === 'zh' || l === 'en') out.lang = l;
   }
   return out;
@@ -36,6 +38,7 @@ export function writeLink(s: LinkState): void {
   else if (s.life) p.set('life', s.life);
   else if (s.journey) p.set('j', s.journey);
   else if (s.year != null) p.set('y', String(Math.round(s.year)));
+  if (s.compare != null && Number.isFinite(s.compare)) p.set('cmp', String(Math.round(s.compare)));
   if (s.lang) p.set('lang', s.lang);
   const h = '#' + p.toString();
   if (h !== location.hash) history.replaceState(null, '', h === '#' ? location.pathname + location.search : h);

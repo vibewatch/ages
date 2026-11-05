@@ -14,6 +14,7 @@ import { Preview } from './preview.ts';
 import { capitalModel, personModel, placeModel } from '../../shared/data/heroes.ts';
 import { LIFE, lifeOf, type LifeItem, type LifeKind } from '../../shared/data/life.ts';
 import { lifeEvent, lifePlace } from '../../shared/data/scenery.ts';
+import { eventSources } from '../../shared/data/sources.ts';
 
 export interface CardHooks {
   play(e: HistEvent): void;
@@ -347,6 +348,7 @@ export class Card {
       const u = unitOf(c.book, c.unit);
       return h('li', {}, h('b', { text: tr(BOOKS[c.book].name, L) }), ' ', h('span', { text: u ? tr(u.title, L) : `#${c.unit}` }));
     });
+    const src = eventSources(e);
     const twin = LIFE.find(l => lifeEvent(l) === e);
     const rawModel = (!e.model?.hero && twin?.model) ? twin.model : (e.model ?? KIND_MODEL[e.kind]);
     const evModel: ModelRecipe = rawModel.year !== undefined ? rawModel : { ...rawModel, year: e.year };
@@ -363,6 +365,11 @@ export class Card {
       e.points.length ? this.sec(t('keyPoints'), true, h('ul', { class: 'points' }, ...e.points.map(p => h('li', { text: tr(p, L) })))) : null,
       e.people?.length ? this.sec(t('people'), true, h('div', { class: 'people' }, ...e.people.map(p => this.personChip(p)))) : null,
       units.length ? this.sec(t('textbook'), true, h('ul', { class: 'units' }, ...units)) : null,
+      this.sec(t('sources'), true,
+        h('div', { class: 'card-sources', 'data-testid': 'card-sources', 'data-source-kind': src.kind },
+          h('p', { class: 'src-prov', text: tr(src.provenance, L) }),
+          h('ul', { class: 'units src-list' }, ...src.classics.map(c => h('li', { text: tr(c, L) }))),
+          src.uncertainty ? h('p', { class: 'src-note', text: tr(src.uncertainty, L) }) : null)),
     );
   }
 

@@ -4,9 +4,10 @@ import { ERAS } from '../../src/shared/data/eras.ts';
 import { EVENTS } from '../../src/shared/data/events.ts';
 import { JOURNEYS, PEOPLE } from '../../src/shared/data/jiangshan.ts';
 import { PLACES } from '../../src/shared/data/places.ts';
-import { distKm, gradeWhere, locatePoints, makeLocateQuiz, makeQuiz, periodQuestion, rankOf } from '../../src/shared/lib/quiz.ts';
+import { distKm, gradeWhere, locatePoints, makeLocateQuiz, makeMistakeQuiz, makeQuiz, periodQuestion, rankOf } from '../../src/shared/lib/quiz.ts';
 import { CHRONICLE, chapterAt, currentEntry, phaseAt, previousSnap, stepStop } from '../../src/shared/lib/chronicle.ts';
 import { SNAPSHOTS } from '../../src/shared/data/territories.ts';
+import { eventSources, snapshotSources } from '../../src/shared/data/sources.ts';
 import { search } from '../../src/shared/lib/search.ts';
 import { ANCHORS, clampYear, eraAt, formatYear, rulerAt, tToYear, ticks, yearToT } from '../../src/shared/lib/timeline.ts';
 
@@ -181,3 +182,41 @@ describe('period check (随堂检测)', () => {
     }
   });
 });
+
+describe('historical sources & uncertainty notes', () => {
+  it('provides provenance and classical or scholarly citations for every event and territorial snapshot', () => {
+    for (const e of EVENTS) {
+      const src = eventSources(e);
+      expect(['curated', 'imported']).toContain(src.kind);
+      expect(src.provenance.zh).toBeTruthy();
+      expect(src.provenance.en).toBeTruthy();
+      expect(src.classics.length).toBeGreaterThan(0);
+      if (e.year < -841) {
+        expect(src.uncertainty?.zh).toBeTruthy();
+        expect(src.uncertainty?.en).toBeTruthy();
+      }
+    }
+    const qinSrc = eventSources(EVENTS.find(e => e.id === 'qin_unify')!);
+    expect(qinSrc.classics[0].zh).toContain('秦始皇本纪');
+    expect(qinSrc.uncertainty?.zh).toContain('前221年');
+
+    for (const s of SNAPSHOTS) {
+      const src = snapshotSources(s);
+      expect(['curated', 'imported', 'schematic']).toContain(src.kind);
+      expect(src.badge.zh).toBeTruthy();
+      expect(src.source.zh).toBeTruthy();
+      expect(src.uncertainty.zh).toBeTruthy();
+      expect(src.uncertainty.en).toBeTruthy();
+    }
+  });
+});
+
+describe('mistake review quiz', () => {
+  it('generates questions targeting the user mistake event IDs', () => {
+    const q = makeMistakeQuiz(EVENTS, ['qin_unify', 'chibi', 'zhenguan'], 42);
+    expect(q.length).toBe(3);
+    const ids = new Set(q.map(x => 'event' in x ? x.event : ''));
+    expect(ids).toEqual(new Set(['qin_unify', 'chibi', 'zhenguan']));
+  });
+});
+

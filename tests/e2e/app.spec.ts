@@ -928,4 +928,105 @@ test.describe('Ages atlas', () => {
     await expect(card.locator('h2')).toHaveText('泰山');
     expect(errs).toEqual([]);
   });
+
+  test('renders historical sources, compares two periods, and supports lesson resumption, mistake review & progress backup', async ({ page }) => {
+    const errs = watchErrors(page);
+    await openApp(page, 'e=qin_unify&lang=zh');
+
+    // 1. Sources & historical uncertainty on Event Card
+    const cardSources = page.locator('[data-testid=card-sources]');
+    await expect(cardSources).toBeVisible();
+    await expect(cardSources).toContainText('秦始皇本纪');
+    await expect(cardSources).toContainText('前221年');
+
+    await page.keyboard.press('Escape');
+
+    // 2. Period Details sources & Two-Period Comparison
+    await page.locator('.b-details').click();
+    const pv = page.locator('.menu.pv');
+    await expect(pv).toBeVisible();
+    await expect(pv.locator('[data-testid=period-sources]')).toContainText('中国历史地图集');
+
+    const cmpSelect = pv.locator('[data-testid=compare-select]');
+    await expect(cmpSelect).toBeVisible();
+    await cmpSelect.selectOption('703');
+    await expect(page).toHaveURL(/cmp=703/);
+    await expect(pv.locator('[data-testid=compare-card]')).toBeVisible();
+    await expect(pv.locator('[data-testid=compare-delta]')).toBeVisible();
+    await expect(pv.locator('.pv-cmp-sum')).toContainText('咸阳');
+    await expect(pv.locator('.pv-cmp-sum')).toContainText('长安');
+    await expect(page.locator('[data-testid=hud-compare]')).toBeVisible();
+
+    // Swap A/B periods
+    await pv.locator('[data-act=cmp-swap]').click();
+    await expect(page).toHaveURL(/y=703/);
+    await expect(page).toHaveURL(/cmp=-221/);
+
+    // Clear comparison
+    await pv.locator('[data-act=cmp-clear]').click();
+    await expect(pv.locator('[data-testid=compare-card]')).toBeHidden();
+    await page.keyboard.press('Escape');
+
+    // 3. Lesson resumption, mistake review & progress backup
+    await page.locator('.b-hub').click();
+    await page.locator('.b-learn').click();
+    const course = page.locator('.course');
+    await expect(course).toBeVisible();
+    await course.locator('.tabs [data-book=g7a]').click();
+    await course.locator('.u-ls[data-lesson="g7a-3"]').click();
+    const ls = page.locator('[data-testid=lesson]');
+    await expect(ls).toBeVisible();
+    await ls.locator('[data-act=next]').click();
+    await ls.locator('[data-act=next]').click();
+    await expect(ls.locator('.ls-n')).toHaveText('3 / 10');
+    await page.keyboard.press('Escape');
+
+    // Re-open course picker: Resume button restores step 3
+    await page.locator('.b-hub').click();
+    await page.locator('.b-learn').click();
+    const resumeBtn = course.locator('[data-act=resume-lesson]');
+    await expect(resumeBtn).toBeVisible();
+    await expect(resumeBtn).toContainText('3');
+    await resumeBtn.click();
+    await expect(ls.locator('.ls-n')).toHaveText('3 / 10');
+    await page.keyboard.press('Escape');
+
+    // Progress backup export / reset / import (including mistakes)
+    await page.locator('.b-hub').click();
+    await page.locator('.b-learn').click();
+    await course.locator('[data-act=toggle-backup]').click();
+    const backup = course.locator('[data-testid=progress-backup]');
+    await expect(backup).toBeVisible();
+    const jsonTa = backup.locator('[data-testid=progress-json]');
+    const savedObj = JSON.parse(await jsonTa.inputValue());
+    expect(savedObj.version).toBe(1);
+    savedObj.mistakes = ['qin_unify', 'chibi'];
+    const savedJson = JSON.stringify(savedObj);
+
+    await backup.locator('[data-act=reset-progress]').click();
+    await expect(course.locator('[data-act=resume-lesson]')).toBeHidden();
+    await expect(course.locator('[data-act=review-mistakes]')).toBeHidden();
+
+    // Restore from saved JSON
+    await course.locator('[data-testid=progress-json]').fill(savedJson);
+    await course.locator('[data-act=import-progress]').click();
+    await expect(course.locator('[data-act=resume-lesson]')).toBeVisible();
+    const mistakesBtn = course.locator('[data-act=review-mistakes]');
+    await expect(mistakesBtn).toBeVisible();
+    await expect(mistakesBtn).toContainText('(2)');
+
+    // Launch mistake review quiz and verify post-answer event summary & card link
+    await mistakesBtn.click();
+    const qz = page.locator('section.quiz');
+    await expect(qz).toBeVisible();
+    if (await qz.locator('.qz-opts .opt').count()) {
+      await qz.locator('.qz-opts .opt').first().click();
+    } else {
+      await page.mouse.click(500, 400);
+    }
+    await expect(qz.locator('[data-testid=quiz-explain]')).toBeVisible();
+    await expect(qz.locator('[data-act=open-event]')).toBeVisible();
+    expect(errs).toEqual([]);
+  });
 });
+

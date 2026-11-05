@@ -53,14 +53,20 @@ export class LessonView {
   get open(): boolean { return !this.el.hidden; }
   get id(): string | null { return this.lesson?.id ?? (this.test ? `test:${this.test.book}-${this.test.unit}` : null); }
 
-  start(l: Lesson): void {
+  start(l: Lesson, resume = false): void {
     this.clearMap();
     this.lesson = l;
     this.test = null;
-    this.phase = 'steps';
-    this.i = 0;
-    this.qs = [];
-    this.got = [];
+    const saved = resume && this.progress.lastLesson?.id === l.id ? this.progress.lastLesson : null;
+    if (saved && saved.phase === 'check' && l.checks.length > 0) {
+      this.check();
+      this.i = Math.min(saved.step, Math.max(0, this.qs.length - 1));
+    } else {
+      this.phase = 'steps';
+      this.i = saved ? Math.min(saved.step, Math.max(0, l.steps.length - 1)) : 0;
+      this.qs = [];
+      this.got = [];
+    }
     this.show();
   }
 
@@ -134,6 +140,10 @@ export class LessonView {
       h('span', { class: 'ls-n', text: n }),
       iconBtn('close', t('close'), () => this.stop()),
       h('i', { class: 'ls-prog', style: `--p:${at / Math.max(total, 1)}` }));
+    if (this.lesson) {
+      if (this.phase === 'steps' || this.phase === 'check') this.progress.saveLessonStep(this.lesson.id, this.phase, this.i);
+      else this.progress.clearLessonStep(this.lesson.id);
+    }
     if (this.phase === 'steps') this.renderStep(this.lesson!.steps[this.i], move);
     else if (this.phase === 'check') this.renderQuestion(move);
     else this.renderDone();
@@ -202,7 +212,11 @@ export class LessonView {
           const ok = k === q.answer;
           opts.forEach((b, j) => { b.disabled = true; b.classList.add(j === q.answer ? 'ok' : j === k ? 'bad' : 'dim'); });
           out.replaceChildren(this.why(q, ok));
-          if (q.ev) this.reveal(q.ev);
+          if (q.ev) {
+            if (!ok) this.progress.addMistake(q.ev);
+            else this.progress.resolveMistake(q.ev);
+            this.reveal(q.ev);
+          }
           this.answered(ok);
         },
       }, h('i', { text: 'ABCDE'[k] }), h('span', { text: tr(o, L) })));
@@ -234,6 +248,7 @@ export class LessonView {
         ok.dataset.done = '1';
         ok.disabled = undo.disabled = true;
         const right = picked.every((id, k) => id === q.answer[k]);
+        q.answer.forEach((id, k) => { if (picked[k] !== id) this.progress.addMistake(id); });
         list.replaceChildren(...q.answer.map((id, k) => h('li', { class: picked[k] === id ? 'ok' : 'bad', text: `${formatYear(EVENT.get(id)!.year, L, { short: true })} · ${tr(EVENT.get(id)!.title, L)}` })));
         out.replaceChildren(this.why(q, right));
         this.answered(right);
@@ -246,6 +261,10 @@ export class LessonView {
         this.atlas.setPickMode(null);
         const km = Math.round(distKm([lon, lat], [q.lon, q.lat]));
         const right = km <= q.tol;
+        if (q.ev) {
+          if (!right) this.progress.addMistake(q.ev);
+          else this.progress.resolveMistake(q.ev);
+        }
         this.atlas.fx.spawn({ lon, lat, model: { kind: 'flag', color: '#2e86de' }, scale: 0.8 });
         this.atlas.fx.ring(this.atlas.geo.pos(q.lon, q.lat, 0.02), right ? '#5bd36b' : '#ff6b4a', 4);
         this.atlas.fx.spawn({ lon: q.lon, lat: q.lat, model: { kind: 'flag', color: '#c8372d' }, scale: 0.8, label: tr(q.name, L) });

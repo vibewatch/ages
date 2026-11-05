@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
 import { readLink } from '../../src/client/lib/link.ts';
-import { load, save } from '../../src/client/lib/storage.ts';
+import { Progress, load, save } from '../../src/client/lib/storage.ts';
 import { articleUrl, parseExtract } from '../../src/client/lib/wikipedia.ts';
 import { bakeStaticMeshes } from '../../src/client/models/pp-kit.ts';
 import { packModel, unpackModel } from '../../src/client/models/pack.ts';
@@ -89,10 +89,10 @@ describe('wikipedia extract parsing', () => {
 });
 
 describe('deep links', () => {
-  it('reads event, year and language and ignores invalid values', () => {
+  it('reads event, year, compare year and language and ignores invalid values', () => {
     expect(readLink('#e=zhenghe&lang=zh')).toEqual({ event: 'zhenghe', lang: 'zh' });
-    expect(readLink('#y=-221&lang=en')).toEqual({ year: -221, lang: 'en' });
-    expect(readLink('#y=12abc&lang=fr')).toEqual({});
+    expect(readLink('#y=-221&cmp=750&lang=en')).toEqual({ year: -221, compare: 750, lang: 'en' });
+    expect(readLink('#y=12abc&cmp=bad&lang=fr')).toEqual({});
     expect(readLink('')).toEqual({});
   });
 
@@ -159,6 +159,50 @@ describe('storage fallback', () => {
     expect(load('shared-storage-test', 'default')).toBe('default');
     readable = false;
     expect(load('shared-storage-test', 'default')).toBe('default');
+  });
+
+  it('tracks mistakes, lesson resumption, and versioned JSON export/import/reset on Progress', () => {
+    const store = new Map<string, string>();
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => store.set(k, v),
+    });
+    const p = new Progress();
+    p.toggleLearned('qin_unify');
+    p.watch('chibi');
+    p.addMistake('zhenguan');
+    p.saveLessonStep('g7a-09-qin', 'steps', 2);
+    p.score('g7a-01-early-humans', 4, 5);
+    p.quiz(80);
+
+    const exported = p.exportData();
+    const parsed = JSON.parse(exported);
+    expect(parsed.version).toBe(1);
+    expect(parsed.mistakes).toEqual(['zhenguan']);
+    expect(parsed.lastLesson).toEqual({ id: 'g7a-09-qin', phase: 'steps', step: 2 });
+
+    p.resolveMistake('zhenguan');
+    expect(p.mistakes.has('zhenguan')).toBe(false);
+
+    p.reset();
+    expect(p.learned.size).toBe(0);
+    expect(p.watched.size).toBe(0);
+    expect(p.mistakes.size).toBe(0);
+    expect(p.lastLesson).toBeNull();
+    expect(p.best).toBe(0);
+
+    // Rejects invalid JSON or invalid schema
+    expect(p.importData('not-json')).toBe(false);
+    expect(p.importData(JSON.stringify({ version: 99 }))).toBe(false);
+
+    // Restores valid backup
+    expect(p.importData(exported)).toBe(true);
+    expect(p.learned.has('qin_unify')).toBe(true);
+    expect(p.watched.has('chibi')).toBe(true);
+    expect(p.mistakes.has('zhenguan')).toBe(true);
+    expect(p.lastLesson).toEqual({ id: 'g7a-09-qin', phase: 'steps', step: 2 });
+    expect(p.scores['g7a-01-early-humans']).toEqual([4, 5]);
+    expect(p.best).toBe(80);
   });
 });
 

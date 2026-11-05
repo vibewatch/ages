@@ -64,6 +64,20 @@ export function makeQuiz(events: HistEvent[], opts: { n?: number; seed?: number;
   });
 }
 
+/** Builds a targeted mistake-review quiz from missed event IDs without inflating normal quiz/lesson scores. */
+export function makeMistakeQuiz(events: HistEvent[], mistakeIds: Iterable<string>, seed = Date.now()): Question[] {
+  const r = rng(seed);
+  const want = new Set(mistakeIds);
+  const pool = events.filter(e => want.has(e.id));
+  return pool.map((e): Question => ({
+    type: 'when',
+    event: e.id,
+    answer: e.year,
+    options: shuffle([e.year, ...distractors(e.year, r)], r),
+    prompt: { zh: `【错题复习】「${e.title.zh}」发生在哪一年？`, en: `[Review] When did “${e.title.en}” happen?` },
+  }));
+}
+
 /** Great-circle distance in km, used to grade "where" answers (within 300 km is correct, 800 km is close). */
 export function distKm(a: [number, number], b: [number, number]): number {
   const R = 6371, rad = Math.PI / 180;

@@ -92,6 +92,7 @@ export class Atlas {
   private paintKey = '';
   private worksKey = '';
   year: Year = -221;
+  compareYear: Year | null = null;
   lang: Lang = 'zh';
   layers: Layers = { territory: true, places: true, events: true, models: true, admin: false, modern: false, works: true, ghost: true };
   snapshot: Snapshot | null = null;
@@ -730,8 +731,9 @@ export class Atlas {
     const snap = snapshotAt(y);
     this.shapes?.hydrate(snap);
     const lakes = this.shapes?.lakes(y) ?? [];
-    // the previous phase's borders as a dashed outline, so the change is visible
-    const ghost = this.layers.ghost && this.layers.territory ? previousSnap(snap) : null;
+    const cmpSnap = this.compareYear != null ? snapshotAt(this.compareYear) : null;
+    // the compared phase's borders (or the previous phase's borders) as a dashed outline, so the change is visible
+    const ghost = this.layers.territory ? (cmpSnap ?? (this.layers.ghost ? previousSnap(snap) : null)) : null;
     if (ghost) this.shapes?.hydrate(ghost);
     const key = [snap?.id, ghost?.id, lakes.length, lakes.map(l => l.from).join(), this.layers.admin, this.layers.modern].join('|');
     if (key !== this.paintKey || !this.texA) {
@@ -769,6 +771,13 @@ export class Atlas {
       this.buildPins();
     }
     this.updateCapital();
+  }
+
+  /** Sets or clears a second snapshot year whose borders are drawn as the dashed comparison outline. */
+  setCompareYear(y: Year | null): void {
+    if (this.compareYear === y) return;
+    this.compareYear = y;
+    if (this.texA) this.setYear(this.year, true);
   }
 
   /**

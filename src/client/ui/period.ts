@@ -3,8 +3,10 @@ import { tr } from '../../shared/data/i18n.ts';
 import { WORKS } from '../../shared/data/jiangshan.ts';
 import { PLACE, mapName } from '../../shared/data/places.ts';
 import { POLITY } from '../../shared/data/polities.ts';
+import { snapshotSources } from '../../shared/data/sources.ts';
+import { SNAPSHOTS } from '../../shared/data/territories.ts';
 import type { Lang, Polity, Snapshot, Year } from '../../shared/data/types.ts';
-import { phaseAt, type Phase } from '../../shared/lib/chronicle.ts';
+import { phaseAt, previousSnap, type Phase } from '../../shared/lib/chronicle.ts';
 import { eraAt, formatYear } from '../../shared/lib/timeline.ts';
 import { lang, t, type Key } from '../lib/i18n.ts';
 import { fill, h, iconBtn } from './dom.ts';
@@ -20,6 +22,10 @@ function areaParts(k: number, l: Lang): [string, string] {
   if (l === 'zh') { const w = k / 10; return [w >= 10 ? Math.round(w).toLocaleString('zh-CN') : w.toFixed(1), '万平方千米']; }
   return k >= 1000 ? [(k / 1000).toFixed(2), 'million km²'] : [`${Math.round(k)},000`, 'km²'];
 }
+
+const areaShort = (k: number, l: Lang): string => areaParts(k, l).join(' ').replace('million km²', 'M km²').replace('平方千米', 'km²');
+const stripTitleDate = (s: string): string =>
+  s.replace(/^[^·（(]*\d[^·（(]*·\s*(?=\S)/, '').replace(/([（(])[^·（）()]*\d[^·（）()]*·\s*(?=\S)/, '$1');
 
 /**
  * The territorial period at the timeline's year, shown at three depths:
@@ -45,7 +51,10 @@ export class Period {
   readonly btn: HTMLButtonElement;
   private sig = '';
   private year: Year = 0;
+  compareYear: Year | null = null;
   onYear: (y: Year) => void = () => {};
+  onCompare: (y: Year | null) => void = () => {};
+  onSwapCompare: () => void = () => {};
   onHold: (polity: string | null) => void = () => {};
   onPolity: (polity: string) => void = () => {};
   onEra: (id: string) => void = () => {};
@@ -77,11 +86,18 @@ export class Period {
     this.btn.setAttribute('aria-expanded', String(on));
   }
 
+  setCompare(y: Year | null): void {
+    if (this.compareYear === y) return;
+    this.compareYear = y;
+    this.sig = '';
+    this.setYear(this.year);
+  }
+
   setYear(y: Year): void {
     this.year = y;
     const ph = phaseAt(y);
     const works = [...new Set(WORKS.filter(w => y >= w.span[0] && y <= w.span[1]).map(w => w.kind))];
-    const sig = `${ph?.snap.id}|${ph?.snap.regions.length}|${works.join()}|${lang}`;
+    const sig = `${ph?.snap.id}|${ph?.snap.regions.length}|${this.compareYear ?? ''}|${works.join()}|${lang}`;
     if (sig === this.sig) return;
     this.sig = sig;
     this.renderStats(ph);
@@ -109,18 +125,26 @@ export class Period {
     const n = snapPolities(s.id).length;
     const [num, unit] = areaParts(area, L);
     const era = eraAt(s.year);
+    const cmpPh = this.compareYear != null ? phaseAt(this.compareYear) : null;
+    const cmpEra = cmpPh ? eraAt(cmpPh.snap.year) : undefined;
     fill(this.stats,
       area ? h('p', { class: 'st-k' }, h('i', { style: `--c:${main?.color ?? era?.color ?? '#888'}` }), h('span', { text: t('realmArea', { p: main?.name ?? (era ? tr(era.short, L) : '') }) })) : null,
       area ? h('p', { class: 'st-n' }, h('b', { text: num }), h('span', { text: unit })) : null,
+      cmpPh ? h('p', { class: 'st-cmp', 'data-testid': 'hud-compare', text: t('cmpVs', { t: `${formatYear(cmpPh.snap.year, L, { short: true })} ${cmpEra ? tr(cmpEra.short, L) : stripTitleDate(tr(cmpPh.snap.title, L))}` }) }) : null,
       others.length ? h('ul', { class: 'st-pols' }, ...others.map(p => h('li', {}, this.polBtn(p, 'st-pol')))) : null,
       n > 1 ? h('p', { class: 'st-c', text: t('coexistN', { n }) }) : null);
   }
 
   private renderKey(works: string[]): void {
+    const cmpPh = this.compareYear != null ? phaseAt(this.compareYear) : null;
+    const cmpEra = cmpPh ? eraAt(cmpPh.snap.year) : undefined;
+    const ghostLabel = cmpPh
+      ? t('cmpBorder', { t: `${formatYear(cmpPh.snap.year, lang, { short: true })} ${cmpEra ? tr(cmpEra.short, lang) : ''}`.trim() })
+      : t('roleGhost');
     fill(this.key,
       h('div', { class: 'mk-row' },
         h('span', { class: 'mk mk-border' }, h('i'), h('span', { text: t('keyBorder') })),
-        h('span', { class: 'mk mk-ghost' }, h('i'), h('span', { text: t('roleGhost') })),
+        h('span', { class: 'mk mk-ghost' }, h('i'), h('span', { text: ghostLabel })),
         h('span', { class: 'mk mk-cap' }, h('i'), h('span', { text: t('capitalNow') })),
         ...works.map(k => h('span', { class: `mk mk-line k-${k}`, style: `--c:${WORK_COLOR[k] ?? '#888'}` }, h('i'), h('span', { text: t(WORK_KEY[k] ?? 'works') })))));
   }
@@ -140,18 +164,74 @@ export class Period {
       'aria-label': `${t('phase', { i: i + 1, n })} ${tr(g.title, L)}`, onclick: () => this.onYear(g.year),
     }))) : null;
     const fact = (k: string, v: Node | string | null) => (v ? h('div', {}, h('dt', { text: k }), typeof v === 'string' ? h('dd', { text: v }) : h('dd', {}, v)) : null);
+    const src = snapshotSources(s);
+    const prev = previousSnap(s);
+    const cmpPh = this.compareYear != null ? phaseAt(this.compareYear) : null;
+    const cmpSnap = cmpPh?.snap ?? null;
+    const cmpSel = h('select', { class: 'pv-cmp-sel', 'data-testid': 'compare-select', 'aria-label': t('cmpTitle') },
+      h('option', { value: '', text: t('cmpNone') }),
+      prev ? h('option', { value: String(prev.year), text: t('cmpPrev', { t: `${formatYear(prev.year, L, { short: true })} · ${stripTitleDate(tr(prev.title, L))}` }) }) : null,
+      ...SNAPSHOTS.filter(x => x.id !== s.id && x.id !== prev?.id).map(x => h('option', {
+        value: String(x.year),
+        text: `${formatYear(x.year, L, { short: true })} · ${stripTitleDate(tr(x.title, L))}`,
+      })));
+    cmpSel.value = cmpSnap ? String(cmpSnap.year) : '';
+    cmpSel.addEventListener('change', () => {
+      const val = cmpSel.value ? Number(cmpSel.value) : null;
+      this.onCompare(val);
+    });
+    let cmpCard: HTMLElement | null = null;
+    if (cmpSnap) {
+      const eraB = eraAt(cmpSnap.year);
+      const capB = eraB?.capital ? PLACE.get(eraB.capital) : undefined;
+      const capNameB = capB ? mapName(capB, cmpSnap.year) ?? capB.name : null;
+      const areaB = realmArea(cmpSnap.id);
+      let deltaStr = '—';
+      if (area && areaB) {
+        const diff = area - areaB;
+        const sign = diff > 0 ? '+' : diff < 0 ? '−' : '±';
+        const pct = Math.round((Math.abs(diff) / areaB) * 100);
+        deltaStr = `${sign}${areaShort(Math.abs(diff), L)} (${sign}${pct}%)`;
+      }
+      const labelA = `${formatYear(s.year, L, { short: true })} ${era ? tr(era.short, L) : stripTitleDate(tr(s.title, L))}`;
+      const labelB = `${formatYear(cmpSnap.year, L, { short: true })} ${eraB ? tr(eraB.short, L) : stripTitleDate(tr(cmpSnap.title, L))}`;
+      cmpCard = h('div', { class: 'pv-cmp-card', 'data-testid': 'compare-card' },
+        h('div', { class: 'pv-cmp-cols' },
+          h('div', { class: 'pv-cmp-col is-a' },
+            h('span', { class: 'pv-cmp-tag', text: 'A' }),
+            h('b', { text: labelA }),
+            h('small', { text: `${t('capitalNow')}: ${capName ? tr(capName, L) : '—'} · ${area ? areaShort(area, L) : '—'}` })),
+          h('div', { class: 'pv-cmp-col is-b' },
+            h('span', { class: 'pv-cmp-tag', text: 'B' }),
+            h('b', { text: labelB }),
+            h('small', { text: `${t('capitalNow')}: ${capNameB ? tr(capNameB, L) : '—'} · ${areaB ? areaShort(areaB, L) : '—'}` }))),
+        h('div', { class: 'pv-cmp-delta', 'data-testid': 'compare-delta' },
+          h('span', { text: t('cmpDelta') }),
+          h('b', { text: deltaStr })),
+        h('p', { class: 'pv-cmp-sum', text: t('cmpSummary', { a: labelA, ca: capName ? tr(capName, L) : '—', b: labelB, cb: capNameB ? tr(capNameB, L) : '—', d: deltaStr }) }));
+    }
     fill(this.overview,
       h('div', { class: 'pv-top' },
         h('span', { class: 'pv-span', text: `${formatYear(ph.from, L, { short: true })} – ${formatYear(ph.to, L, { short: true })}` }),
         n > 1 ? h('small', { class: 'pv-idx', text: `${pad(ph.index + 1)} / ${pad(n)}` }) : null),
       steps,
       // the span is shown above, so a title's own leading dates ("221–215 BCE · …") are dropped
-      h('p', { class: 'pv-title', text: tr(s.title, L).replace(/^[^·]*\d[^·]*·\s*(?=\S)/, '') }),
+      h('p', { class: 'pv-title', text: stripTitleDate(tr(s.title, L)) }),
       h('dl', { class: 'pv-facts' },
         fact(t('dynasty'), era ? h('button', { type: 'button', class: 'pv-era', style: `--c:${era.color}`, onclick: () => this.onEra(era.id) }, h('i'), h('span', { text: tr(era.short, L) })) : null),
         fact(t('capitalNow'), capName ? tr(capName, L) : null),
-        fact(t('pArea'), area ? areaParts(area, L).join(' ').replace('million km²', 'M km²').replace('平方千米', 'km²') : null)),
-      s.note ? h('p', { class: 'pv-note', text: tr(s.note, L) }) : null);
+        fact(t('pArea'), area ? areaShort(area, L) : null)),
+      s.note ? h('p', { class: 'pv-note', text: tr(s.note, L) }) : null,
+      h('div', { class: 'pv-src', 'data-testid': 'period-sources', 'data-source-kind': src.kind },
+        h('span', { class: 'pv-src-badge', text: tr(src.badge, L) }),
+        h('p', { class: 'pv-src-text', text: tr(src.source, L) }),
+        h('p', { class: 'pv-src-note', text: tr(src.uncertainty, L) })),
+      h('div', { class: 'pv-cmp', 'data-testid': 'period-compare' },
+        h('div', { class: 'pv-cmp-bar' },
+          cmpSel,
+          cmpSnap ? h('button', { type: 'button', class: 'btn pv-cmp-btn', 'data-act': 'cmp-swap', text: t('cmpSwap'), onclick: () => this.onSwapCompare() }) : null,
+          cmpSnap ? h('button', { type: 'button', class: 'btn ghost pv-cmp-btn', 'data-act': 'cmp-clear', text: t('cmpClear'), onclick: () => this.onCompare(null) }) : null),
+        cmpCard));
   }
 
   private renderPolities(s: Snapshot): void {
