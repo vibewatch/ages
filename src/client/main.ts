@@ -22,6 +22,7 @@ import { SURFACES, type Surface } from './scene/terrain.ts';
 import { journeyStory } from '../shared/data/stories.ts';
 import { JOURNEYS, PERSON, type Journey, type Person } from '../shared/data/jiangshan.ts';
 import { LIFE, type LifeItem } from '../shared/data/life.ts';
+import { TRAIL } from '../shared/data/trails.ts';
 import { Quiz } from './ui/quiz.ts';
 import { Reader } from './ui/reader.ts';
 import { SearchBox } from './ui/searchbox.ts';
@@ -30,6 +31,7 @@ import { Chronicle } from './ui/chronicle.ts';
 import { Period } from './ui/period.ts';
 import { Panel } from './ui/panel.ts';
 import { Music } from './ui/music.ts';
+import { TrailBar } from './ui/trail.ts';
 import { initTips } from './ui/tip.ts';
 import { BootIntro } from './ui/intro.ts';
 
@@ -48,6 +50,7 @@ class App {
   search = new SearchBox();
   chronicle = new Chronicle();
   period = new Period();
+  trail = new TrailBar();
   panel!: Panel;
   music = new Music();
   learn: Learn;
@@ -70,6 +73,8 @@ class App {
       read: (w, title) => this.read(w, title),
       open: e => this.openEvent(e),
       era: id => this.openEra(id),
+      place: p => this.openPlace(p),
+      lesson: l => this.startLesson(l),
       close: () => this.closeCard(),
       learned: () => { if (this.learn.open) this.learn.render(); },
       journey: j => this.playJourney(j),
@@ -140,10 +145,12 @@ class App {
     }
     const linkLesson = link.lesson ? LESSON.get(link.lesson) : undefined;
     if (linkLesson) this.startLesson(linkLesson, true);
+    const linkTrail = link.trail ? TRAIL.get(link.trail) : undefined;
+    if (linkTrail) this.trail.start(linkTrail, link.trailStop ?? 0);
     const linkJourney = link.journey ? JOURNEYS.find(j => j.id === link.journey) : undefined;
     if (linkJourney) setTimeout(() => void this.playJourney(linkJourney), 600);
     this.ready = true;
-    intro.finish(this.atlas, Boolean(ev || linkPlace || linkPerson || link.life || linkLesson || linkJourney));
+    intro.finish(this.atlas, Boolean(ev || linkPlace || linkPerson || link.life || linkLesson || linkTrail || linkJourney));
   }
 
   private cine?: HTMLElement;
@@ -191,10 +198,19 @@ class App {
     tl.onPlay = on => { if (on) { if (this.quiz.open) this.quiz.toggle(false); this.player.stop(); this.closeCard(); } };
 
     this.search.onPick = (x: Hit) => {
-      if (x.type === 'event') this.openEvent(EVENT.get(x.id)!);
-      else if (x.type === 'era') { this.openEra(x.id); }
+      if (x.type === 'year') {
+        this.timeline.setPlaying(false);
+        this.timeline.set(clampYear(x.year), true);
+      } else if (x.type === 'event') this.openEvent(EVENT.get(x.id)!);
+      else if (x.type === 'era') this.openEra(x.id);
       else if (x.type === 'person') this.openPerson(PERSON.get(x.id)!);
-      else if (x.type === 'journey') this.playJourney(JOURNEYS.find(j => j.id === x.id)!);
+      else if (x.type === 'life') {
+        const li = LIFE.find(i => i.id === x.id);
+        if (li) this.openLife(li);
+      } else if (x.type === 'lesson') {
+        const ls = LESSON.get(x.id);
+        if (ls) this.startLesson(ls);
+      } else if (x.type === 'journey') this.playJourney(JOURNEYS.find(j => j.id === x.id)!);
       else {
         const p = PLACE.get(x.id)!;
         this.atlas.flyTo({ lon: p.lon, lat: p.lat - 1, dist: 18, tilt: 0.85 }, 1.6);
@@ -222,8 +238,21 @@ class App {
     this.settings.onSurface = s => { this.atlas.setSurface(s); save('surface', s); };
     this.settings.onHelp = () => { this.pop(null); this.help.toggle(true); };
     this.hub.onPlay = j => this.playJourney(j);
+    this.hub.onTrail = tl => this.trail.start(tl, 0);
     this.hub.onPick = w => { this.pop(null); this.toggle(w); };
     this.hub.stat = () => { const [n, m] = this.learn.done(); return n ? `✓ ${n}/${m}` : ''; };
+    this.trail.onStop = (_tl, stop) => {
+      if (stop.event && EVENT.has(stop.event)) this.openEvent(EVENT.get(stop.event)!);
+      else if (stop.place && PLACE.has(stop.place)) {
+        this.timeline.set(stop.year, true, false);
+        this.atlas.setYear(stop.year);
+        this.openPlace(PLACE.get(stop.place)!);
+      } else {
+        this.timeline.set(stop.year, true);
+      }
+      this.syncLink();
+    };
+    this.trail.onClose = () => this.syncLink();
     this.quiz.onClose = () => this.root.classList.remove('quiz-on');
     this.quiz.onYear = y => { this.timeline.set(y, true, false); this.atlas.setYear(y); };
     this.quiz.onOpenEvent = e => this.openEvent(e);
@@ -281,7 +310,7 @@ class App {
       h('div', { class: 'hud-tr' }, this.period.stats),
       h('div', { class: 'hud-bot' },
         this.hudBl,
-        this.hudBc = h('div', { class: 'hud-bc' }, this.period.line, this.caption.el, this.timeline.el)));
+        this.hudBc = h('div', { class: 'hud-bc' }, this.trail.el, this.period.line, this.caption.el, this.timeline.el)));
     this.panel = new Panel([this.lesson.el, this.quiz.el, this.card.el]);
     this.panel.onChange = () => {
       this.root.classList.toggle('dock-on', this.panel.open);
@@ -321,6 +350,12 @@ class App {
       else if (l.person && l.person !== this.card.person?.id) { const p = PERSON.get(l.person); if (p) this.openPerson(p); }
       else if (l.life && l.life !== this.card.life?.id) { const x = LIFE.find(i => i.id === l.life); if (x) this.openLife(x); }
       else if (l.lesson && l.lesson !== this.lesson.id) { const x = LESSON.get(l.lesson); if (x) this.startLesson(x, true); }
+      else if (l.trail) {
+        const trl = TRAIL.get(l.trail);
+        if (trl && (this.trail.active?.trail.id !== trl.id || this.trail.active?.index !== (l.trailStop ?? 0))) {
+          this.trail.start(trl, l.trailStop ?? 0);
+        }
+      }
       else if (l.journey) { const j = JOURNEYS.find(x => x.id === l.journey); if (j) void this.playJourney(j); }
       else if (!l.event && !l.place && !l.person && !l.life && l.year != null) {
         this.timeline.set(l.year, true, false);
@@ -347,16 +382,24 @@ class App {
     this.timeline.set(cmp, true);
   }
 
+  private linkExtras(l = lang): { trail?: string; trailStop?: number; compare?: number; lang: Lang } {
+    const tr = this.trail.active;
+    return {
+      trail: tr?.trail.id,
+      trailStop: tr ? tr.index : undefined,
+      compare: this.period.compareYear ?? undefined,
+      lang: l,
+    };
+  }
+
   private saveYear(y: Year): void {
     save('year', y);
-    const compare = this.period.compareYear ?? undefined;
-    if (this.card.place) writeLink({ place: this.card.place.p.id, year: y, compare, lang });
-    else if (!this.card.event) writeLink({ year: y, compare, lang });
+    if (this.card.place) writeLink({ place: this.card.place.p.id, year: y, ...this.linkExtras() });
+    else if (!this.card.event) writeLink({ year: y, ...this.linkExtras() });
   }
 
   private syncLink(l = lang): void {
     const journey = this.player?.state !== 'idle' ? readLink().journey : undefined;
-    const compare = this.period.compareYear ?? undefined;
     const subject = journey ? { journey }
       : this.card.event ? { event: this.card.event.id }
       : this.card.place ? { place: this.card.place.p.id, year: this.timeline.year }
@@ -364,7 +407,7 @@ class App {
       : this.card.life ? { life: this.card.life.id }
       : this.lesson.open && this.lesson.id && !this.lesson.id.startsWith('test:') ? { lesson: this.lesson.id }
       : { year: this.timeline.year };
-    writeLink({ ...subject, compare, lang: l });
+    writeLink({ ...subject, ...this.linkExtras(l) });
   }
 
   /** Opens one toolbar popover (or none): 时期详情, the study hall and settings are mutually exclusive. */
@@ -418,7 +461,7 @@ class App {
     this.chronicle.select(e.id);
     this.card.showEvent(e);
     this.root.classList.add('card-on');
-    writeLink({ event: e.id, compare: this.period.compareYear ?? undefined, lang });
+    writeLink({ event: e.id, ...this.linkExtras() });
   }
 
   openEra(id: string): void {
@@ -435,7 +478,7 @@ class App {
     if (cap) this.atlas.flyTo({ lon: cap.lon + 2, lat: cap.lat - 3, dist: 50, tilt: 0.6 }, 1.6);
     this.card.showEra(era);
     this.root.classList.add('card-on');
-    writeLink({ year: y, compare: this.period.compareYear ?? undefined, lang });
+    writeLink({ year: y, ...this.linkExtras() });
   }
 
   openPlace(p: Place, fly = true): void {
@@ -447,7 +490,7 @@ class App {
     this.card.showPlace(p, this.timeline.year);
     this.atlas.focus(`place:${p.id}`, [p.lon, p.lat]);
     this.root.classList.add('card-on');
-    writeLink({ place: p.id, year: this.timeline.year, compare: this.period.compareYear ?? undefined, lang });
+    writeLink({ place: p.id, year: this.timeline.year, ...this.linkExtras() });
   }
 
   /** A building, custom, food or figure standing on the map: jumps time into its dynasty, flies there and opens its card. */
@@ -466,7 +509,7 @@ class App {
     this.card.showLife(x);
     this.atlas.focus(`life:${x.id}`, [x.lon, x.lat]);
     this.root.classList.add('card-on');
-    writeLink({ life: x.id, compare: this.period.compareYear ?? undefined, lang });
+    writeLink({ life: x.id, ...this.linkExtras() });
   }
 
   openPerson(p: Person): void {
@@ -480,7 +523,7 @@ class App {
     this.card.showPerson(p);
     this.atlas.focus(`person:${p.id}`);
     this.root.classList.add('card-on');
-    writeLink({ person: p.id, compare: this.period.compareYear ?? undefined, lang });
+    writeLink({ person: p.id, ...this.linkExtras() });
   }
 
   closeCard(): void {
@@ -493,8 +536,7 @@ class App {
     this.root.classList.remove('card-on');
     // back to the lesson underneath, if any
     const id = this.lesson?.open ? this.lesson.id : null;
-    const compare = this.period.compareYear ?? undefined;
-    writeLink(id && !id.startsWith('test:') ? { lesson: id, compare, lang } : { year: this.timeline.year, compare, lang });
+    writeLink(id && !id.startsWith('test:') ? { lesson: id, ...this.linkExtras() } : { year: this.timeline.year, ...this.linkExtras() });
   }
 
   async playStory(e: HistEvent): Promise<void> {
@@ -634,6 +676,7 @@ class App {
     this.lesson.relabel();
     this.chronicle.relabel();
     this.period.relabel();
+    this.trail.relabel();
     this.reader.relabel();
     this.music.relabel();
     this.caption.relabel();

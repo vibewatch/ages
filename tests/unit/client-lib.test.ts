@@ -96,9 +96,10 @@ describe('deep links', () => {
     expect(readLink('')).toEqual({});
   });
 
-  it('reads places, people and journeys, from the hash or the query string', () => {
+  it('reads places, people, trails and journeys, from the hash or the query string', () => {
     expect(readLink('#p=kaifeng&y=1100', '')).toEqual({ place: 'kaifeng', year: 1100 });
     expect(readLink('#person=sushi', '')).toEqual({ person: 'sushi' });
+    expect(readLink('#e=pangeng&trail=capitals&ts=1&lang=zh', '')).toEqual({ event: 'pangeng', trail: 'capitals', trailStop: 1, lang: 'zh' });
     expect(readLink('', '?j=xuanzang&lang=en')).toEqual({ journey: 'xuanzang', lang: 'en' });
     expect(readLink('#e=chibi', '?year=208')).toEqual({ event: 'chibi', year: 208 });
   });

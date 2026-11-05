@@ -4,17 +4,19 @@
  */
 import type { Lang } from '../../shared/data/types.ts';
 
-export interface LinkState { event?: string; place?: string; person?: string; life?: string; journey?: string; lesson?: string; year?: number; compare?: number; lang?: Lang }
+export interface LinkState { event?: string; place?: string; person?: string; life?: string; journey?: string; lesson?: string; trail?: string; trailStop?: number; year?: number; compare?: number; lang?: Lang }
 
 export function readLink(hash = location.hash, search = typeof location === 'undefined' ? '' : location.search): LinkState {
   const out: LinkState = {};
   for (const [i, p] of [new URLSearchParams(search), new URLSearchParams(hash.replace(/^#/, ''))].entries()) {
-    const e = p.get('e') ?? p.get('event'), pl = p.get('p') ?? p.get('place'), pe = p.get('person'), li = p.get('life'), j = p.get('j') ?? p.get('journey'), le = p.get('lesson');
+    const e = p.get('e') ?? p.get('event'), pl = p.get('p') ?? p.get('place'), pe = p.get('person'), li = p.get('life'), j = p.get('j') ?? p.get('journey'), le = p.get('lesson'), tr = p.get('trail');
+    const ts = p.get('ts') ?? p.get('stop');
     const y = p.get('y') ?? p.get('year'), cmp = p.get('cmp') ?? p.get('compare'), l = p.get('lang');
     const year = y && /^-?\d+$/.test(y) ? Number(y) : null;
     const compare = cmp && /^-?\d+$/.test(cmp) ? Number(cmp) : null;
-    if (i && (e || pl || pe || li || j || le || (year !== null && Number.isSafeInteger(year)))) {
-      delete out.event; delete out.place; delete out.person; delete out.life; delete out.journey; delete out.lesson; delete out.compare;
+    const trailStop = ts && /^\d+$/.test(ts) ? Number(ts) : null;
+    if (i && (e || pl || pe || li || j || le || tr || (year !== null && Number.isSafeInteger(year)))) {
+      delete out.event; delete out.place; delete out.person; delete out.life; delete out.journey; delete out.lesson; delete out.trail; delete out.trailStop; delete out.compare;
     }
     if (e) out.event = e;
     if (pl) out.place = pl;
@@ -22,6 +24,8 @@ export function readLink(hash = location.hash, search = typeof location === 'und
     if (li) out.life = li;
     if (j) out.journey = j;
     if (le) out.lesson = le;
+    if (tr) out.trail = tr;
+    if (trailStop !== null && Number.isSafeInteger(trailStop)) out.trailStop = trailStop;
     if (year !== null && Number.isSafeInteger(year)) out.year = year;
     if (compare !== null && Number.isSafeInteger(compare)) out.compare = compare;
     if (l === 'zh' || l === 'en') out.lang = l;
@@ -38,6 +42,10 @@ export function writeLink(s: LinkState): void {
   else if (s.life) p.set('life', s.life);
   else if (s.journey) p.set('j', s.journey);
   else if (s.year != null) p.set('y', String(Math.round(s.year)));
+  if (s.trail) {
+    p.set('trail', s.trail);
+    if (s.trailStop != null && s.trailStop > 0) p.set('ts', String(Math.round(s.trailStop)));
+  }
   if (s.compare != null && Number.isFinite(s.compare)) p.set('cmp', String(Math.round(s.compare)));
   if (s.lang) p.set('lang', s.lang);
   const h = '#' + p.toString();

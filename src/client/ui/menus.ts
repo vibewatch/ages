@@ -2,6 +2,7 @@ import type { Layers } from '../scene/atlas.ts';
 import { SURFACES, type Surface } from '../scene/terrain.ts';
 import { ERAS } from '../../shared/data/eras.ts';
 import { JOURNEYS, eraIdOfDyn, type Journey } from '../../shared/data/jiangshan.ts';
+import { TRAILS, type Trail } from '../../shared/data/trails.ts';
 import { tr } from '../../shared/data/i18n.ts';
 import { kindName, lang, t, type Key } from '../lib/i18n.ts';
 import { load, save } from '../lib/storage.ts';
@@ -49,13 +50,14 @@ export class SettingsMenu {
   toggle(on = this.el.hidden): void { this.el.hidden = !on; }
 }
 
-type HubTab = 'study' | 'journeys';
+type HubTab = 'study' | 'journeys' | 'trails';
 
-/** Study hall popover, in tabs: 学习 (the course, the quiz) and 人物行迹 (the journeys of historical figures). */
+/** Study hall popover, in tabs: 学习 (the course, the quiz), 人物行迹 (the journeys of historical figures), and 专题脉络 (cross-dynasty thematic trails). */
 export class HubMenu {
   readonly el: HTMLElement;
-  private tab: HubTab = load<HubTab>('hubTab', 'study', v => v === 'study' || v === 'journeys');
+  private tab: HubTab = load<HubTab>('hubTab', 'study', v => v === 'study' || v === 'journeys' || v === 'trails');
   onPlay: (j: Journey) => void = () => {};
+  onTrail: (trail: Trail) => void = () => {};
   onPick: (what: 'learn' | 'quiz') => void = () => {};
   /** the course's progress, e.g. ✓ 3/31 */
   stat: () => string = () => '';
@@ -68,7 +70,7 @@ export class HubMenu {
   }
   render(): void {
     this.el.setAttribute('aria-label', t('hub'));
-    const tabs = h('div', { class: 'tabs hub-tabs', role: 'tablist' }, ...(['study', 'journeys'] as HubTab[]).map(k => h('button', {
+    const tabs = h('div', { class: 'tabs hub-tabs', role: 'tablist' }, ...(['study', 'journeys', 'trails'] as HubTab[]).map(k => h('button', {
       type: 'button', role: 'tab', class: k === this.tab ? 'on' : '', 'aria-selected': String(k === this.tab), 'data-tab': k, text: t(k),
       onclick: () => { this.tab = k; save('hubTab', k); this.render(); },
     })));
@@ -76,10 +78,19 @@ export class HubMenu {
       ? h('div', { class: 'hub-list' },
         this.card('b-learn', 'book', t('learnTitle'), t('learnDesc'), this.stat(), () => this.onPick('learn')),
         this.card('b-quiz', 'quiz', t('quizTitle'), t('quizDesc'), '', () => this.onPick('quiz')))
-      : h('div', { class: 'hub-list journeys' }, ...JOURNEYS.map((j, i) => h('button', {
-        type: 'button', class: 'jn', 'data-journey': j.id, style: `--c:${j.color}`,
-        onclick: () => { this.toggle(false); this.onPlay(j); },
-      }, h('i', { text: String(i + 1).padStart(2, '0') }), h('b', { text: tr(j.title, lang) }), h('small', { text: this.era(j) + tr(j.span, lang).replace(/（.*）|\(.*\)/, '') }))));
+      : this.tab === 'journeys'
+        ? h('div', { class: 'hub-list journeys' }, ...JOURNEYS.map((j, i) => h('button', {
+          type: 'button', class: 'jn', 'data-journey': j.id, style: `--c:${j.color}`,
+          onclick: () => { this.toggle(false); this.onPlay(j); },
+        }, h('i', { text: String(i + 1).padStart(2, '0') }), h('b', { text: tr(j.title, lang) }), h('small', { text: this.era(j) + tr(j.span, lang).replace(/（.*）|\(.*\)/, '') }))))
+        : h('div', { class: 'hub-list trails', 'data-testid': 'hub-trails' }, ...TRAILS.map((tl, i) => h('button', {
+          type: 'button', class: 'jn tr-item', 'data-trail': tl.id, style: `--c:${tl.color}`,
+          onclick: () => { this.toggle(false); this.onTrail(tl); },
+        }, h('i', { text: String(i + 1).padStart(2, '0') }),
+          h('div', { class: 'tr-item-body' },
+            h('b', { text: tr(tl.title, lang) }),
+            h('small', { text: tr(tl.subtitle, lang) })),
+          h('em', { class: 'tr-cnt', text: t('trailStops', { n: tl.stops.length }) }))));
     this.el.replaceChildren(tabs, body);
   }
   private era(j: Journey): string {

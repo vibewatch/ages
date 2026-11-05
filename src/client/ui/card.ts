@@ -3,8 +3,9 @@ import { ERAS, RULERS } from '../../shared/data/eras.ts';
 import { EVENTS, hasStory } from '../../shared/data/events.ts';
 import { tr } from '../../shared/data/i18n.ts';
 import { JOURNEYS, PEOPLE, dynastyOfEra, eraIdOfDyn, journeysOf, personNamed, type Journey, type Person } from '../../shared/data/jiangshan.ts';
+import { LESSON } from '../../shared/data/lessons/index.ts';
 import { PLACE, isCapital, placeName } from '../../shared/data/places.ts';
-import type { Era, EventKind, HistEvent, I18n, ModelRecipe, Place, Wiki, Year } from '../../shared/data/types.ts';
+import type { Era, EventKind, HistEvent, I18n, Lesson, ModelRecipe, Place, Wiki, Year } from '../../shared/data/types.ts';
 import { eraAt, formatYear } from '../../shared/lib/timeline.ts';
 import { kindName, lang, t } from '../lib/i18n.ts';
 import type { Progress } from '../lib/storage.ts';
@@ -15,12 +16,15 @@ import { capitalModel, personModel, placeModel } from '../../shared/data/heroes.
 import { LIFE, lifeOf, type LifeItem, type LifeKind } from '../../shared/data/life.ts';
 import { lifeEvent, lifePlace } from '../../shared/data/scenery.ts';
 import { eventSources } from '../../shared/data/sources.ts';
+import { eventWorldLink, worldForRange } from '../../shared/data/world-sync.ts';
 
 export interface CardHooks {
   play(e: HistEvent): void;
   read(wiki: Wiki, title: string): void;
   open(e: HistEvent): void;
   era(id: string): void;
+  place?(p: Place): void;
+  lesson?(l: Lesson): void;
   close(): void;
   learned(e: HistEvent, on: boolean): void;
   journey(j: Journey): void;
@@ -346,17 +350,27 @@ export class Card {
     const playBtn = hasStory(e) ? h('button', { type: 'button', class: 'btn primary', 'data-act': 'play', onclick: () => this.hooks.play(e) }, icon('play'), h('span', { text: t('playStory') })) : null;
     const units = e.curriculum.map(c => {
       const u = unitOf(c.book, c.unit);
-      return h('li', {}, h('b', { text: tr(BOOKS[c.book].name, L) }), ' ', h('span', { text: u ? tr(u.title, L) : `#${c.unit}` }));
+      const ls = LESSON.get(`${c.book}-${c.unit}`);
+      const label = [h('b', { text: tr(BOOKS[c.book].name, L) }), ' ', h('span', { text: u ? tr(u.title, L) : `#${c.unit}` })];
+      return h('li', {}, ls && this.hooks.lesson
+        ? h('button', { type: 'button', class: 'unit-link', 'data-act': 'open-lesson', 'data-lesson': ls.id, onclick: () => this.hooks.lesson?.(ls) }, ...label, h('i', { class: 'unit-go', text: ' →' }))
+        : h('span', {}, ...label));
     });
     const src = eventSources(e);
+    const wsync = eventWorldLink(e.id, e.year, e.end);
     const twin = LIFE.find(l => lifeEvent(l) === e);
     const rawModel = (!e.model?.hero && twin?.model) ? twin.model : (e.model ?? KIND_MODEL[e.kind]);
     const evModel: ModelRecipe = rawModel.year !== undefined ? rawModel : { ...rawModel, year: e.year };
     this.setHero(evModel, kindName(e.kind), `var(--k-${e.kind})`, i >= 0 ? [i + 1, list.length] : null,
       i > 0 ? () => this.hooks.open(list[i - 1]) : undefined, i >= 0 && i < list.length - 1 ? () => this.hooks.open(list[i + 1]) : undefined);
+    const placeEl = place
+      ? (this.hooks.place
+          ? h('button', { type: 'button', class: 'ey-p link', 'data-act': 'open-place', onclick: () => this.hooks.place?.(place) }, icon('pin'), tr(placeName(place, e.year), L))
+          : h('span', { class: 'ey-p' }, icon('pin'), tr(placeName(place, e.year), L)))
+      : null;
     fill(this.body,
       this.title(h('div', { class: 'eyebrow' }, h('b', { class: 'ey-y', text: when }),
-        place ? h('i', { text: '·' }) : null, place ? h('span', { class: 'ey-p' }, icon('pin'), tr(placeName(place, e.year), L)) : null,
+        placeEl ? h('i', { text: '·' }) : null, placeEl,
         era ? h('i', { text: '·' }) : null, era ? this.eraLink(era) : null), tr(e.title, L), null, [
         this.progress.watched.has(e.id) ? h('span', { class: 'badge seen', text: '✓ ' + t('watched') }) : null,
       ]),
@@ -365,6 +379,10 @@ export class Card {
       e.points.length ? this.sec(t('keyPoints'), true, h('ul', { class: 'points' }, ...e.points.map(p => h('li', { text: tr(p, L) })))) : null,
       e.people?.length ? this.sec(t('people'), true, h('div', { class: 'people' }, ...e.people.map(p => this.personChip(p)))) : null,
       units.length ? this.sec(t('textbook'), true, h('ul', { class: 'units' }, ...units)) : null,
+      this.sec(t('worldSync'), true,
+        h('div', { class: 'card-world', 'data-testid': 'card-world' },
+          h('b', { class: 'cw-title', text: tr(wsync.title, L) }),
+          h('p', { class: 'cw-note', text: tr(wsync.note, L) }))),
       this.sec(t('sources'), true,
         h('div', { class: 'card-sources', 'data-testid': 'card-sources', 'data-source-kind': src.kind },
           h('p', { class: 'src-prov', text: tr(src.provenance, L) }),
@@ -395,16 +413,29 @@ export class Card {
     const figures = PEOPLE.filter(p => eraIdOfDyn(p.dyn) === era.id).sort((a, b) => a.span[0] - b.span[0]);
     const journeys = JOURNEYS.filter(j => eraIdOfDyn(j.dyn) === era.id);
     const life = lifeOf(era.id).filter(x => x.kind !== 'person');
+    const worldList = worldForRange(era.start, era.end, 3);
     const seat = cap ? tr(placeName(cap, era.start), L) : dy?.seat.zh ? tr(dy.seat, L) : '';
+    const seatEl = seat
+      ? (cap && this.hooks.place
+          ? h('div', { class: 'eyebrow' }, h('button', { type: 'button', class: 'ey-p link', 'data-act': 'open-place', onclick: () => this.hooks.place?.(cap) }, '★ ' + seat))
+          : this.eyebrow('★ ' + seat))
+      : null;
     const model: ModelRecipe = capitalModel(era);
     this.setHero(model, t('era'), era.color, [i + 1, ERAS.length],
       i > 0 ? () => this.hooks.era(ERAS[i - 1].id) : undefined, i < ERAS.length - 1 ? () => this.hooks.era(ERAS[i + 1].id) : undefined);
     fill(this.body,
-      this.title(seat ? this.eyebrow('★ ' + seat) : null, tr(era.name, L)),
+      this.title(seatEl, tr(era.name, L)),
       this.stats([t('when'), `${formatYear(era.start, L, { short: true })} – ${formatYear(era.end, L, { short: true })}`], era.start > -5000 ? [t('duration'), t('years', { n: Math.max(1, era.end - era.start) })] : null),
       h('p', { class: 'sum', text: tr(era.summary, L) }),
       era.wiki ? h('div', { class: 'acts' }, this.wikiBtn(era.wiki, tr(era.name, L))) : null,
       overview?.zh ? this.sec(t('overview'), true, h('p', { class: 'sum', text: tr(overview, L) })) : null,
+      worldList.length ? this.sec(t('worldSync'), true,
+        h('ul', { class: 'periods world-list', 'data-testid': 'card-world' },
+          ...worldList.map(w => h('li', {},
+            h('span', { class: 'y', text: tr(w.region, L) }),
+            h('div', { class: 'wl-body' },
+              h('b', { text: tr(w.title, L) }),
+              h('p', { class: 'wl-sum', text: tr(w.summary, L) })))))) : null,
       rulers.length ? this.sec(t('rulers'), true, h('ul', { class: 'periods' },
         ...rulers.map(r => h('li', {
           style: 'cursor:pointer',

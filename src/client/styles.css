@@ -706,6 +706,8 @@ b.w { font-family: 'Linux Libertine', 'Times New Roman', serif; font-weight: 700
 .eyebrow i { font-style: normal; color: var(--ink-3); }
 .eyebrow .ey-y { color: var(--zhu); font-weight: 700; font-variant-numeric: tabular-nums; }
 .eyebrow .ey-p { display: inline-flex; align-items: center; gap: 3px; }
+.eyebrow .ey-p.link { border: 0; background: none; padding: 0; font: inherit; color: var(--ink-2); cursor: pointer; font-weight: 600; }
+.eyebrow .ey-p.link:hover { color: var(--zhu); text-decoration: underline; }
 .eyebrow .era-link { font-weight: 600; color: var(--ink-2); }
 .eyebrow .era-link:hover { color: var(--zhu); }
 .card h2 { font-size: 17px; font-weight: 800; line-height: 1.25; margin: 0 0 2px; color: var(--ink); }
@@ -740,6 +742,44 @@ details.sec > :last-child { margin-bottom: 8px; }
 .units { list-style: none; margin: 0; padding: 0; font-size: var(--t-xs); line-height: 1.55; color: var(--ink-2); }
 .units li + li { margin-top: 3px; }
 .units b { color: var(--ink); font-weight: 700; }
+.unit-link { border: 0; background: none; padding: 2px 4px; margin: -2px -4px; font: inherit; color: inherit; cursor: pointer; text-align: left; display: inline-flex; align-items: baseline; gap: 4px; }
+.unit-link:hover { background: var(--well); color: var(--zhu); }
+.unit-link .unit-go { font-style: normal; color: var(--zhu); font-weight: 700; }
+.card-world { padding: 6px 8px; background: var(--well); font-size: var(--t-xs); line-height: 1.55; color: var(--ink-2); }
+.card-world .cw-title { display: block; color: var(--ink); font-weight: 700; margin-bottom: 2px; }
+.card-world .cw-note { margin: 0; color: var(--ink-2); }
+.card .world-list li { align-items: flex-start; padding: 5px 6px; }
+.card .world-list .wl-body { min-width: 0; }
+.card .world-list .wl-sum { margin: 2px 0 0; font-size: var(--t-2xs); color: var(--ink-2); line-height: 1.5; }
+.pv-world { margin-top: 8px; padding: 7px 9px; background: var(--well); font-size: var(--t-2xs); line-height: 1.55; color: var(--ink-2); }
+.pv-world-h { display: block; font-weight: 700; color: var(--ink); margin-bottom: 3px; }
+.pv-world-item { margin: 2px 0 0; }
+.pv-world-item b { color: var(--ink); }
+.tr-item { align-items: flex-start !important; }
+.tr-item-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; text-align: left; }
+.tr-cnt { font-style: normal; font-size: var(--t-2xs); color: var(--ink-3); flex: none; }
+.trail-bar {
+  pointer-events: auto; width: min(640px, 100%); margin: 0 auto 4px; padding: 7px 10px;
+  background: var(--panel); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
+  box-shadow: var(--shadow); border-left: 3px solid var(--c, var(--zhu));
+  display: flex; flex-direction: column; gap: 4px; font-size: var(--t-xs);
+}
+.trail-bar[hidden] { display: none !important; }
+.tb-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.tb-badge { font-size: var(--t-2xs); font-weight: 700; padding: 1px 6px; background: var(--zhu-fill); color: var(--zhu); }
+.tb-title { font-weight: 800; color: var(--ink); margin-right: 4px; }
+.tb-idx { font-size: var(--t-2xs); color: var(--ink-3); font-variant-numeric: tabular-nums; margin-right: auto; }
+.tb-dots { display: flex; align-items: center; gap: 3px; }
+.tb-dot {
+  width: 20px; height: 20px; border: 0; background: var(--well); color: var(--ink-2);
+  font-size: 10px; font-weight: 700; cursor: pointer; padding: 0; display: grid; place-items: center;
+}
+.tb-dot.on { background: var(--c, var(--zhu)); color: #fff; }
+.tb-head .ib { width: 24px; height: 24px; }
+.tb-stop { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; line-height: 1.45; }
+.tb-year { font-weight: 700; color: var(--c, var(--zhu)); font-variant-numeric: tabular-nums; }
+.tb-stop-title { color: var(--ink); }
+.tb-stop-note { color: var(--ink-2); }
 .card .caps { font-size: var(--t-xs); color: var(--ink-2); margin: 0 0 4px; line-height: 1.6; }
 .card .periods { list-style: none; padding: 0; margin: 0; font-size: var(--t-xs); }
 .card .periods li { display: grid; grid-template-columns: 7.6em 1fr; gap: 6px; padding: 3px 6px; line-height: 1.45; border-radius: 0; color: var(--ink-2); }

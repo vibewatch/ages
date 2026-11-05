@@ -6,6 +6,7 @@ import { POLITY } from '../../shared/data/polities.ts';
 import { snapshotSources } from '../../shared/data/sources.ts';
 import { SNAPSHOTS } from '../../shared/data/territories.ts';
 import type { Lang, Polity, Snapshot, Year } from '../../shared/data/types.ts';
+import { worldForRange } from '../../shared/data/world-sync.ts';
 import { phaseAt, previousSnap, type Phase } from '../../shared/lib/chronicle.ts';
 import { eraAt, formatYear } from '../../shared/lib/timeline.ts';
 import { lang, t, type Key } from '../lib/i18n.ts';
@@ -165,6 +166,7 @@ export class Period {
     }))) : null;
     const fact = (k: string, v: Node | string | null) => (v ? h('div', {}, h('dt', { text: k }), typeof v === 'string' ? h('dd', { text: v }) : h('dd', {}, v)) : null);
     const src = snapshotSources(s);
+    const worldList = worldForRange(ph.from, ph.to, 2);
     const prev = previousSnap(s);
     const cmpPh = this.compareYear != null ? phaseAt(this.compareYear) : null;
     const cmpSnap = cmpPh?.snap ?? null;
@@ -226,6 +228,11 @@ export class Period {
         h('span', { class: 'pv-src-badge', text: tr(src.badge, L) }),
         h('p', { class: 'pv-src-text', text: tr(src.source, L) }),
         h('p', { class: 'pv-src-note', text: tr(src.uncertainty, L) })),
+      worldList.length ? h('div', { class: 'pv-world', 'data-testid': 'period-world' },
+        h('span', { class: 'pv-world-h', text: `🌍 ${t('worldSync')}` }),
+        ...worldList.map(w => h('p', { class: 'pv-world-item' },
+          h('b', { text: `${tr(w.region, L)} · ${tr(w.title, L)}` }),
+          h('span', { text: ` — ${tr(w.summary, L)}` })))) : null,
       h('div', { class: 'pv-cmp', 'data-testid': 'period-compare' },
         h('div', { class: 'pv-cmp-bar' },
           cmpSel,

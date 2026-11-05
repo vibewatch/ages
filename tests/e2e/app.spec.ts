@@ -1039,5 +1039,70 @@ test.describe('Ages atlas', () => {
     await expect(qz.locator('[data-testid=quiz-explain]')).toBeVisible();
     expect(errs).toEqual([]);
   });
+
+  test('supports year & life search, card place/lesson cross-links, world synchronism, and thematic trails', async ({ page }) => {
+    const errs = watchErrors(page);
+    await openApp(page, 'e=qin_unify&lang=zh');
+
+    // 1. World Synchronism on Event Card & Period Details
+    const cardWorld = page.locator('[data-testid=card-world]');
+    await expect(cardWorld).toBeVisible();
+    await expect(cardWorld).toContainText('布匿战争');
+
+    // 2. Clickable Place pin on Event Card -> opens Place Card
+    await page.locator('.card [data-act=open-place]').click();
+    await expect(page.locator('.card h2')).toContainText('咸阳');
+    await expect(page).toHaveURL(/#p=xianyang/);
+
+    // 3. Clickable Textbook Unit on Event Card -> launches Lesson player
+    await page.goto('/?lowfx=1#e=qin_unify&lang=zh');
+    await expect.poll(() => page.evaluate(() => (window as any).__atlas?.ready)).toBe(true);
+    await page.locator('.card [data-act=open-lesson]').first().click();
+    const ls = page.locator('[data-testid=lesson]');
+    await expect(ls).toBeVisible();
+    await expect(page).toHaveURL(/#lesson=g7a-3/);
+    await page.keyboard.press('Escape');
+
+    // 4. Omnibox Search 2.0: year jump ("1405") and everyday life ("马球")
+    const q = page.locator('.search input.q');
+    await q.fill('1405');
+    await expect(page.locator('.search .hits .ty-year')).toBeVisible();
+    await page.keyboard.press('Enter');
+    await expect.poll(async () => (await state(page)).year).toBe(1405);
+
+    await q.fill('马球');
+    await expect(page.locator('.search .hits .ty-life')).toBeVisible();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('.card h2')).toHaveText('马球');
+    await page.keyboard.press('Escape');
+
+    // 5. Period Details World Synchronism
+    await page.locator('.b-details').click();
+    const pv = page.locator('.menu.pv');
+    await expect(pv.locator('[data-testid=period-world]')).toBeVisible();
+    await page.keyboard.press('Escape');
+
+    // 6. Cross-Dynasty Thematic Trails in Study Hall
+    await page.locator('.b-hub').click();
+    await page.locator('.hub [data-tab=trails]').click();
+    await expect(page.locator('[data-testid=hub-trails]')).toBeVisible();
+    await page.locator('.hub [data-trail=capitals]').click();
+
+    const trailBar = page.locator('[data-testid=trail-bar]');
+    await expect(trailBar).toBeVisible();
+    await expect(trailBar.locator('[data-testid=trail-index]')).toHaveText('1 / 8');
+    await expect(page).toHaveURL(/trail=capitals/);
+    await expect(page.locator('.card h2')).toContainText('夏朝建立');
+
+    await trailBar.locator('[data-act=trail-next]').click();
+    await expect(trailBar.locator('[data-testid=trail-index]')).toHaveText('2 / 8');
+    await expect(page).toHaveURL(/trail=capitals&ts=1/);
+    await expect(page.locator('.card h2')).toContainText('盘庚迁殷');
+
+    await trailBar.locator('[data-act=trail-close]').click();
+    await expect(trailBar).toBeHidden();
+    await expect(page).not.toHaveURL(/trail=/);
+    expect(errs).toEqual([]);
+  });
 });
 

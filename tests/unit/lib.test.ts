@@ -8,7 +8,13 @@ import { distKm, gradeWhere, locatePoints, makeLocateQuiz, makeMistakeQuiz, make
 import { CHRONICLE, chapterAt, currentEntry, phaseAt, previousSnap, stepStop } from '../../src/shared/lib/chronicle.ts';
 import { SNAPSHOTS } from '../../src/shared/data/territories.ts';
 import { eventSources, snapshotSources } from '../../src/shared/data/sources.ts';
-import { search } from '../../src/shared/lib/search.ts';
+import { LIFE } from '../../src/shared/data/life.ts';
+import { LESSONS } from '../../src/shared/data/lessons/index.ts';
+import { EVENT } from '../../src/shared/data/events.ts';
+import { PLACE } from '../../src/shared/data/places.ts';
+import { TRAIL, TRAILS } from '../../src/shared/data/trails.ts';
+import { WORLD_MILESTONES, eventWorldLink, worldForRange } from '../../src/shared/data/world-sync.ts';
+import { parseYearQuery, search } from '../../src/shared/lib/search.ts';
 import { ANCHORS, clampYear, eraAt, formatYear, rulerAt, tToYear, ticks, yearToT } from '../../src/shared/lib/timeline.ts';
 
 describe('timeline', () => {
@@ -66,6 +72,62 @@ describe('search', () => {
     expect(search('Xuanzang', all).some(h => h.type === 'journey' && h.id === 'xuanzang')).toBe(true);
     const old = search('汴梁', all).find(h => h.type === 'place');
     expect(old && 'sub' in old && old.sub?.zh).toBe('汴梁');
+  });
+  it('parses year queries and indexes everyday life items and lessons', () => {
+    expect(parseYearQuery('-221')).toBe(-221);
+    expect(parseYearQuery('前221年')).toBe(-221);
+    expect(parseYearQuery('公元前138')).toBe(-138);
+    expect(parseYearQuery('221 BCE')).toBe(-221);
+    expect(parseYearQuery('1405')).toBe(1405);
+    expect(parseYearQuery('755年')).toBe(755);
+    expect(parseYearQuery('0')).toBeNull();
+    expect(parseYearQuery('abc')).toBeNull();
+
+    const full = { ...src, people: PEOPLE, journeys: JOURNEYS, life: LIFE.filter(l => !l.person), lessons: LESSONS };
+    const yHits = search('-221', full);
+    expect(yHits[0]).toMatchObject({ type: 'year', year: -221 });
+    expect(yHits.some(h => h.type === 'event' && h.id === 'qin_unify')).toBe(true);
+
+    expect(search('马球', full).some(h => h.type === 'life' && h.id === 'polo')).toBe(true);
+    expect(search('繁荣与开放', full).some(h => h.type === 'lesson' && h.id === 'g7b-1')).toBe(true);
+  });
+});
+
+describe('world synchronism & thematic trails', () => {
+  it('provides bilingual world milestones and event global context across all eras', () => {
+    expect(WORLD_MILESTONES.length).toBeGreaterThanOrEqual(18);
+    for (const era of ERAS) {
+      const list = worldForRange(era.start, era.end, 3);
+      expect(list.length, era.id).toBeGreaterThan(0);
+      for (const m of list) {
+        expect(m.title.zh).toBeTruthy();
+        expect(m.title.en).toBeTruthy();
+        expect(m.summary.zh).toBeTruthy();
+        expect(m.summary.en).toBeTruthy();
+      }
+    }
+    const qinWorld = eventWorldLink('qin_unify', -221);
+    expect(qinWorld.title.zh).toContain('布匿战争');
+    const fallbackWorld = eventWorldLink('nonexistent_event', 750);
+    expect(fallbackWorld.title.zh).toBeTruthy();
+    expect(fallbackWorld.note.en).toBeTruthy();
+  });
+
+  it('validates all cross-dynasty thematic trails and stop references', () => {
+    expect(TRAILS.length).toBeGreaterThanOrEqual(5);
+    for (const tr of TRAILS) {
+      expect(TRAIL.get(tr.id)).toBe(tr);
+      expect(tr.title.zh).toBeTruthy();
+      expect(tr.title.en).toBeTruthy();
+      expect(tr.stops.length).toBeGreaterThanOrEqual(6);
+      let prevYear = -Infinity;
+      for (const s of tr.stops) {
+        expect(s.year).toBeGreaterThanOrEqual(prevYear);
+        prevYear = s.year;
+        if (s.event) expect(EVENT.has(s.event), `${tr.id}:${s.event}`).toBe(true);
+        if (s.place) expect(PLACE.has(s.place), `${tr.id}:${s.place}`).toBe(true);
+      }
+    }
   });
 });
 
