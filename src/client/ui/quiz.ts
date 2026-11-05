@@ -1,7 +1,7 @@
 import { BOOKS } from '../../shared/data/curriculum.ts';
 import { EVENT, EVENTS } from '../../shared/data/events.ts';
 import { tr } from '../../shared/data/i18n.ts';
-import type { Book, HistEvent } from '../../shared/data/types.ts';
+import type { Book, HistEvent, I18n } from '../../shared/data/types.ts';
 import { PLACE, PLACES } from '../../shared/data/places.ts';
 import { distKm, gradeWhere, locatePoints, makeLocateQuiz, makeMistakeQuiz, makeQuiz, rankOf, type Question } from '../../shared/lib/quiz.ts';
 import { formatYear } from '../../shared/lib/timeline.ts';
@@ -98,14 +98,16 @@ export class Quiz {
     const openBtn = h('button', { type: 'button', class: 'btn ghost', 'data-act': 'open-event', hidden: true, text: t('openCard') });
     const next = h('button', { type: 'button', class: 'btn primary', 'data-act': 'next', hidden: true, text: t('nextQ'), onclick: () => { this.i++; this.ask(); } });
     const nodes: Node[] = [this.head(`${this.i + 1}/${this.qs.length}`), h('p', { class: 'qz-q', text: tr(q.prompt, L) })];
-    const finish = (ok: boolean, msg: string, pts = ok ? 1 : 0, ev?: HistEvent) => {
+    const finish = (ok: boolean, msg: string, pts = ok ? 1 : 0, ev?: HistEvent, why?: I18n) => {
       this.answered = true;
       this.score += pts;
       fb.textContent = msg;
       fb.className = 'qz-fb ' + (ok ? 'ok' : 'no');
-      if (ev) {
-        whyBox.textContent = tr(ev.summary, L);
+      if (why || ev) {
+        whyBox.textContent = tr(why ?? ev!.summary, L);
         whyBox.hidden = false;
+      }
+      if (ev) {
         openBtn.hidden = false;
         openBtn.onclick = () => this.onOpenEvent(ev);
       }
@@ -114,13 +116,14 @@ export class Quiz {
     };
     if (q.type === 'when') {
       const e = EVENT.get(q.event)!;
+      const mKey = q.key ?? `when:${e.id}`;
       const opts = h('div', { class: 'qz-opts' }, ...q.options.map(y => h('button', {
         type: 'button', class: 'opt', text: formatYear(y, L),
         onclick: (ev: Event) => {
           if (!next.hidden) return;
           const ok = y === q.answer;
-          if (!ok) this.progress.addMistake(e.id);
-          else this.progress.resolveMistake(e.id);
+          if (!ok) this.progress.addMistake(mKey);
+          else this.progress.resolveMistake(mKey);
           (ev.currentTarget as HTMLElement).classList.add(ok ? 'ok' : 'no');
           opts.querySelectorAll('button').forEach(b => { if (b.textContent === formatYear(q.answer, L)) b.classList.add('ok'); });
           finish(ok, ok ? t('correct') : t('answerWas', { a: formatYear(q.answer, L) }), ok ? 1 : 0, e);
@@ -128,16 +131,37 @@ export class Quiz {
         },
       })));
       nodes.push(opts);
+    } else if (q.type === 'choice') {
+      const e = q.event ? EVENT.get(q.event) : undefined;
+      const mKey = q.key ?? (q.event ? `choice:${q.event}` : '');
+      const opts = h('div', { class: 'qz-opts col' }, ...q.options.map((o, idx) => h('button', {
+        type: 'button', class: 'opt', text: tr(o, L),
+        onclick: (ev: Event) => {
+          if (!next.hidden) return;
+          const ok = idx === q.answer;
+          if (mKey) {
+            if (!ok) this.progress.addMistake(mKey);
+            else this.progress.resolveMistake(mKey);
+          }
+          (ev.currentTarget as HTMLElement).classList.add(ok ? 'ok' : 'no');
+          const all = opts.querySelectorAll('button');
+          all[q.answer]?.classList.add('ok');
+          finish(ok, ok ? t('correct') : t('wrong'), ok ? 1 : 0, e, q.why);
+          if (e) this.reveal(e.id);
+        },
+      })));
+      nodes.push(opts);
     } else if (q.type === 'where') {
       const e = EVENT.get(q.event);
+      const mKey = q.key ?? `where:${q.event}`;
       nodes.push(h('p', { class: 'qz-hint', text: t('clickMap') }));
       this.atlas.home();
       this.atlas.setPickMode((lon, lat) => {
         this.atlas.setPickMode(null);
         const km = Math.round(distKm([lon, lat], [q.lon, q.lat]));
         const g = gradeWhere(km);
-        if (g !== 'correct') this.progress.addMistake(q.event);
-        else this.progress.resolveMistake(q.event);
+        if (g !== 'correct') this.progress.addMistake(mKey);
+        else this.progress.resolveMistake(mKey);
         this.atlas.fx.spawn({ lon, lat, model: { kind: 'flag', color: '#2e86de' }, scale: 0.8 });
         this.atlas.fx.ring(this.atlas.geo.pos(q.lon, q.lat, 0.02), g === 'wrong' ? '#ff6b4a' : '#5bd36b', 4);
         finish(g === 'correct', `${t(g === 'correct' ? 'correct' : g === 'close' ? 'close_' : 'wrong')} ${t('kmAway', { n: km })}`, g === 'correct' ? 1 : 0, e);
@@ -185,10 +209,12 @@ export class Quiz {
       } });
       check.addEventListener('click', () => {
         const ok = picked.every((id, k) => id === q.answer[k]);
-        q.answer.forEach((id, k) => { if (picked[k] !== id) this.progress.addMistake(id); });
+        const mKey = q.key ?? `order:${q.answer.join(',')}`;
+        if (!ok) this.progress.addMistake(mKey);
+        else this.progress.resolveMistake(mKey);
         list.replaceChildren(...q.answer.map((id, k) => h('li', { class: picked[k] === id ? 'ok' : 'no', text: `${formatYear(EVENT.get(id)!.year, L, { short: true })} · ${tr(EVENT.get(id)!.title, L)}` })));
         check.disabled = true;
-        finish(ok, ok ? t('correct') : t('wrong'));
+        finish(ok, ok ? t('correct') : t('wrong'), ok ? 1 : 0, EVENT.get(q.answer[0]));
       });
       nodes.push(h('p', { class: 'qz-hint', text: t('orderHint') }), h('div', { class: 'qz-opts col' }, ...btns), list, h('div', { class: 'qz-row' }, undo, check));
     }

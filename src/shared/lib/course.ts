@@ -13,10 +13,10 @@ import { periodQuestion, rng } from './quiz.ts';
 import { formatYear } from './timeline.ts';
 
 export type Asked =
-  | { kind: 'choice'; prompt: I18n; options: I18n[]; answer: number; why: I18n; ev?: string }
+  | { kind: 'choice'; key?: string; prompt: I18n; options: I18n[]; answer: number; why: I18n; ev?: string }
   /** `items` are event ids shown shuffled; `answer` is their time order */
-  | { kind: 'order'; prompt: I18n; items: string[]; answer: string[]; why: I18n }
-  | { kind: 'where'; prompt: I18n; lon: number; lat: number; tol: number; name: I18n; why: I18n; ev?: string };
+  | { kind: 'order'; key?: string; prompt: I18n; items: string[]; answer: string[]; why: I18n }
+  | { kind: 'where'; key?: string; prompt: I18n; lon: number; lat: number; tol: number; name: I18n; why: I18n; ev?: string };
 
 const both = (f: (l: 'zh' | 'en') => string): I18n => ({ zh: f('zh'), en: f('en') });
 function shuffle<T>(a: T[], r: () => number): T[] {
@@ -26,8 +26,11 @@ function shuffle<T>(a: T[], r: () => number): T[] {
 }
 
 /** The question a written check asks (order items are shuffled with `r`). */
-export function ask(c: Check, r: () => number = Math.random): Asked {
-  if ('q' in c) return { kind: 'choice', prompt: c.q, options: c.options, answer: c.answer, why: c.why, ev: c.ev };
+export function ask(c: Check, r: () => number = Math.random, keyPrefix?: string): Asked {
+  if ('q' in c) {
+    const key = keyPrefix ? `choice:${keyPrefix}` : c.ev ? `choice:${c.ev}` : undefined;
+    return { kind: 'choice', key, prompt: c.q, options: c.options, answer: c.answer, why: c.why, ev: c.ev };
+  }
   if ('order' in c) {
     const evs = c.order.map(id => EVENT.get(id)!);
     const answer = evs.slice().sort((a, b) => a.year - b.year).map(e => e.id);
@@ -35,7 +38,7 @@ export function ask(c: Check, r: () => number = Math.random): Asked {
     // never start in the right order
     if (items.every((id, i) => id === answer[i])) items = [...items.slice(1), items[0]];
     return {
-      kind: 'order', items, answer,
+      kind: 'order', key: `order:${answer.join(',')}`, items, answer,
       prompt: both(l => (l === 'zh' ? '按时间先后排列' : 'Put these in time order')),
       why: c.why ?? both(l => answer.map(id => { const e = EVENT.get(id)!; const y = formatYear(e.year, l); return l === 'zh' ? `${e.title.zh}（${y}）` : `${e.title.en} (${y})`; }).join(' → ')),
     };
@@ -44,14 +47,17 @@ export function ask(c: Check, r: () => number = Math.random): Asked {
   const name = e ? e.title : p!.name;
   const at = e ?? p!;
   return {
-    kind: 'where', lon: at.lon, lat: at.lat, tol: c.tol ?? 400, name, ev: e?.id,
+    kind: 'where', key: `where:${c.where}`, lon: at.lon, lat: at.lat, tol: c.tol ?? 400, name, ev: e?.id,
     prompt: both(l => (l === 'zh' ? `在地图上点出「${name.zh}」的位置` : `Find “${name.en}” on the map`)),
     why: c.why ?? (e ? both(l => `${tr(e.title, l)}${l === 'zh' ? '：' : ': '}${tr(e.site ?? PLACE.get(e.place ?? '')?.name ?? e.title, l)}`) : both(l => tr(p!.modern ?? p!.name, l))),
   };
 }
 
 /** A lesson's 随堂检测, in the order written. */
-export const lessonQuestions = (lesson: Lesson, seed = Date.now()): Asked[] => { const r = rng(seed); return lesson.checks.map(c => ask(c, r)); };
+export const lessonQuestions = (lesson: Lesson, seed = Date.now()): Asked[] => {
+  const r = rng(seed);
+  return lesson.checks.map((c, idx) => ask(c, r, `${lesson.id}:${idx}`));
+};
 
 /** Four year options around `y`, the same side of the BCE/CE line. */
 function years(y: number, r: () => number): number[] {
@@ -70,13 +76,13 @@ export function unitTest(book: Book, unit: number, seed = Date.now()): Asked[] {
   const r = rng(seed);
   const u = UNITS.find(x => x.book === book && x.unit === unit);
   if (!u) return [];
-  const out: Asked[] = unitLessons(book, unit).flatMap(l => l.checks.map(c => ask(c, r)));
+  const out: Asked[] = unitLessons(book, unit).flatMap(l => l.checks.map((c, idx) => ask(c, r, `${l.id}:${idx}`)));
   const core = EVENTS.filter(e => e.weight === 1 && e.year > -10_000 && e.curriculum.some(c => c.book === book && c.unit === unit));
   for (const e of shuffle(core, r).slice(0, 3)) {
     const opts = years(e.year, r);
     if (opts.length < 4) continue;
     out.push({
-      kind: 'choice', ev: e.id, answer: opts.indexOf(e.year),
+      kind: 'choice', key: `when:${e.id}`, ev: e.id, answer: opts.indexOf(e.year),
       prompt: both(l => (l === 'zh' ? `「${e.title.zh}」发生在哪一年？` : `When did “${e.title.en}” happen?`)),
       options: opts.map(y => both(l => formatYear(y, l))),
       why: both(l => `${tr(e.title, l)}${l === 'zh' ? '：' : ': '}${formatYear(e.year, l)}`),

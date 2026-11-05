@@ -1,4 +1,5 @@
 import { formatArea, snapPolities } from '../data/areas.ts';
+import { LESSON, LESSONS } from '../data/lessons/index.ts';
 import { PLACE, mapName } from '../data/places.ts';
 import { POLITY } from '../data/polities.ts';
 import type { Book, HistEvent, I18n, Place, Snapshot, Year } from '../data/types.ts';
@@ -7,9 +8,10 @@ import { CHAPTERS, CHRONICLE, phaseAt, type Phase } from './chronicle.ts';
 import { eraAt, formatYear } from './timeline.ts';
 
 export type Question =
-  | { type: 'when'; event: string; prompt: I18n; options: number[]; answer: number }
-  | { type: 'where'; event: string; prompt: I18n; lon: number; lat: number }
-  | { type: 'order'; events: string[]; prompt: I18n; answer: string[] }
+  | { type: 'when'; key?: string; event: string; prompt: I18n; options: number[]; answer: number }
+  | { type: 'where'; key?: string; event: string; prompt: I18n; lon: number; lat: number }
+  | { type: 'order'; key?: string; events: string[]; prompt: I18n; answer: string[] }
+  | { type: 'choice'; key?: string; event?: string; prompt: I18n; options: I18n[]; answer: number; why: I18n }
   | { type: 'locate'; place: string; year: Year; name: I18n; prompt: I18n; hint?: I18n; lon: number; lat: number };
 
 /** Small seeded PRNG so a quiz can be reproduced from its seed (and tested deterministically). */
@@ -64,18 +66,107 @@ export function makeQuiz(events: HistEvent[], opts: { n?: number; seed?: number;
   });
 }
 
-/** Builds a targeted mistake-review quiz from missed event IDs without inflating normal quiz/lesson scores. */
+/** Builds a targeted mistake-review quiz from missed question keys (`when:`, `where:`, `order:`, `choice:` or legacy event IDs) without inflating normal quiz/lesson scores. */
 export function makeMistakeQuiz(events: HistEvent[], mistakeIds: Iterable<string>, seed = Date.now()): Question[] {
   const r = rng(seed);
-  const want = new Set(mistakeIds);
-  const pool = events.filter(e => want.has(e.id));
-  return pool.map((e): Question => ({
-    type: 'when',
-    event: e.id,
-    answer: e.year,
-    options: shuffle([e.year, ...distractors(e.year, r)], r),
-    prompt: { zh: `【错题复习】「${e.title.zh}」发生在哪一年？`, en: `[Review] When did “${e.title.en}” happen?` },
-  }));
+  const byId = new Map(events.map(e => [e.id, e]));
+  const orderPool = events.filter(e => e.weight <= 2 && e.year > -10_000);
+  const out: Question[] = [];
+
+  for (const raw of mistakeIds) {
+    if (!raw) continue;
+    if (raw.startsWith('where:')) {
+      const id = raw.slice(6);
+      const e = byId.get(id);
+      if (e) {
+        out.push({
+          type: 'where',
+          key: raw,
+          event: e.id,
+          lon: e.lon,
+          lat: e.lat,
+          prompt: { zh: `【错题复习】在地图上找到「${e.title.zh}」的发生地`, en: `[Review] Find where “${e.title.en}” happened` },
+        });
+        continue;
+      }
+      const p = PLACE.get(id);
+      if (p) {
+        out.push({
+          type: 'where',
+          key: raw,
+          event: p.id,
+          lon: p.lon,
+          lat: p.lat,
+          prompt: { zh: `【错题复习】在地图上找到「${p.name.zh}」的位置`, en: `[Review] Find “${p.name.en}” on the map` },
+        });
+      }
+      continue;
+    }
+
+    if (raw.startsWith('order:')) {
+      const ids = raw.slice(6).split(',').map(s => s.trim()).filter(Boolean);
+      const chosen = ids.map(id => byId.get(id)).filter((x): x is HistEvent => !!x);
+      if (chosen.length === 1) {
+        for (const x of shuffle(orderPool, r)) {
+          if (chosen.every(c => Math.abs(c.year - x.year) > 3)) {
+            chosen.push(x);
+            if (chosen.length >= 4) break;
+          }
+        }
+      }
+      if (chosen.length >= 2) {
+        const answer = chosen.slice().sort((a, b) => a.year - b.year).map(x => x.id);
+        let set = shuffle(chosen, r).map(x => x.id);
+        if (set.length > 1 && set.every((id, idx) => id === answer[idx])) set = [...set.slice(1), set[0]];
+        out.push({
+          type: 'order',
+          key: raw,
+          events: set,
+          answer,
+          prompt: { zh: '【错题复习】按时间先后排列这些事件', en: '[Review] Put these events in time order' },
+        });
+      }
+      continue;
+    }
+
+    if (raw.startsWith('choice:')) {
+      const rest = raw.slice(7);
+      const sep = rest.indexOf(':');
+      let check = sep > 0 ? LESSON.get(rest.slice(0, sep))?.checks[Number(rest.slice(sep + 1))] : undefined;
+      if (!check && sep < 0) {
+        for (const l of LESSONS) {
+          const found = l.checks.find(c => 'q' in c && c.ev === rest);
+          if (found) { check = found; break; }
+        }
+      }
+      if (check && 'q' in check) {
+        out.push({
+          type: 'choice',
+          key: raw,
+          event: check.ev,
+          prompt: { zh: `【错题复习】${check.q.zh}`, en: `[Review] ${check.q.en}` },
+          options: check.options,
+          answer: check.answer,
+          why: check.why,
+        });
+        continue;
+      }
+    }
+
+    const id = raw.startsWith('when:') ? raw.slice(5) : raw.startsWith('choice:') ? raw.slice(7) : raw;
+    const e = byId.get(id);
+    if (!e) continue;
+    out.push({
+      type: 'when',
+      key: raw,
+      event: e.id,
+      answer: e.year,
+      options: shuffle([e.year, ...distractors(e.year, r)], r),
+      prompt: { zh: `【错题复习】「${e.title.zh}」发生在哪一年？`, en: `[Review] When did “${e.title.en}” happen?` },
+    });
+  }
+
+  return out;
 }
 
 /** Great-circle distance in km, used to grade "where" answers (within 300 km is correct, 800 km is close). */

@@ -110,7 +110,8 @@ class App {
       open: e => this.openEvent(e),
       change: id => {
         this.root.classList.toggle('lesson-on', !!id || this.lesson.open);
-        writeLink(id ? { lesson: id, lang } : { year: this.timeline.year, lang });
+        const compare = this.period.compareYear ?? undefined;
+        writeLink(id ? { lesson: id, compare, lang } : { year: this.timeline.year, compare, lang });
       },
     });
     const surf = load<Surface>('surface', 'paper');
@@ -333,7 +334,7 @@ class App {
     const cmp = cy != null ? clampYear(cy) : null;
     this.atlas.setCompareYear(cmp);
     this.period.setCompare(cmp);
-    if (saveLink) this.saveYear(this.timeline.year);
+    if (saveLink) this.syncLink();
   }
 
   private swapCompare(): void {
@@ -351,6 +352,19 @@ class App {
     const compare = this.period.compareYear ?? undefined;
     if (this.card.place) writeLink({ place: this.card.place.p.id, year: y, compare, lang });
     else if (!this.card.event) writeLink({ year: y, compare, lang });
+  }
+
+  private syncLink(l = lang): void {
+    const journey = this.player?.state !== 'idle' ? readLink().journey : undefined;
+    const compare = this.period.compareYear ?? undefined;
+    const subject = journey ? { journey }
+      : this.card.event ? { event: this.card.event.id }
+      : this.card.place ? { place: this.card.place.p.id, year: this.timeline.year }
+      : this.card.person ? { person: this.card.person.id }
+      : this.card.life ? { life: this.card.life.id }
+      : this.lesson.open && this.lesson.id && !this.lesson.id.startsWith('test:') ? { lesson: this.lesson.id }
+      : { year: this.timeline.year };
+    writeLink({ ...subject, compare, lang: l });
   }
 
   /** Opens one toolbar popover (or none): 时期详情, the study hall and settings are mutually exclusive. */
@@ -404,7 +418,7 @@ class App {
     this.chronicle.select(e.id);
     this.card.showEvent(e);
     this.root.classList.add('card-on');
-    writeLink({ event: e.id, lang });
+    writeLink({ event: e.id, compare: this.period.compareYear ?? undefined, lang });
   }
 
   openEra(id: string): void {
@@ -421,7 +435,7 @@ class App {
     if (cap) this.atlas.flyTo({ lon: cap.lon + 2, lat: cap.lat - 3, dist: 50, tilt: 0.6 }, 1.6);
     this.card.showEra(era);
     this.root.classList.add('card-on');
-    writeLink({ year: y, lang });
+    writeLink({ year: y, compare: this.period.compareYear ?? undefined, lang });
   }
 
   openPlace(p: Place, fly = true): void {
@@ -433,7 +447,7 @@ class App {
     this.card.showPlace(p, this.timeline.year);
     this.atlas.focus(`place:${p.id}`, [p.lon, p.lat]);
     this.root.classList.add('card-on');
-    writeLink({ place: p.id, year: this.timeline.year, lang });
+    writeLink({ place: p.id, year: this.timeline.year, compare: this.period.compareYear ?? undefined, lang });
   }
 
   /** A building, custom, food or figure standing on the map: jumps time into its dynasty, flies there and opens its card. */
@@ -452,7 +466,7 @@ class App {
     this.card.showLife(x);
     this.atlas.focus(`life:${x.id}`, [x.lon, x.lat]);
     this.root.classList.add('card-on');
-    writeLink({ life: x.id, lang });
+    writeLink({ life: x.id, compare: this.period.compareYear ?? undefined, lang });
   }
 
   openPerson(p: Person): void {
@@ -466,7 +480,7 @@ class App {
     this.card.showPerson(p);
     this.atlas.focus(`person:${p.id}`);
     this.root.classList.add('card-on');
-    writeLink({ person: p.id, lang });
+    writeLink({ person: p.id, compare: this.period.compareYear ?? undefined, lang });
   }
 
   closeCard(): void {
@@ -480,7 +494,7 @@ class App {
     // back to the lesson underneath, if any
     const id = this.lesson?.open ? this.lesson.id : null;
     const compare = this.period.compareYear ?? undefined;
-    writeLink(id && !id.startsWith('test:') ? { lesson: id, lang } : { year: this.timeline.year, compare, lang });
+    writeLink(id && !id.startsWith('test:') ? { lesson: id, compare, lang } : { year: this.timeline.year, compare, lang });
   }
 
   async playStory(e: HistEvent): Promise<void> {
@@ -623,16 +637,7 @@ class App {
     this.reader.relabel();
     this.music.relabel();
     this.caption.relabel();
-    const journey = this.player.state !== 'idle' ? readLink().journey : undefined;
-    const compare = this.period.compareYear ?? undefined;
-    const subject = journey ? { journey }
-      : this.card.event ? { event: this.card.event.id }
-      : this.card.place ? { place: this.card.place.p.id, year: this.timeline.year, compare }
-      : this.card.person ? { person: this.card.person.id }
-      : this.card.life ? { life: this.card.life.id }
-      : this.lesson.open && this.lesson.id && !this.lesson.id.startsWith('test:') ? { lesson: this.lesson.id }
-      : { year: this.timeline.year, compare };
-    writeLink({ ...subject, lang: l });
+    this.syncLink(l);
   }
 
   /** Fits the side panel between the headline and the line key, and tells the camera how much of the screen it (or the

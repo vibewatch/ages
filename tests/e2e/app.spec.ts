@@ -962,12 +962,20 @@ test.describe('Ages atlas', () => {
     await expect(page).toHaveURL(/y=703/);
     await expect(page).toHaveURL(/cmp=-221/);
 
+    // Opening an event card while comparison is active preserves cmp in the URL
+    await page.goto('/?lowfx=1#e=zhenguan&cmp=-221&lang=zh');
+    await expect.poll(() => page.evaluate(() => (window as any).__atlas?.ready)).toBe(true);
+    await expect(page).toHaveURL(/#e=zhenguan&cmp=-221&lang=zh/);
+    await page.keyboard.press('Escape');
+    await expect(page).toHaveURL(/cmp=-221/);
+
     // Clear comparison
+    await page.locator('.b-details').click();
     await pv.locator('[data-act=cmp-clear]').click();
     await expect(pv.locator('[data-testid=compare-card]')).toBeHidden();
     await page.keyboard.press('Escape');
 
-    // 3. Lesson resumption, mistake review & progress backup
+    // 3. Lesson resumption (including check phase answers), mistake review & progress backup + undo reset
     await page.locator('.b-hub').click();
     await page.locator('.b-learn').click();
     const course = page.locator('.course');
@@ -991,7 +999,7 @@ test.describe('Ages atlas', () => {
     await expect(ls.locator('.ls-n')).toHaveText('3 / 10');
     await page.keyboard.press('Escape');
 
-    // Progress backup export / reset / import (including mistakes)
+    // Progress backup export / reset / undo-reset / import (including typed mistakes)
     await page.locator('.b-hub').click();
     await page.locator('.b-learn').click();
     await course.locator('[data-act=toggle-backup]').click();
@@ -1000,14 +1008,18 @@ test.describe('Ages atlas', () => {
     const jsonTa = backup.locator('[data-testid=progress-json]');
     const savedObj = JSON.parse(await jsonTa.inputValue());
     expect(savedObj.version).toBe(1);
-    savedObj.mistakes = ['qin_unify', 'chibi'];
+    savedObj.mistakes = ['when:qin_unify', 'choice:g7a-3:0'];
     const savedJson = JSON.stringify(savedObj);
 
     await backup.locator('[data-act=reset-progress]').click();
     await expect(course.locator('[data-act=resume-lesson]')).toBeHidden();
     await expect(course.locator('[data-act=review-mistakes]')).toBeHidden();
+    // One-click Undo reset restores the pre-reset state
+    await expect(backup.locator('[data-act=undo-reset]')).toBeVisible();
+    await backup.locator('[data-act=undo-reset]').click();
+    await expect(course.locator('[data-act=resume-lesson]')).toBeVisible();
 
-    // Restore from saved JSON
+    // Restore from saved JSON with typed mistakes
     await course.locator('[data-testid=progress-json]').fill(savedJson);
     await course.locator('[data-act=import-progress]').click();
     await expect(course.locator('[data-act=resume-lesson]')).toBeVisible();
@@ -1015,7 +1027,7 @@ test.describe('Ages atlas', () => {
     await expect(mistakesBtn).toBeVisible();
     await expect(mistakesBtn).toContainText('(2)');
 
-    // Launch mistake review quiz and verify post-answer event summary & card link
+    // Launch mistake review quiz and verify post-answer explanation
     await mistakesBtn.click();
     const qz = page.locator('section.quiz');
     await expect(qz).toBeVisible();
@@ -1025,7 +1037,6 @@ test.describe('Ages atlas', () => {
       await page.mouse.click(500, 400);
     }
     await expect(qz.locator('[data-testid=quiz-explain]')).toBeVisible();
-    await expect(qz.locator('[data-act=open-event]')).toBeVisible();
     expect(errs).toEqual([]);
   });
 });

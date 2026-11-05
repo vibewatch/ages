@@ -199,6 +199,14 @@ describe('historical sources & uncertainty notes', () => {
     const qinSrc = eventSources(EVENTS.find(e => e.id === 'qin_unify')!);
     expect(qinSrc.classics[0].zh).toContain('秦始皇本纪');
     expect(qinSrc.uncertainty?.zh).toContain('前221年');
+    expect(qinSrc.provenance.zh).toContain('核校');
+
+    // Lower/Middle Paleolithic sites (-1.7 Ma, -700 ka) use paleomagnetic / cosmogenic dating, not calibrated ¹⁴C
+    const yuanmouSrc = eventSources(EVENTS.find(e => e.id === 'yuanmou')!);
+    expect(yuanmouSrc.classics[0].zh).toContain('旧石器时代');
+    expect(yuanmouSrc.uncertainty?.zh).toContain('古地磁');
+    const pekingSrc = eventSources(EVENTS.find(e => e.id === 'peking_man')!);
+    expect(pekingSrc.uncertainty?.zh).toContain('²⁶Al/¹⁰Be');
 
     for (const s of SNAPSHOTS) {
       const src = snapshotSources(s);
@@ -212,11 +220,20 @@ describe('historical sources & uncertainty notes', () => {
 });
 
 describe('mistake review quiz', () => {
-  it('generates questions targeting the user mistake event IDs', () => {
+  it('generates questions targeting the user mistake event IDs and preserves question skills', () => {
     const q = makeMistakeQuiz(EVENTS, ['qin_unify', 'chibi', 'zhenguan'], 42);
     expect(q.length).toBe(3);
     const ids = new Set(q.map(x => 'event' in x ? x.event : ''));
     expect(ids).toEqual(new Set(['qin_unify', 'chibi', 'zhenguan']));
+
+    const typed = makeMistakeQuiz(EVENTS, ['when:qin_unify', 'where:chibi', 'order:qin_unify,chibi,zhenguan', 'choice:g7a-1:0'], 42);
+    expect(typed.map(x => x.type).sort()).toEqual(['choice', 'order', 'when', 'where']);
+    const whereQ = typed.find(x => x.type === 'where')!;
+    expect(whereQ.key).toBe('where:chibi');
+    const orderQ = typed.find(x => x.type === 'order')!;
+    expect(orderQ.key).toBe('order:qin_unify,chibi,zhenguan');
+    const choiceQ = typed.find(x => x.type === 'choice')!;
+    expect(choiceQ.key).toBe('choice:g7a-1:0');
   });
 });
 

@@ -30,6 +30,8 @@ export interface LastLesson {
   id: string;
   phase: 'steps' | 'check';
   step: number;
+  got?: (boolean | null)[];
+  seed?: number;
 }
 
 export interface ProgressBackup {
@@ -51,7 +53,9 @@ const isValidLastLesson = (v: unknown): v is LastLesson | null =>
   v === null || (!!v && typeof v === 'object' && !Array.isArray(v)
     && typeof (v as LastLesson).id === 'string' && (v as LastLesson).id.length > 0
     && ((v as LastLesson).phase === 'steps' || (v as LastLesson).phase === 'check')
-    && typeof (v as LastLesson).step === 'number' && Number.isInteger((v as LastLesson).step) && (v as LastLesson).step >= 0);
+    && typeof (v as LastLesson).step === 'number' && Number.isInteger((v as LastLesson).step) && (v as LastLesson).step >= 0
+    && ((v as LastLesson).got === undefined || (Array.isArray((v as LastLesson).got) && (v as LastLesson).got!.every(x => x === null || typeof x === 'boolean')))
+    && ((v as LastLesson).seed === undefined || (typeof (v as LastLesson).seed === 'number' && Number.isFinite((v as LastLesson).seed))));
 
 export function save(k: string, v: unknown): void {
   const s = JSON.stringify(v);
@@ -79,11 +83,16 @@ export class Progress {
     save('mistakes', [...this.mistakes]);
   }
   resolveMistake(id: string): void {
-    if (!this.mistakes.delete(id)) return;
+    let changed = this.mistakes.delete(id);
+    if (id.startsWith('when:')) changed = this.mistakes.delete(id.slice(5)) || changed;
+    if (!changed) return;
     save('mistakes', [...this.mistakes]);
   }
-  saveLessonStep(id: string, phase: 'steps' | 'check', step: number): void {
-    this.lastLesson = { id, phase, step: Math.max(0, Math.floor(step)) };
+  saveLessonStep(id: string, phase: 'steps' | 'check', step: number, got?: (boolean | null)[], seed?: number): void {
+    const next: LastLesson = { id, phase, step: Math.max(0, Math.floor(step)) };
+    if (got && got.length) next.got = got.map(x => (typeof x === 'boolean' ? x : null));
+    if (seed != null && Number.isFinite(seed)) next.seed = seed;
+    this.lastLesson = next;
     save('lastLesson', this.lastLesson);
   }
   clearLessonStep(id?: string): void {
@@ -110,7 +119,12 @@ export class Progress {
       quizBest: this.best,
       lessons: { ...this.scores },
       mistakes: [...this.mistakes],
-      lastLesson: this.lastLesson ? { ...this.lastLesson } : null,
+      lastLesson: this.lastLesson
+        ? {
+          ...this.lastLesson,
+          ...(this.lastLesson.got ? { got: [...this.lastLesson.got] } : {}),
+        }
+        : null,
     };
     return JSON.stringify(payload, null, 2);
   }

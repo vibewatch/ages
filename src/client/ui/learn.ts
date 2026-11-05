@@ -19,6 +19,7 @@ export class Learn {
   private book: Book = load<Book>('book', 'g7a', v => typeof v === 'string' && Object.hasOwn(BOOKS, v));
   private backupOpen = false;
   private backupMsg: { ok: boolean; text: string } | null = null;
+  private lastResetBackup: string | null = null;
   onLesson: (l: Lesson, resume?: boolean) => void = () => {};
   onTest: (book: Book, unit: number) => void = () => {};
   onReviewMistakes: () => void = () => {};
@@ -48,12 +49,16 @@ export class Learn {
     const L = lang;
     this.el.setAttribute('aria-label', t('learnTitle'));
     const [n, m] = this.done();
-    const saved = this.progress.lastLesson ? LESSON.get(this.progress.lastLesson.id) : undefined;
+    const last = this.progress.lastLesson;
+    const saved = last ? LESSON.get(last.id) : undefined;
     const mistakeCount = this.progress.mistakes.size;
+    const resumeText = saved && last
+      ? `▶ ${t(last.phase === 'check' ? 'lsResumeCheck' : 'lsResume', { t: tr(saved.title, L), s: last.step + 1 })}`
+      : '';
     const tools = h('div', { class: 'c-tools' },
       saved ? h('button', {
         type: 'button', class: 'btn primary c-resume', 'data-act': 'resume-lesson',
-        text: `▶ ${t('lsResume', { t: tr(saved.title, L), s: this.progress.lastLesson!.step + 1 })}`,
+        text: resumeText,
         onclick: () => this.onLesson(saved, true),
       }) : null,
       mistakeCount > 0 ? h('button', {
@@ -86,6 +91,7 @@ export class Learn {
             onclick: () => {
               const ok = this.progress.importData(ta.value);
               if (ok) {
+                this.lastResetBackup = null;
                 this.backupMsg = { ok: true, text: t('pgImported') };
                 this.render();
               } else {
@@ -99,11 +105,22 @@ export class Learn {
           h('button', {
             type: 'button', class: 'btn ghost', 'data-act': 'reset-progress', text: t('pgReset'),
             onclick: () => {
+              this.lastResetBackup = this.progress.exportData();
               this.progress.reset();
               this.backupMsg = { ok: true, text: t('pgResetDone') };
               this.render();
             },
-          })));
+          }),
+          this.lastResetBackup ? h('button', {
+            type: 'button', class: 'btn', 'data-act': 'undo-reset', text: t('pgUndoReset'),
+            onclick: () => {
+              if (this.lastResetBackup && this.progress.importData(this.lastResetBackup)) {
+                this.lastResetBackup = null;
+                this.backupMsg = { ok: true, text: t('pgImported') };
+                this.render();
+              }
+            },
+          }) : null));
     }
     const tabs = h('div', { class: 'tabs', role: 'tablist' }, ...(Object.keys(BOOKS) as Book[]).map(b => h('button', {
       type: 'button', role: 'tab', class: b === this.book ? 'on' : '', 'aria-selected': String(b === this.book), 'data-book': b,

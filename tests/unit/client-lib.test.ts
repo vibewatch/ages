@@ -203,6 +203,19 @@ describe('storage fallback', () => {
     expect(p.lastLesson).toEqual({ id: 'g7a-09-qin', phase: 'steps', step: 2 });
     expect(p.scores['g7a-01-early-humans']).toEqual([4, 5]);
     expect(p.best).toBe(80);
+
+    // Check-phase lesson state (got + seed) and skill-typed mistakes round-trip cleanly
+    p.saveLessonStep('g7a-3', 'check', 1, [true, null, null, null], 777);
+    p.addMistake('qin_unify');
+    p.addMistake('where:qin_unify');
+    p.resolveMistake('when:qin_unify');
+    expect(p.mistakes.has('qin_unify')).toBe(false);
+    expect(p.mistakes.has('where:qin_unify')).toBe(true);
+    const snap = p.exportData();
+    p.reset();
+    expect(p.importData(snap)).toBe(true);
+    expect(p.lastLesson).toEqual({ id: 'g7a-3', phase: 'check', step: 1, got: [true, null, null, null], seed: 777 });
+    expect(p.mistakes.has('where:qin_unify')).toBe(true);
   });
 });
 

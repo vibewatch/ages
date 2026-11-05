@@ -15,6 +15,14 @@ export interface SnapshotSourceInfo {
 }
 
 const PILOT_EVENT_CLASSICS: Record<string, I18n[]> = {
+  yuanmou: [
+    { zh: '中国社会科学院考古研究所《中国考古学·旧石器时代卷》', en: 'CASS Institute of Archaeology, Chinese Archaeology: Paleolithic Volume' },
+    { zh: '钱方等《元谋人牙齿化石地层古地磁测年》与元谋盆地发掘报告', en: 'Paleomagnetic stratigraphy & excavation reports of the Yuanmou hominin site' },
+  ],
+  peking_man: [
+    { zh: '裴文中、贾兰坡《周口店发掘记》 · 《中国考古学·旧石器时代卷》', en: 'Pei Wenzhong & Jia Lanpo, Zhoukoudian Excavation Reports · Chinese Archaeology: Paleolithic Volume' },
+    { zh: '沈冠军等《周口店第一地点²⁶Al/¹⁰Be埋藏测年》（Nature, 2009）', en: 'Shen et al., ²⁶Al/¹⁰Be cosmogenic nuclide burial dating of Zhoukoudian Locality 1 (Nature, 2009)' },
+  ],
   qin_unify: [
     { zh: '《史记·秦始皇本纪》（司马迁）', en: 'Records of the Grand Historian (Shiji): Basic Annals of Qin Shi Huang' },
     { zh: '睡虎地秦墓竹简 · 里耶秦简（出土秦律与郡县公文）', en: 'Shuihudi & Liye Qin Bamboo Slips (excavated Qin statutes and county archives)' },
@@ -46,6 +54,14 @@ const PILOT_EVENT_CLASSICS: Record<string, I18n[]> = {
 };
 
 const PILOT_EVENT_UNCERTAINTY: Record<string, I18n> = {
+  yuanmou: {
+    zh: '年代说明：距今约170万年远超碳十四测年上限（约5万年），本条目年代依据古地磁地层学与电子自旋共振（ESR）测年，代表早更新世化石层近似区间。',
+    en: 'Chronology note: At ~1.7 Ma (far beyond the ~50 ka limit of ¹⁴C), this date relies on paleomagnetic stratigraphy and ESR dating of the Early Pleistocene fossil horizon.',
+  },
+  peking_man: {
+    zh: '年代说明：周口店北京人遗址跨越中更新世多个文化层（距今约70万—20万年），由古地磁、铀系法及宇宙成因核素（²⁶Al/¹⁰Be）埋藏测年综合测定。',
+    en: 'Chronology note: Zhoukoudian Locality 1 spans multiple Middle Pleistocene strata (~700–200 ka), dated via paleomagnetism, U-series, and ²⁶Al/¹⁰Be cosmogenic burial dating.',
+  },
   qin_unify: {
     zh: '考证说明：前221年秦完成兼并六国核心区；南征百越置桂林、象郡、南海三郡（前214年）及北击匈奴收河南地系后续扩边，地图疆界反映前214年后的极盛范围。',
     en: 'Historical note: Qin completed the annexation of the Six States in 221 BCE; the three Lingnan commanderies (214 BCE) and the Ordos Loop were incorporated in subsequent campaigns.',
@@ -65,6 +81,12 @@ const PILOT_EVENT_UNCERTAINTY: Record<string, I18n> = {
 };
 
 function defaultClassics(year: number): I18n[] {
+  if (year < -50_000) {
+    return [
+      { zh: '中国社会科学院考古研究所《中国考古学·旧石器时代卷》', en: 'CASS Institute of Archaeology, Chinese Archaeology: Paleolithic Volume' },
+      { zh: '古脊椎动物与古人类研究所遗址发掘报告及古地磁/同位素测年研究', en: 'IVPP hominin excavation reports & paleomagnetic / radiometric dating studies' },
+    ];
+  }
   if (year < -2070) {
     return [
       { zh: '中国社会科学院考古研究所《中国考古学·新石器时代卷》', en: 'CASS Institute of Archaeology, Chinese Archaeology: Neolithic Volume' },
@@ -140,20 +162,28 @@ function defaultClassics(year: number): I18n[] {
 /** Returns structured provenance, classical/primary sources, and date/location uncertainty notes for any event. */
 export function eventSources(e: HistEvent): EventSourceInfo {
   const imported = e.source === 'jiangshan';
+  const hasPilotSource = Object.hasOwn(PILOT_EVENT_CLASSICS, e.id);
   const provenance: I18n = imported
-    ? { zh: '江山图编年史料 · 经 CHGIS 与传世正史参校', en: 'jiangshan-map chronicle · cross-referenced with CHGIS & dynastic histories' }
-    : e.curriculum.length
-      ? { zh: '统编历史教材核心条目 · 正史与出土文献参校', en: 'Core curriculum entry · verified against dynastic histories & archaeology' }
-      : { zh: '长河专题史事 · 传世典籍与学术论著整理', en: 'Curated historical entry · synthesized from primary sources & scholarship' };
+    ? { zh: '江山图编年史料 · 附断代参考史籍', en: 'jiangshan-map chronicle · paired with period reference histories' }
+    : hasPilotSource
+      ? { zh: '统编历史教材核心条目 · 专项正史与出土文献核校', en: 'Core curriculum entry · verified with event-specific primary & archaeological sources' }
+      : e.curriculum.length
+        ? { zh: '统编历史教材核心条目 · 附断代参考史籍', en: 'Core curriculum entry · paired with period reference histories' }
+        : { zh: '长河专题史事 · 附断代参考史籍', en: 'Curated historical entry · paired with period reference histories' };
 
   const classics = PILOT_EVENT_CLASSICS[e.id] ?? defaultClassics(e.year);
 
   let uncertainty: I18n | null = PILOT_EVENT_UNCERTAINTY[e.id] ?? null;
   if (!uncertainty) {
-    if (e.year < -2070) {
+    if (e.year < -50_000) {
       uncertainty = {
-        zh: '年代说明：史前绝对年代依据放射性碳十四（¹⁴C）测年与树轮校正，为考古文化层近似区间。',
-        en: 'Chronology note: Prehistoric dates derive from calibrated radiocarbon (¹⁴C) dating and represent approximate archaeological horizons.',
+        zh: '年代说明：距今5万年以前的旧石器时代遗址超出碳十四测年范围，绝对年代主要依据古地磁地层学、铀系法、电子自旋共振（ESR）或宇宙成因核素测年。',
+        en: 'Chronology note: Paleolithic sites older than ~50 ka exceed the limit of ¹⁴C dating and rely on paleomagnetic stratigraphy, U-series, ESR, or cosmogenic nuclide dating.',
+      };
+    } else if (e.year < -2070) {
+      uncertainty = {
+        zh: '年代说明：新石器及旧石器晚期绝对年代主要依据放射性碳十四（¹⁴C）测年与树轮校正，为考古文化层近似区间。',
+        en: 'Chronology note: Late prehistoric dates derive from calibrated radiocarbon (¹⁴C) dating and represent approximate archaeological horizons.',
       };
     } else if (e.year < -841) {
       uncertainty = {
