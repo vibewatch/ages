@@ -5,6 +5,7 @@ import { JOURNEYS, PEOPLE } from '../../shared/data/jiangshan.ts';
 import { LESSONS } from '../../shared/data/lessons/index.ts';
 import { LIFE } from '../../shared/data/life.ts';
 import { PLACES } from '../../shared/data/places.ts';
+import { TRAILS } from '../../shared/data/trails.ts';
 import { search, type Hit } from '../../shared/lib/search.ts';
 import { formatYear } from '../../shared/lib/timeline.ts';
 import { lang, t } from '../lib/i18n.ts';
@@ -47,13 +48,14 @@ export class SearchBox {
       journeys: JOURNEYS,
       life: LIFE_SEARCH,
       lessons: LESSONS,
+      trails: TRAILS,
     }, 8) : [];
     this.cur = 0;
     if (!q) { this.list.hidden = true; return; }
     this.list.replaceChildren(...(this.hits.length ? this.hits.map((x, i) => h('li', {
       role: 'option', class: i === this.cur ? 'cur' : '', 'aria-selected': String(i === this.cur),
       onmousedown: (e: Event) => { e.preventDefault(); this.pick(x); },
-    }, h('span', { class: `ty ty-${x.type}`, text: ({ year: '⏱', event: '◆', era: '▬', place: '●', person: '人', journey: '⇢', life: '✦', lesson: '课' } as const)[x.type] }),
+    }, h('span', { class: `ty ty-${x.type}`, text: ({ year: '⏱', event: '◆', era: '▬', place: '●', person: '人', journey: '⇢', life: '✦', lesson: '课', trail: '脉' } as const)[x.type] }),
       h('span', { class: 'lb', text: tr(x.label, lang) }, 'sub' in x && x.sub ? h('small', { text: ' ' + tr(x.sub, lang) }) : null),
       'year' in x ? h('span', { class: 'yr', text: formatYear(x.year, lang, { short: true }) }) : null)) : [h('li', { class: 'none', text: t('noHits') })]));
     this.list.hidden = false;

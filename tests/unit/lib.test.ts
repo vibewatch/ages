@@ -12,7 +12,7 @@ import { LIFE } from '../../src/shared/data/life.ts';
 import { LESSONS } from '../../src/shared/data/lessons/index.ts';
 import { EVENT } from '../../src/shared/data/events.ts';
 import { PLACE } from '../../src/shared/data/places.ts';
-import { TRAIL, TRAILS } from '../../src/shared/data/trails.ts';
+import { TRAIL, TRAILS, trailsForEvent, trailsForPlace } from '../../src/shared/data/trails.ts';
 import { WORLD_MILESTONES, eventWorldLink, worldForRange } from '../../src/shared/data/world-sync.ts';
 import { parseYearQuery, search } from '../../src/shared/lib/search.ts';
 import { ANCHORS, clampYear, eraAt, formatYear, rulerAt, tToYear, ticks, yearToT } from '../../src/shared/lib/timeline.ts';
@@ -83,13 +83,15 @@ describe('search', () => {
     expect(parseYearQuery('0')).toBeNull();
     expect(parseYearQuery('abc')).toBeNull();
 
-    const full = { ...src, people: PEOPLE, journeys: JOURNEYS, life: LIFE.filter(l => !l.person), lessons: LESSONS };
+    const full = { ...src, people: PEOPLE, journeys: JOURNEYS, life: LIFE.filter(l => !l.person), lessons: LESSONS, trails: TRAILS };
     const yHits = search('-221', full);
     expect(yHits[0]).toMatchObject({ type: 'year', year: -221 });
     expect(yHits.some(h => h.type === 'event' && h.id === 'qin_unify')).toBe(true);
 
     expect(search('马球', full).some(h => h.type === 'life' && h.id === 'polo')).toBe(true);
     expect(search('繁荣与开放', full).some(h => h.type === 'lesson' && h.id === 'g7b-1')).toBe(true);
+    expect(search('丝路驼铃', full).some(h => h.type === 'trail' && h.id === 'silk-maritime')).toBe(true);
+    expect(search('Imperial Capitals', full).some(h => h.type === 'trail' && h.id === 'capitals')).toBe(true);
   });
 });
 
@@ -128,6 +130,10 @@ describe('world synchronism & thematic trails', () => {
         if (s.place) expect(PLACE.has(s.place), `${tr.id}:${s.place}`).toBe(true);
       }
     }
+    const qinTrails = trailsForEvent('qin_unify');
+    expect(qinTrails.map(t => t.trail.id)).toEqual(expect.arrayContaining(['capitals', 'reforms']));
+    const xianTrails = trailsForPlace('xian', id => EVENT.get(id)?.place);
+    expect(xianTrails.map(t => t.trail.id)).toEqual(expect.arrayContaining(['capitals', 'silk-maritime']));
   });
 });
 

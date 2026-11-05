@@ -1,10 +1,13 @@
 import { BOOKS, unitOf } from '../../shared/data/curriculum.ts';
+import { formatArea, polityArea, realmArea } from '../../shared/data/areas.ts';
 import { ERAS, RULERS } from '../../shared/data/eras.ts';
-import { EVENTS, hasStory } from '../../shared/data/events.ts';
+import { EVENT, EVENTS, hasStory } from '../../shared/data/events.ts';
 import { tr } from '../../shared/data/i18n.ts';
 import { JOURNEYS, PEOPLE, dynastyOfEra, eraIdOfDyn, journeysOf, personNamed, type Journey, type Person } from '../../shared/data/jiangshan.ts';
 import { LESSON } from '../../shared/data/lessons/index.ts';
 import { PLACE, isCapital, placeName } from '../../shared/data/places.ts';
+import { SNAPSHOTS } from '../../shared/data/territories.ts';
+import { trailsForEvent, trailsForPlace, type Trail } from '../../shared/data/trails.ts';
 import type { Era, EventKind, HistEvent, I18n, Lesson, ModelRecipe, Place, Wiki, Year } from '../../shared/data/types.ts';
 import { eraAt, formatYear } from '../../shared/lib/timeline.ts';
 import { kindName, lang, t } from '../lib/i18n.ts';
@@ -25,6 +28,8 @@ export interface CardHooks {
   era(id: string): void;
   place?(p: Place): void;
   lesson?(l: Lesson): void;
+  trail?(trail: Trail, stopIndex: number): void;
+  compare?(year: Year): void;
   close(): void;
   learned(e: HistEvent, on: boolean): void;
   journey(j: Journey): void;
@@ -236,6 +241,7 @@ export class Card {
     const modern = p.modern && p.modern.zh !== now.zh ? p.modern : now.zh !== p.name.zh ? p.name : undefined;
     const wikiName = p.tier > 3 && p.modern?.zh && !p.modern.zh.includes('·') ? p.modern : p.name;
     const capYears = (p.capital ?? []).reduce((s, [a, b]) => s + Math.max(1, Math.min(b, 1949) - a), 0);
+    const placeTrails = trailsForPlace(p.id, id => EVENT.get(id)?.place);
     this.setHero(placeModel(p, year), t(p.kind === 'pass' ? 'pass' : 'place'), '#c9a45c', null);
     const showNames = names.length > 1 || (names.length === 1 && names[0].name.zh !== now.zh);
     fill(this.body,
@@ -252,7 +258,31 @@ export class Card {
           style: 'cursor:pointer',
           onclick: () => this.hooks.year?.(Math.round((n.from + Math.min(n.to, 2025)) / 2)),
         }, h('span', { class: 'y', text: this.span(n.from, n.to) }), h('b', { text: tr(n.name, L) }))))) : null,
-      p.capital?.length ? this.sec(t('asCapital'), true, h('p', { class: 'caps', text: p.capital.map(([a, b]) => this.span(a, b)).join('；') })) : null,
+      p.capital?.length ? this.sec(t('asCapital'), true,
+        h('div', { class: 'people caps-list', 'data-testid': 'place-capitals' },
+          ...p.capital.map(([a, b]) => {
+            const mid = Math.round((a + Math.min(b, 2025)) / 2);
+            const capEra = eraAt(mid);
+            const label = capEra ? `${tr(capEra.name, L)} · ${this.span(a, b)}` : this.span(a, b);
+            return h('button', {
+              type: 'button',
+              class: 'chip link' + (year >= a && year <= b ? ' on' : ''),
+              'data-act': 'jump-capital',
+              'data-year': String(mid),
+              onclick: () => this.hooks.year?.(mid),
+            }, label);
+          }))) : null,
+      placeTrails.length ? this.sec(t('trails'), true,
+        h('div', { class: 'people card-trails', 'data-testid': 'card-trails' },
+          ...placeTrails.map(({ trail, stopIndex }) =>
+            h('button', {
+              type: 'button',
+              class: 'chip link trail-chip',
+              'data-act': 'open-trail',
+              'data-trail': trail.id,
+              style: `--tc:${trail.color}`,
+              onclick: () => this.hooks.trail?.(trail, stopIndex),
+            }, `${tr(trail.title, L)} (${stopIndex + 1}/${trail.stops.length})`)))) : null,
       notes.length ? this.sec(t('notes'), true, h('ul', { class: 'periods' },
         ...notes.map(n => h('li', {
           style: 'cursor:pointer',
@@ -358,6 +388,7 @@ export class Card {
     });
     const src = eventSources(e);
     const wsync = eventWorldLink(e.id, e.year, e.end);
+    const evTrails = trailsForEvent(e.id);
     const twin = LIFE.find(l => lifeEvent(l) === e);
     const rawModel = (!e.model?.hero && twin?.model) ? twin.model : (e.model ?? KIND_MODEL[e.kind]);
     const evModel: ModelRecipe = rawModel.year !== undefined ? rawModel : { ...rawModel, year: e.year };
@@ -379,6 +410,17 @@ export class Card {
       e.points.length ? this.sec(t('keyPoints'), true, h('ul', { class: 'points' }, ...e.points.map(p => h('li', { text: tr(p, L) })))) : null,
       e.people?.length ? this.sec(t('people'), true, h('div', { class: 'people' }, ...e.people.map(p => this.personChip(p)))) : null,
       units.length ? this.sec(t('textbook'), true, h('ul', { class: 'units' }, ...units)) : null,
+      evTrails.length ? this.sec(t('trails'), true,
+        h('div', { class: 'people card-trails', 'data-testid': 'card-trails' },
+          ...evTrails.map(({ trail, stopIndex }) =>
+            h('button', {
+              type: 'button',
+              class: 'chip link trail-chip',
+              'data-act': 'open-trail',
+              'data-trail': trail.id,
+              style: `--tc:${trail.color}`,
+              onclick: () => this.hooks.trail?.(trail, stopIndex),
+            }, `${tr(trail.title, L)} (${stopIndex + 1}/${trail.stops.length})`)))) : null,
       this.sec(t('worldSync'), true,
         h('div', { class: 'card-world', 'data-testid': 'card-world' },
           h('b', { class: 'cw-title', text: tr(wsync.title, L) }),
@@ -414,6 +456,7 @@ export class Card {
     const journeys = JOURNEYS.filter(j => eraIdOfDyn(j.dyn) === era.id);
     const life = lifeOf(era.id).filter(x => x.kind !== 'person');
     const worldList = worldForRange(era.start, era.end, 3);
+    const phases = SNAPSHOTS.filter(s => era.lane ? polityArea(s.id, era.id) > 0 : (s.year >= era.start && s.year <= era.end));
     const seat = cap ? tr(placeName(cap, era.start), L) : dy?.seat.zh ? tr(dy.seat, L) : '';
     const seatEl = seat
       ? (cap && this.hooks.place
@@ -429,6 +472,31 @@ export class Card {
       h('p', { class: 'sum', text: tr(era.summary, L) }),
       era.wiki ? h('div', { class: 'acts' }, this.wikiBtn(era.wiki, tr(era.name, L))) : null,
       overview?.zh ? this.sec(t('overview'), true, h('p', { class: 'sum', text: tr(overview, L) })) : null,
+      phases.length ? this.sec(t('eraPhases'), true,
+        h('ul', { class: 'periods era-phases', 'data-testid': 'era-phases' },
+          ...phases.map(s => {
+            const area = era.lane ? polityArea(s.id, era.id) : realmArea(s.id);
+            const cleanTitle = tr(s.title, L).replace(/^[^·（(]*\d[^·（(]*·\s*(?=\S)/, '');
+            return h('li', { class: 'era-phase-row' },
+              h('button', {
+                type: 'button',
+                class: 'era-phase-jump',
+                'data-act': 'era-phase',
+                'data-year': String(s.year),
+                onclick: () => this.hooks.year?.(s.year),
+              },
+                h('span', { class: 'y', text: formatYear(s.year, L, { short: true }) }),
+                h('b', { class: 'ep-title', text: cleanTitle }),
+                area > 0 ? h('span', { class: 'ep-area', text: formatArea(area, L, true) }) : null),
+              this.hooks.compare ? h('button', {
+                type: 'button',
+                class: 'era-phase-cmp',
+                'data-act': 'era-compare',
+                'data-year': String(s.year),
+                title: t('cmpTitle'),
+                onclick: () => this.hooks.compare?.(s.year),
+              }, `⇄ ${t('cmpBtn')}`) : null);
+          }))) : null,
       worldList.length ? this.sec(t('worldSync'), true,
         h('ul', { class: 'periods world-list', 'data-testid': 'card-world' },
           ...worldList.map(w => h('li', {},

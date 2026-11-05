@@ -48,7 +48,7 @@ class App {
   reader = new Reader();
   caption = new Caption(canSpeak());
   search = new SearchBox();
-  chronicle = new Chronicle();
+  chronicle = new Chronicle(this.progress);
   period = new Period();
   trail = new TrailBar();
   panel!: Panel;
@@ -75,8 +75,10 @@ class App {
       era: id => this.openEra(id),
       place: p => this.openPlace(p),
       lesson: l => this.startLesson(l),
+      trail: (tl, idx) => this.trail.start(tl, idx),
+      compare: y => this.setCompare(y),
       close: () => this.closeCard(),
-      learned: () => { if (this.learn.open) this.learn.render(); },
+      learned: () => { if (this.learn.open) this.learn.render(); this.chronicle.relabel(); },
       journey: j => this.playJourney(j),
       person: p => this.openPerson(p),
       life: l => this.openLife(l),
@@ -210,6 +212,9 @@ class App {
       } else if (x.type === 'lesson') {
         const ls = LESSON.get(x.id);
         if (ls) this.startLesson(ls);
+      } else if (x.type === 'trail') {
+        const tl = TRAIL.get(x.id);
+        if (tl) this.trail.start(tl, 0);
       } else if (x.type === 'journey') this.playJourney(JOURNEYS.find(j => j.id === x.id)!);
       else {
         const p = PLACE.get(x.id)!;
@@ -636,6 +641,12 @@ class App {
       else if (this.quiz.open) this.quiz.toggle(false);
       else if (this.card.open) this.closeCard();
       else if (this.lesson.open) this.lesson.stop();
+      else if (this.trail.active) this.trail.close(true);
+      return;
+    }
+    if ((e.key === '[' || e.key === ']') && !e.altKey && !e.metaKey && !e.ctrlKey && this.trail.active) {
+      this.trail.step(e.key === ']' ? 1 : -1);
+      e.preventDefault();
       return;
     }
     if ((e.key === 'r' || e.key === 'R') && !e.altKey && !e.metaKey && !e.ctrlKey && this.player.state === 'idle') {

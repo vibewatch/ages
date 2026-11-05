@@ -297,3 +297,24 @@ export const TRAILS: Trail[] = [
 ];
 
 export const TRAIL = new Map(TRAILS.map(t => [t.id, t]));
+
+/** Returns all thematic trails and stop indices that include `eventId`. */
+export function trailsForEvent(eventId: string): { trail: Trail; stopIndex: number }[] {
+  const out: { trail: Trail; stopIndex: number }[] = [];
+  for (const trail of TRAILS) {
+    const idx = trail.stops.findIndex(s => s.event === eventId);
+    if (idx >= 0) out.push({ trail, stopIndex: idx });
+  }
+  return out;
+}
+
+/** Returns all thematic trails and stop indices that visit `placeId` (either directly or via the stop's event place). */
+export function trailsForPlace(placeId: string, eventPlaceOf?: (evId: string) => string | undefined): { trail: Trail; stopIndex: number }[] {
+  const out: { trail: Trail; stopIndex: number }[] = [];
+  for (const trail of TRAILS) {
+    const idx = trail.stops.findIndex(s => s.place === placeId || (s.event && eventPlaceOf?.(s.event) === placeId));
+    if (idx >= 0) out.push({ trail, stopIndex: idx });
+  }
+  return out;
+}
+

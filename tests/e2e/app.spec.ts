@@ -1099,9 +1099,44 @@ test.describe('Ages atlas', () => {
     await expect(page).toHaveURL(/trail=capitals&ts=1/);
     await expect(page.locator('.card h2')).toContainText('盘庚迁殷');
 
+    // Keyboard [ / ] steps along the active trail
+    await page.keyboard.press(']');
+    await expect(trailBar.locator('[data-testid=trail-index]')).toHaveText('3 / 8');
+    await page.keyboard.press('[');
+    await expect(trailBar.locator('[data-testid=trail-index]')).toHaveText('2 / 8');
+
     await trailBar.locator('[data-act=trail-close]').click();
     await expect(trailBar).toBeHidden();
     await expect(page).not.toHaveURL(/trail=/);
+
+    // 7. Card trail pills ([data-testid="card-trails"]), Place capital chips ([data-testid="place-capitals"]),
+    //    Era territorial phases & compare ([data-testid="era-phases"]), and Chronicle kind filter ([data-testid="chronicle-kinds"])
+    await page.goto('/?lowfx=1#p=xian&y=700&lang=zh');
+    await expect.poll(() => page.evaluate(() => (window as any).__atlas?.ready)).toBe(true);
+    const placeCaps = page.locator('[data-testid=place-capitals]');
+    await expect(placeCaps).toBeVisible();
+    await expect(placeCaps).toContainText('唐');
+    await expect(page.locator('[data-testid=card-trails]')).toBeVisible();
+    await page.locator('[data-testid=card-trails] [data-trail=capitals]').click();
+    await expect(trailBar).toBeVisible();
+    await trailBar.locator('[data-act=trail-close]').click();
+
+    // Open Tang Era card from timeline band and verify territorial phases + one-click compare
+    await page.locator('.tl-band[data-era=tang]').click();
+    const eraPhases = page.locator('[data-testid=era-phases]');
+    await expect(eraPhases).toBeVisible();
+    await eraPhases.locator('[data-act=era-compare]').first().click();
+    await expect(page).toHaveURL(/cmp=/);
+
+    // Open Period Details and filter Chronicle by 3D Story / event kind
+    await page.locator('.b-details').click();
+    const chKinds = pv.locator('[data-testid=chronicle-kinds]');
+    await expect(chKinds).toBeVisible();
+    const allCount = await pv.locator('.ch-list > li').count();
+    await chKinds.locator('[data-kind=story]').click();
+    const storyCount = await pv.locator('.ch-list > li').count();
+    expect(storyCount).toBeGreaterThan(0);
+    expect(storyCount).toBeLessThan(allCount);
     expect(errs).toEqual([]);
   });
 });

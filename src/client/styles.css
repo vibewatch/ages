@@ -1245,3 +1245,52 @@ i.seen { color: var(--k-economy); font-style: normal; margin-left: auto; }
   .menu.pv { height: calc(100dvh - 70px); }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition: none !important; } }
+
+/* Trail Cross-Links, Era Territorial Phases, Place Capitals, Chronicle Filters */
+.ty-trail { color: var(--gold); }
+.trail-chip { border-color: color-mix(in srgb, var(--tc, var(--gold)) 55%, var(--rule)); }
+.trail-chip::before {
+  content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--tc, var(--gold)); margin-right: 5px; vertical-align: middle;
+}
+.caps-list .chip.on {
+  border-color: var(--gold); background: rgba(201, 164, 92, .16); color: var(--ink);
+}
+.era-phases { gap: 4px; }
+.era-phase-row {
+  display: flex; align-items: center; gap: 6px; padding: 2px 0 !important;
+}
+.era-phase-jump {
+  flex: 1 1 auto; min-width: 0; display: flex; align-items: baseline; gap: 6px;
+  background: none; border: 0; padding: 3px 4px; border-radius: 6px; color: var(--ink);
+  font: inherit; text-align: left; cursor: pointer;
+}
+.era-phase-jump:hover { background: var(--well); }
+.era-phase-jump .ep-title {
+  flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-weight: 600; font-size: var(--t-s);
+}
+.era-phase-jump .ep-area {
+  flex: none; font-size: var(--t-xs); color: var(--muted); font-variant-numeric: tabular-nums;
+}
+.era-phase-cmp {
+  flex: none; padding: 2px 7px; border-radius: 999px; border: 1px solid var(--rule);
+  background: var(--well); color: var(--muted); font: inherit; font-size: var(--t-xs); cursor: pointer;
+}
+.era-phase-cmp:hover { border-color: var(--gold); color: var(--ink); }
+.ch-kinds {
+  display: flex; flex-wrap: wrap; gap: 4px; padding: 0 12px 6px;
+}
+.ch-kind-chip {
+  padding: 2px 8px; border-radius: 999px; border: 1px solid var(--rule);
+  background: var(--well); color: var(--muted); font: inherit; font-size: var(--t-xs);
+  cursor: pointer; line-height: 1.4;
+}
+.ch-kind-chip:hover { color: var(--ink); border-color: var(--rule-2); }
+.ch-kind-chip.on {
+  background: rgba(201, 164, 92, .18); border-color: var(--gold); color: var(--ink); font-weight: 600;
+}
+.ch-ok {
+  flex: none; font-style: normal; font-size: var(--t-xs); color: #3f9b6f; font-weight: 700;
+}
+

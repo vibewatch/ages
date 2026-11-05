@@ -8,12 +8,14 @@ export type Hit =
   | { type: 'person'; id: string; label: I18n; score: number; sub?: I18n }
   | { type: 'journey'; id: string; label: I18n; score: number }
   | { type: 'life'; id: string; label: I18n; score: number; sub?: I18n }
-  | { type: 'lesson'; id: string; label: I18n; score: number; sub?: I18n };
+  | { type: 'lesson'; id: string; label: I18n; score: number; sub?: I18n }
+  | { type: 'trail'; id: string; label: I18n; score: number; sub?: I18n };
 
 export interface SearchPerson { id: string; name: I18n; title: I18n; aliases: string[] }
 export interface SearchJourney { id: string; title: I18n; short: I18n }
 export interface SearchLife { id: string; name: I18n; desc: I18n }
 export interface SearchLesson { id: string; title: I18n; blurb: I18n; sub?: I18n }
+export interface SearchTrail { id: string; title: I18n; subtitle: I18n }
 
 const norm = (s: string) => s.toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[’'`·\-\s]/g, '');
 
@@ -66,6 +68,7 @@ export function search(
     journeys?: SearchJourney[];
     life?: SearchLife[];
     lessons?: SearchLesson[];
+    trails?: SearchTrail[];
   },
   limit = 12,
 ): Hit[] {
@@ -130,6 +133,10 @@ export function search(
   for (const ls of src.lessons ?? []) {
     const s = best(q, ls.title.zh, ls.title.en) * 2.2 || (best(q, ls.blurb.zh, ls.blurb.en) > 0 ? 0.9 : 0);
     if (s) hits.push({ type: 'lesson', id: ls.id, label: ls.title, sub: ls.sub, score: s + 0.2 });
+  }
+  for (const tr of src.trails ?? []) {
+    const s = best(q, tr.title.zh, tr.title.en) * 2.4 || (best(q, tr.subtitle.zh, tr.subtitle.en) > 0 ? 1.1 : 0);
+    if (s) hits.push({ type: 'trail', id: tr.id, label: tr.title, score: s + 0.35 });
   }
   return hits.sort((a, b) => b.score - a.score).slice(0, limit);
 }
