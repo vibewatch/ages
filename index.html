@@ -92,11 +92,14 @@
       <script>
         (() => {
           try {
-            const p = new URLSearchParams(location.hash.slice(1) || location.search);
-            let l = p.get('lang');
-            if (l !== 'zh' && l !== 'en') {
-              const s = localStorage.getItem('ages:lang');
-              l = s === '"en"' ? 'en' : s === '"zh"' ? 'zh' : (navigator.language || '').toLowerCase().startsWith('zh') ? 'zh' : 'en';
+            let l = !navigator.language || /^zh/i.test(navigator.language) ? 'zh' : 'en';
+            try {
+              const saved = JSON.parse(localStorage.getItem('ages:lang'));
+              if (saved === 'zh' || saved === 'en') l = saved;
+            } catch {}
+            for (const source of [location.search, location.hash.slice(1)]) {
+              const value = new URLSearchParams(source).get('lang');
+              if (value === 'zh' || value === 'en') l = value;
             }
             if (l !== 'en') return;
             document.documentElement.lang = 'en';

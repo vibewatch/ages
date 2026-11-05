@@ -1095,7 +1095,7 @@ i.seen { color: var(--k-economy); font-style: normal; margin-left: auto; }
   .hud::after { height: 92px; }
   .hud-tl { top: 12px; left: 14px; max-width: 50%; }
   .brand-k { display: none; }
-  .tl-head { margin-top: 8px; }
+  .tl-head { margin-top: 22px; }
   .tl-era { font-size: var(--t-s); }
   .tl-year { font-size: 20px; }
   .tl-ruler { font-size: var(--t-2xs); }
@@ -1138,6 +1138,9 @@ i.seen { color: var(--k-economy); font-style: normal; margin-left: auto; }
   .card h2 { font-size: var(--t-xl); }
   .caption { padding: 8px 6px 10px 12px; }
   .cap-t { font-size: var(--t-m); }
+}
+@media (max-width: 350px) {
+  .brand b { display: none; }
 }
 /* ================================================================ phones and short (landscape) screens: the card scrolls as
    a whole; on short screens its 3D view collapses into a strip that keeps the card's buttons at hand (phones float it

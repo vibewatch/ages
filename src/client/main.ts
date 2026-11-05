@@ -163,10 +163,10 @@ class App {
 
   private buildChrome(): void {
     const tl = this.timeline;
-    let raf = 0, pending: Year | null = null;
+    let raf = 0;
     tl.onYear = (y, final) => {
-      pending = y;
-      if (!raf) raf = requestAnimationFrame(() => { raf = 0; if (pending != null) this.atlas.setYear(pending); });
+      // Navigation may set a new year before a queued scrub/playback frame runs.
+      if (!raf) raf = requestAnimationFrame(() => { raf = 0; this.atlas.setYear(tl.year); });
       if (final) {
         this.saveYear(y);
         if (this.card.open && this.card.place) this.card.showPlace(this.card.place.p, y);
@@ -180,7 +180,7 @@ class App {
     this.period.onEra = id => this.openEra(id);
     this.period.onDetails = () => this.pop(this.period.view.hidden ? 'details' : null);
     tl.onEra = id => this.openEra(id);
-    tl.onPlay = on => { if (on) { this.player.stop(); this.closeCard(); } };
+    tl.onPlay = on => { if (on) { if (this.quiz.open) this.quiz.toggle(false); this.player.stop(); this.closeCard(); } };
 
     this.search.onPick = (x: Hit) => {
       if (x.type === 'event') this.openEvent(EVENT.get(x.id)!);
@@ -336,7 +336,7 @@ class App {
 
   private toggle(which: 'learn' | 'quiz'): void {
     if (which === 'learn') this.learn.toggle();
-    else { if (!this.quiz.open) { this.stopStory(); this.closeCard(); this.learn.toggle(false); this.lesson.stop(); } this.quiz.toggle(); this.root.classList.toggle('quiz-on', this.quiz.open); }
+    else { if (!this.quiz.open) { this.timeline.setPlaying(false); this.stopStory(); this.closeCard(); this.learn.toggle(false); this.lesson.stop(); } this.quiz.toggle(); this.root.classList.toggle('quiz-on', this.quiz.open); }
   }
 
   /** Leaves the course picker for the lesson scene. */
@@ -353,10 +353,14 @@ class App {
     this.timeline.setPlaying(false);
   }
 
-  openEvent(e: HistEvent, fly = true): void {
-    if (this.quiz?.open) this.quiz.toggle(false);
-    if (this.player.event?.id !== e.id) this.stopStory();
+  private stopTimelineAndQuiz(): void {
     this.timeline.setPlaying(false);
+    if (this.quiz.open) this.quiz.toggle(false);
+  }
+
+  openEvent(e: HistEvent, fly = true): void {
+    this.stopTimelineAndQuiz();
+    if (this.player.event?.id !== e.id) this.stopStory();
     this.timeline.set(e.year, true, false);
     this.atlas.setYear(e.year);
     this.atlas.select(e, fly);
@@ -370,6 +374,7 @@ class App {
   openEra(id: string): void {
     const era = ERAS.find(x => x.id === id) as Era | undefined;
     if (!era) return;
+    this.stopTimelineAndQuiz();
     this.stopStory();
     this.atlas.select(null);
     this.timeline.select(null);
@@ -384,7 +389,8 @@ class App {
   }
 
   openPlace(p: Place, fly = true): void {
-    if (this.player.state !== 'idle') return;
+    this.stopTimelineAndQuiz();
+    this.stopStory();
     this.atlas.select(null);
     this.timeline.select(null);
     if (fly) this.atlas.flyTo({ lon: p.lon, lat: p.lat - 0.6, dist: Math.min(this.atlas.view.pose().dist, 22), tilt: 0.85 }, 1.2);
@@ -396,6 +402,7 @@ class App {
 
   /** A building, custom, food or figure standing on the map: jumps time into its dynasty, flies there and opens its card. */
   openLife(x: LifeItem): void {
+    this.stopTimelineAndQuiz();
     this.stopStory();
     this.atlas.select(null);
     this.timeline.select(null);
@@ -416,6 +423,7 @@ class App {
     // a figure who stands on the map as one of the dynasty's people has a single card: theirs there
     const li = LIFE.find(x => x.person === p);
     if (li) return this.openLife(li);
+    this.stopTimelineAndQuiz();
     this.stopStory();
     this.atlas.select(null);
     this.timeline.select(null);
@@ -439,6 +447,7 @@ class App {
   }
 
   async playStory(e: HistEvent): Promise<void> {
+    this.stopTimelineAndQuiz();
     this.reader.close();
     this.caption.show(true);
     this.root.classList.add('story-on');
@@ -460,6 +469,7 @@ class App {
 
   /** Plays a journey (traveller crossing the 3D map stop by stop). */
   async playJourney(j: Journey): Promise<void> {
+    this.stopTimelineAndQuiz();
     this.closeCard();
     this.learn.toggle(false);
     this.reader.close();

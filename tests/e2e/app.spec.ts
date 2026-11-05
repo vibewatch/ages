@@ -7,6 +7,76 @@ async function switchLang(page: Page): Promise<void> {
 }
 
 test.describe('Ages atlas', () => {
+  test('localizes the initial loading screen before app scripts load', async ({ browser }) => {
+    const cases = [
+      { url: '/?lang=en#y=-221', saved: '"zh"', locale: 'zh-CN', expected: 'AGES' },
+      { url: '/?lang=zh#lang=en', saved: '"zh"', locale: 'zh-CN', expected: 'AGES' },
+      { url: '/?lang=en#lang=invalid', saved: '"zh"', locale: 'zh-CN', expected: 'AGES' },
+      { url: '/', saved: '"en"', locale: 'zh-CN', expected: 'AGES' },
+      { url: '/', saved: 'blocked', locale: 'en-US', expected: 'AGES' },
+      { url: '/?lang=en#lang=zh', saved: '"en"', locale: 'en-US', expected: '长河' },
+    ];
+    for (const c of cases) {
+      const ctx = await browser.newContext({ locale: c.locale, serviceWorkers: 'block' });
+      try {
+        const page = await ctx.newPage();
+        await page.addInitScript(saved => {
+          if (saved === 'blocked') Object.defineProperty(window, 'localStorage', { get() { throw new Error('storage blocked'); } });
+          else localStorage.setItem('ages:lang', saved);
+        }, c.saved);
+        await page.route('**/*', route => route.request().resourceType() === 'script' ? route.abort() : route.continue());
+        await page.goto(c.url);
+        expect.soft(await page.locator('.boot-mark-title').textContent(), JSON.stringify(c)).toBe(c.expected);
+        if (c.expected === 'AGES') expect.soft(await page.locator('#boot').textContent()).not.toMatch(/[\u4e00-\u9fff]/);
+      } finally { await ctx.close(); }
+    }
+  });
+
+  test('keeps quizzes and card navigation separate from timeline playback', async ({ page }) => {
+    await openApp(page, 'y=700&lang=en');
+    await page.locator('.tl-play').click();
+    await page.locator('.b-hub').click();
+    await page.locator('.b-quiz').click();
+    expect.soft(await page.evaluate(() => (window as any).__atlas.timeline.playing)).toBe(false);
+    await page.locator('.qz-mode[data-mode=locate]').click();
+    await page.locator('.quiz [data-act=start]').click();
+    await expect(page.locator('#stage')).toHaveClass(/picking/);
+    await page.locator('.search .q').fill('Kaifeng');
+    await page.locator('.hits li').filter({ hasText: 'Kaifeng' }).first().click();
+    await expect(page.locator('.card h2')).toBeVisible();
+    expect.soft(await page.locator('.quiz').evaluate(el => (el as HTMLElement).hidden)).toBe(true);
+    expect.soft(await page.locator('#stage').getAttribute('class')).not.toContain('picking');
+    expect.soft(await page.evaluate(() => (window as any).__atlas.timeline.playing)).toBe(false);
+
+    await page.locator('.tl-play').click();
+    await page.locator('.search .q').fill('Zheng He');
+    await page.locator('.hits li').filter({ hasText: 'Zheng He' }).first().click();
+    await expect.poll(() => page.evaluate(() => {
+      const app = (window as any).__atlas;
+      return { year: app.timeline.year, mapYear: app.atlas.year, playing: app.timeline.playing };
+    })).toEqual({ year: 1405, mapYear: 1405, playing: false });
+  });
+
+  test('keeps the toolbar clear of the headline on narrow phones @mobile', async ({ page }) => {
+    await openApp(page, 'y=700&lang=en');
+    for (const width of [320, 360, 393]) {
+      await page.setViewportSize({ width, height: 800 });
+      const bounds = await page.evaluate(() => {
+        const box = (s: string) => {
+          const r = document.querySelector(s)!.getBoundingClientRect();
+          return { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
+        };
+        return { tools: box('.tools'), brand: box('.brand'), head: box('.tl-head') };
+      });
+      expect.soft(bounds.tools.left, `toolbar inside ${width}px screen`).toBeGreaterThanOrEqual(0);
+      expect.soft(bounds.tools.right).toBeLessThanOrEqual(width);
+      expect.soft(bounds.brand.right, `brand clear at ${width}px`).toBeLessThanOrEqual(bounds.tools.left);
+      expect.soft(bounds.head.top, `headline below controls at ${width}px`).toBeGreaterThanOrEqual(bounds.tools.bottom);
+    }
+    await page.locator('.b-lang').tap();
+    await expect(page.locator('.b-lang')).toHaveText('EN');
+  });
+
   test('boots into the map and switches between English and Chinese', async ({ page }) => {
     const errs = watchErrors(page);
     await page.addInitScript(() => {
