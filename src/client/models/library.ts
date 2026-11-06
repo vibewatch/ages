@@ -151,12 +151,12 @@ export async function instance(recipe: ModelRecipe, opts: boolean | BuildOpts = 
 }
 
 /**
- * Cancels all unstarted worker jobs whose tag starts with `prefix` (e.g. `era:` or `prefetch:` when switching to a
- * new dynasty) so the worker pool immediately focuses on the newly active dynasty.
+ * Cancels all unstarted worker jobs whose tag starts with `prefix` (except `keepTag` when provided) so the worker pool
+ * immediately focuses on the newly active dynasty without dropping its own queued capital or upgraded jobs.
  */
-export function cancelByTag(prefix: string): void {
+export function cancelByTag(prefix: string, keepTag?: string): void {
   for (let i = queue.length - 1; i >= 0; i--) {
-    if (queue[i].tag.startsWith(prefix)) {
+    if (queue[i].tag.startsWith(prefix) && queue[i].tag !== keepTag) {
       const [job] = queue.splice(i, 1);
       waits.delete(job.key);
       job.reject(new Error('cancelled'));

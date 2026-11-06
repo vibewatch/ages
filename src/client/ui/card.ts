@@ -115,6 +115,14 @@ export class Card {
   setActive(on: boolean): void { this.preview.active = on && this.open; }
 
   private set(o: { event?: HistEvent; era?: Era; place?: { p: Place; year: Year }; person?: Person; life?: LifeItem }): void {
+    const sameSubject = !this.el.hidden && !!(
+      (o.event && o.event === this.event) ||
+      (o.era && o.era === this.era) ||
+      (o.place && o.place.p === this.place?.p) ||
+      (o.person && o.person === this.person) ||
+      (o.life && o.life === this.life)
+    );
+    const prevScroll = this.body.scrollTop;
     this.event = o.event ?? null;
     this.era = o.era ?? null;
     this.place = o.place ?? null;
@@ -122,7 +130,7 @@ export class Card {
     this.life = o.life ?? null;
     this.el.hidden = false;
     this.render();
-    this.body.scrollTop = 0;
+    this.body.scrollTop = sameSubject ? prevScroll : 0;
     this.setActive(true);
     this.onShow();
   }

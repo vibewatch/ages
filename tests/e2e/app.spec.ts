@@ -926,6 +926,16 @@ test.describe('Ages atlas', () => {
     await expect(name).toBeVisible();
     await name.tap();
     await expect(card.locator('h2')).toHaveText('泰山');
+
+    // Starting a thematic trail on mobile keeps the trail stepper bar clear below the bottom-sheet card
+    await openApp(page, 'trail=capitals&lang=zh');
+    const trailBar = page.locator('[data-testid=trail-bar]');
+    await expect(trailBar).toBeVisible();
+    await expect(card).toBeVisible();
+    await card.evaluate(el => Promise.all(el.getAnimations().map(a => a.finished)));
+    const cardBox = (await card.boundingBox())!;
+    const trailBox = (await trailBar.boundingBox())!;
+    expect(cardBox.y + cardBox.height).toBeLessThanOrEqual(trailBox.y + 2);
     expect(errs).toEqual([]);
   });
 
@@ -1155,6 +1165,212 @@ test.describe('Ages atlas', () => {
     await page.locator('.card [data-act=era-quiz]').click();
     const qz = page.locator('section.quiz');
     await expect(qz).toBeVisible();
+    expect(errs).toEqual([]);
+  });
+
+  test('keeps place markers, 3D models and period panels stable during timeline playback across dynasties', async ({ page }) => {
+    const errs = watchErrors(page);
+    await openApp(page, 'y=650&lang=zh');
+    await setMapPose(page, { lon: 111, lat: 34.5, dist: 34, tilt: 0.78 });
+    await expect.poll(async () => (await state(page)).pose.dist).toBeCloseTo(34, 0);
+    await expect(page.locator('.place[data-place=xian].modeled.on')).toBeVisible();
+    await expect.poll(() => page.evaluate(() => Boolean((window as any).__atlas.atlas.eraReady))).toBe(true);
+
+    // 1. Real timeline playback within a dynasty (650 -> 720 CE): monitor every frame for .place flicker or .b DOM churn
+    const playbackReport = await page.evaluate(async () => {
+      const app = (window as any).__atlas;
+      const places = [...document.querySelectorAll<HTMLElement>('.place')];
+      const capState = new Map<HTMLElement, boolean>();
+      for (const el of places) capState.set(el, el.classList.contains('cap'));
+      let unnecessaryIconMutations = 0;
+      const mo = new MutationObserver(muts => {
+        for (const m of muts) {
+          const b = (m.target as HTMLElement).closest('.b');
+          const placeEl = b?.closest<HTMLElement>('.place');
+          if (!placeEl) continue;
+          const nowCap = placeEl.classList.contains('cap');
+          if (capState.get(placeEl) === nowCap) unnecessaryIconMutations++;
+          capState.set(placeEl, nowCap);
+        }
+      });
+      for (const el of places) {
+        const b = el.querySelector('.b');
+        if (b) mo.observe(b, { childList: true, subtree: true });
+      }
+
+      const transitions = new Map<string, boolean[]>();
+      const candidateMajorIds = ['xian', 'luoyang', 'kaifeng', 'nanjing', 'beijing', 'chengdu', 'hangzhou', 'wuhan', 'guangzhou'];
+      const activeMajorIds = candidateMajorIds.filter(id =>
+        document.querySelector<HTMLElement>(`.place[data-place="${id}"]`)?.classList.contains('on')
+      );
+      const majorDropouts: string[] = [];
+      let modeledDropouts = 0;
+      let frames = 0;
+
+      app.timeline.speed = 1;
+      app.timeline.setPlaying(true);
+
+      await new Promise<void>(resolve => {
+        const step = () => {
+          frames++;
+          if (app.timeline.year < 720) {
+            app.timeline.set(Math.min(720, app.timeline.year + 3), false);
+          }
+          for (const el of places) {
+            const id = el.dataset.place!;
+            const on = el.classList.contains('on');
+            const hist = transitions.get(id) ?? [];
+            if (hist.length === 0 || hist[hist.length - 1] !== on) hist.push(on);
+            transitions.set(id, hist);
+          }
+          for (const id of activeMajorIds) {
+            const el = document.querySelector<HTMLElement>(`.place[data-place="${id}"]`);
+            if (!el || !el.classList.contains('on')) majorDropouts.push(`${id}@${app.timeline.year}`);
+          }
+          const xian = document.querySelector<HTMLElement>('.place[data-place="xian"]');
+          if (!xian?.classList.contains('modeled')) modeledDropouts++;
+          if (app.timeline.year >= 720 && frames >= 20) {
+            app.timeline.setPlaying(false);
+            resolve();
+          } else {
+            requestAnimationFrame(step);
+          }
+        };
+        requestAnimationFrame(step);
+      });
+      mo.disconnect();
+
+      const placeFlickers: string[] = [];
+      for (const [id, hist] of transitions) {
+        // Any on -> off -> on or off -> on -> off (>= 3 states) during within-dynasty playback is a flicker
+        if (hist.length >= 3) placeFlickers.push(`${id}:${hist.map(v => (v ? 1 : 0)).join('')}`);
+      }
+      return { frames, activeMajorCount: activeMajorIds.length, unnecessaryIconMutations, placeFlickers, majorDropouts: [...new Set(majorDropouts)], modeledDropouts };
+    });
+
+    expect(playbackReport.frames).toBeGreaterThan(10);
+    expect(playbackReport.activeMajorCount).toBeGreaterThanOrEqual(4);
+    expect(playbackReport.unnecessaryIconMutations).toBe(0);
+    expect(playbackReport.placeFlickers).toEqual([]);
+    expect(playbackReport.majorDropouts).toEqual([]);
+    expect(playbackReport.modeledDropouts).toBe(0);
+
+    // 2. Cross-dynasty transitions & interregnum years (-206..-203 BCE, 24 CE, and Sui 614 -> Tang 624) with Period Details open
+    await page.locator('.b-details').click();
+    const pv = page.locator('.menu.pv');
+    await expect(pv).toBeVisible();
+
+    const crossDynastyReport = await page.evaluate(async () => {
+      const app = (window as any).__atlas;
+      const places = [...document.querySelectorAll<HTMLElement>('.place')];
+      const blankEraYears: number[] = [];
+      const frameFlickers: string[] = [];
+      const suiTangDropouts: string[] = [];
+
+      const stepYear = async (y: number, trackSuiTang = false) => {
+        app.timeline.set(y, true);
+        const hist = new Map<string, boolean[]>();
+        for (let i = 0; i < 4; i++) {
+          await new Promise<void>(r => requestAnimationFrame(() => r()));
+          const eraText = document.querySelector('.tl-era')?.textContent?.trim() ?? '';
+          if (!eraText) blankEraYears.push(y);
+          for (const el of places) {
+            const id = el.dataset.place!;
+            const on = el.classList.contains('on');
+            const seq = hist.get(id) ?? [];
+            if (seq.length === 0 || seq[seq.length - 1] !== on) seq.push(on);
+            hist.set(id, seq);
+          }
+          if (trackSuiTang) {
+            const xian = document.querySelector<HTMLElement>('.place[data-place="xian"]');
+            if (!xian?.classList.contains('modeled') || !xian?.classList.contains('on')) {
+              const marks = app.atlas.marks.filter((m: any) => m.place?.id === 'xian').map((m: any) => `${m.layer}:${m.prio}:shown=${m.layout?.shown}`);
+              suiTangDropouts.push(`${y}#${i}:m=${xian?.classList.contains('modeled')},on=${xian?.classList.contains('on')},marks=[${marks.join(',')}]`);
+            }
+          }
+        }
+        for (const [id, seq] of hist) {
+          if (seq.length >= 3) frameFlickers.push(`${id}@${y}:${seq.map(v => (v ? 1 : 0)).join('')}`);
+        }
+      };
+
+      for (const y of [-208, -206, -204, -202, -198, 18, 24, 30, 605]) {
+        await stepYear(y, false);
+      }
+      while (!app.atlas.eraReady || !document.querySelector('.place[data-place="xian"]')?.classList.contains('modeled')) {
+        await new Promise<void>(r => requestAnimationFrame(() => r()));
+      }
+      await stepYear(614, true);
+      await stepYear(618, true);
+      await stepYear(624, true);
+
+      return {
+        blankEraYears,
+        frameFlickers: [...new Set(frameFlickers)],
+        suiTangDropouts,
+        eraChip: document.querySelector('.pv-era')?.textContent?.trim() ?? '',
+      };
+    });
+
+    expect(crossDynastyReport.blankEraYears).toEqual([]);
+    expect(crossDynastyReport.frameFlickers).toEqual([]);
+    expect(crossDynastyReport.suiTangDropouts).toEqual([]);
+    expect(crossDynastyReport.eraChip).toBe('唐');
+    await expect.poll(() => page.evaluate(() => {
+      const atlas = (window as any).__atlas.atlas;
+      const scenery = atlas.marks.filter((m: any) => m.layer === 'scenery' && m.g.parent && m.g.visible);
+      return Boolean(atlas.eraReady) && scenery.length >= 4;
+    })).toBe(true);
+
+    // 3. Language switching preserves Period Comparison & answered Phase Quick Check state
+    const cmpSelect = pv.locator('[data-testid=compare-select]');
+    await cmpSelect.selectOption('-221');
+    await expect(pv.locator('[data-testid=compare-card]')).toBeVisible();
+    const periodCheck = pv.locator('[data-testid=period-check]');
+    await periodCheck.locator('[data-act=period-opt]').first().click();
+    await expect(periodCheck.locator('[data-testid=period-check-why]')).toBeVisible();
+
+    await switchLang(page);
+    await expect(pv.locator('[data-testid=compare-card]')).toContainText('221 BCE');
+    await expect(page.locator('[data-testid=hud-compare]')).toContainText('221 BCE');
+    await expect(periodCheck.locator('[data-testid=period-check-why]')).toBeVisible();
+    await page.keyboard.press('Escape');
+
+    // 4. Omnibox trail search + language switching during an active trail + parallel-lane dynasty quiz
+    const q = page.locator('.search input.q');
+    await q.fill('Maritime Silk Roads');
+    const trailHit = page.locator('.search .hits li').filter({ has: page.locator('.ty-trail') }).first();
+    await expect(trailHit).toBeVisible();
+    await trailHit.click();
+    const trailBar = page.locator('[data-testid=trail-bar]');
+    await expect(trailBar).toBeVisible();
+    await expect(trailBar.locator('.tb-title')).toContainText('Silk Roads');
+    await trailBar.locator('[data-act=trail-next]').click();
+    await expect(trailBar.locator('[data-testid=trail-index]')).toHaveText('2 / 7');
+
+    await switchLang(page);
+    await expect(trailBar.locator('.tb-title')).toContainText('丝路驼铃');
+    await expect(trailBar.locator('[data-testid=trail-index]')).toHaveText('2 / 7');
+    await trailBar.locator('[data-act=trail-close]').click();
+
+    // 5. Clicking a dynasty capital chip on a scrolled Place Card preserves scrollTop and updates historical name
+    await page.evaluate(() => { location.hash = '#p=xian&y=700&lang=zh'; });
+    await expect(page.locator('.card h2')).toHaveText('长安');
+    await page.evaluate(() => { document.querySelector<HTMLElement>('.card-body')!.scrollTop = 180; });
+    const whanChip = page.locator('[data-testid=place-capitals] [data-act=jump-capital]').filter({ hasText: '西汉' });
+    await whanChip.click();
+    await expect(whanChip).toHaveClass(/on/);
+    const scrollAfter = await page.evaluate(() => document.querySelector<HTMLElement>('.card-body')!.scrollTop);
+    expect(scrollAfter).toBeGreaterThan(0);
+
+    await page.locator('.b-hub').click();
+    await page.locator('.b-quiz').click();
+    const qz = page.locator('section.quiz');
+    await expect(qz).toBeVisible();
+    const qzEra = qz.locator('[data-testid=quiz-era]');
+    await qzEra.selectOption('liao');
+    await qz.locator('[data-act=start]').click();
+    await expect(qz.locator('.qz-q')).not.toBeEmpty();
     expect(errs).toEqual([]);
   });
 });

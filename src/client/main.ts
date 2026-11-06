@@ -191,10 +191,9 @@ class App {
 
   private buildChrome(): void {
     const tl = this.timeline;
-    let raf = 0;
     tl.onYear = (y, final) => {
-      // Navigation may set a new year before a queued scrub/playback frame runs.
-      if (!raf) raf = requestAnimationFrame(() => { raf = 0; this.atlas.setYear(tl.year); });
+      // Coalesce into Atlas.frame() so setYear + layoutMarks always execute together before the browser paints.
+      this.atlas.queueYear(tl.year);
       if (final) {
         this.saveYear(y);
         if (this.card.open && this.card.place) this.card.showPlace(this.card.place.p, y);
@@ -353,37 +352,42 @@ class App {
 
     window.addEventListener('keydown', e => this.key(e));
     window.addEventListener('hashchange', () => {
-      const l = readLink();
-      if (l.lang && l.lang !== lang) setLang(l.lang);
-      const cmp = l.compare != null ? clampYear(l.compare) : null;
-      if (cmp !== this.period.compareYear) this.setCompare(cmp, false);
-      if (!l.trail && this.trail.active) this.trail.close(false);
-      if (l.trail) {
-        const trl = TRAIL.get(l.trail);
-        if (trl && (this.trail.active?.trail.id !== trl.id || this.trail.active?.index !== (l.trailStop ?? 0))) {
-          this.trail.start(trl, l.trailStop ?? 0);
-          return;
+      this.inHashChange = true;
+      try {
+        const l = readLink();
+        if (l.lang && l.lang !== lang) setLang(l.lang);
+        const cmp = l.compare != null ? clampYear(l.compare) : null;
+        if (cmp !== this.period.compareYear) this.setCompare(cmp, false);
+        if (!l.trail && this.trail.active) this.trail.close(false);
+        if (l.trail) {
+          const trl = TRAIL.get(l.trail);
+          if (trl && (this.trail.active?.trail.id !== trl.id || this.trail.active?.index !== (l.trailStop ?? 0))) {
+            this.trail.start(trl, l.trailStop ?? 0);
+            return;
+          }
         }
-      }
-      if (l.event && l.event !== this.card.event?.id) { const ev = EVENT.get(l.event); if (ev) this.openEvent(ev); }
-      else if (l.era) {
-        if (l.era !== this.card.era?.id || (l.year != null && l.year !== this.timeline.year)) this.openEra(l.era, l.year);
-      }
-      else if (l.place) {
-        const p = PLACE.get(l.place);
-        if (p) {
-          if (l.year != null && l.year !== this.timeline.year) { this.timeline.set(l.year, true, false); this.atlas.setYear(this.timeline.year); }
-          if (p.id !== this.card.place?.p.id || l.year != null) this.openPlace(p);
+        if (l.event && l.event !== this.card.event?.id) { const ev = EVENT.get(l.event); if (ev) this.openEvent(ev); }
+        else if (l.era) {
+          if (l.era !== this.card.era?.id || (l.year != null && l.year !== this.timeline.year)) this.openEra(l.era, l.year);
         }
-      }
-      else if (l.person && l.person !== this.card.person?.id) { const p = PERSON.get(l.person); if (p) this.openPerson(p); }
-      else if (l.life && l.life !== this.card.life?.id) { const x = LIFE.find(i => i.id === l.life); if (x) this.openLife(x); }
-      else if (l.lesson && l.lesson !== this.lesson.id) { const x = LESSON.get(l.lesson); if (x) this.startLesson(x, true); }
-      else if (l.journey) { const j = JOURNEYS.find(x => x.id === l.journey); if (j) void this.playJourney(j); }
-      else if (!l.event && !l.era && !l.place && !l.person && !l.life && l.year != null) {
-        this.timeline.set(l.year, true, false);
-        this.atlas.setYear(this.timeline.year);
-        this.closeCard();
+        else if (l.place) {
+          const p = PLACE.get(l.place);
+          if (p) {
+            if (l.year != null && l.year !== this.timeline.year) { this.timeline.set(l.year, true, false); this.atlas.setYear(this.timeline.year); }
+            if (p.id !== this.card.place?.p.id || l.year != null) this.openPlace(p);
+          }
+        }
+        else if (l.person && l.person !== this.card.person?.id) { const p = PERSON.get(l.person); if (p) this.openPerson(p); }
+        else if (l.life && l.life !== this.card.life?.id) { const x = LIFE.find(i => i.id === l.life); if (x) this.openLife(x); }
+        else if (l.lesson && l.lesson !== this.lesson.id) { const x = LESSON.get(l.lesson); if (x) this.startLesson(x, true); }
+        else if (l.journey) { const j = JOURNEYS.find(x => x.id === l.journey); if (j) void this.playJourney(j); }
+        else if (!l.event && !l.era && !l.place && !l.person && !l.life && l.year != null) {
+          this.timeline.set(l.year, true, false);
+          this.atlas.setYear(this.timeline.year);
+          this.closeCard();
+        }
+      } finally {
+        this.inHashChange = false;
       }
     });
   }
@@ -706,6 +710,7 @@ class App {
     }
   }
 
+  private inHashChange = false;
   private onLang(l: Lang): void {
     this.atlas.setLang(l);
     this.relabel();
@@ -724,7 +729,7 @@ class App {
     this.reader.relabel();
     this.music.relabel();
     this.caption.relabel();
-    this.syncLink(l);
+    if (!this.inHashChange) this.syncLink(l);
   }
 
   /** Fits the side panel between the headline and the line key, and tells the camera how much of the screen it (or the
@@ -733,9 +738,10 @@ class App {
     if (!this.panel) return;
     const H = this.root.clientHeight;
     const top = this.root.getBoundingClientRect().top;
-    // (on phones the transport buttons sit just above the track)
+    // (on phones the transport buttons sit just above the track, and the trail bar sits above them when active)
     const ctl = this.timeline.el.querySelector('.tl-ctl');
-    const tl = Math.min(this.timeline.el.getBoundingClientRect().top, ctl?.getClientRects().length ? ctl.getBoundingClientRect().top : Infinity) - top;
+    const trailTop = !this.trail.el.hidden && matchMedia('(max-width: 720px)').matches ? this.trail.el.getBoundingClientRect().top : Infinity;
+    const tl = Math.min(this.timeline.el.getBoundingClientRect().top, ctl?.getClientRects().length ? ctl.getBoundingClientRect().top : Infinity, trailTop) - top;
     // the phone's bottom sheet sits right above the timeline
     this.root.style.setProperty('--tl-b', `${Math.round(H - tl)}px`);
     // the left column: under the headline, above the line key (or the timeline, where the key is folded away)
