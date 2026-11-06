@@ -1640,7 +1640,7 @@ function taihu(p: THREE.Object3D, x: number, z: number, h: number, w: number, se
     pos.setXYZ(i, v.x, v.y, v.z);
   }
   geo.computeVertexNormals();
-  const pg = paintFaces(geo.toNonIndexed(), '#8e8b84', (px, py, pz) => {
+  const pg = paintFaces(geo, '#8e8b84', (px, py, pz) => {
     const n = fbm(px * 5 + seed, py * 4, pz * 5, 3);
     if (n > 0.63) return '#3e3d3a';
     if (n > 0.59) return '#6a6862';

@@ -23,6 +23,7 @@ export class Learn {
   onLesson: (l: Lesson, resume?: boolean) => void = () => {};
   onTest: (book: Book, unit: number) => void = () => {};
   onReviewMistakes: () => void = () => {};
+  onProgressChange: () => void = () => {};
 
   constructor(private progress: Progress) {
     this.box = h('div', { class: 'modal-box course' });
@@ -94,6 +95,7 @@ export class Learn {
                 this.lastResetBackup = null;
                 this.backupMsg = { ok: true, text: t('pgImported') };
                 this.render();
+                this.onProgressChange();
               } else {
                 this.backupMsg = { ok: false, text: t('pgInvalid') };
                 msgEl.textContent = this.backupMsg.text;
@@ -109,6 +111,7 @@ export class Learn {
               this.progress.reset();
               this.backupMsg = { ok: true, text: t('pgResetDone') };
               this.render();
+              this.onProgressChange();
             },
           }),
           this.lastResetBackup ? h('button', {
@@ -118,6 +121,7 @@ export class Learn {
                 this.lastResetBackup = null;
                 this.backupMsg = { ok: true, text: t('pgImported') };
                 this.render();
+                this.onProgressChange();
               }
             },
           }) : null));

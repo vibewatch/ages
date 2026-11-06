@@ -154,10 +154,22 @@ describe('quiz', () => {
       for (let k = 1; k < ys.length; k++) expect(ys[k] - ys[k - 1]).toBeGreaterThan(3);
     }
   });
-  it('filters by textbook', () => {
+  it('filters by textbook and by dynasty/era (including parallel lanes and prehistory)', () => {
     const q = makeQuiz(EVENTS, { seed: 1, n: 6, book: 'g8b' });
     const ids = q.flatMap(x => ('event' in x ? [x.event] : []));
     for (const id of ids) expect(EVENTS.find(e => e.id === id)!.curriculum.some(c => c.book === 'g8b')).toBe(true);
+
+    for (const era of ERAS.filter(e => e.scope === 'china')) {
+      const eq = makeQuiz(EVENTS, { seed: 7, n: 6, era: era.id });
+      expect(eq.length, `quiz for era ${era.id}`).toBeGreaterThan(0);
+      for (const item of eq) {
+        if ('event' in item && item.event) {
+          const ev = EVENTS.find(e => e.id === item.event)!;
+          expect(ev.year, `${era.id}:${ev.id}`).toBeGreaterThanOrEqual(era.start);
+          expect(ev.year, `${era.id}:${ev.id}`).toBeLessThanOrEqual(era.end);
+        }
+      }
+    }
   });
   it('grades distances', () => {
     expect(distKm([116.4, 39.9], [121.47, 31.23])).toBeGreaterThan(1000);

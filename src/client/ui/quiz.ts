@@ -1,4 +1,5 @@
 import { BOOKS } from '../../shared/data/curriculum.ts';
+import { ERAS } from '../../shared/data/eras.ts';
 import { EVENT, EVENTS } from '../../shared/data/events.ts';
 import { tr } from '../../shared/data/i18n.ts';
 import type { Book, HistEvent, I18n } from '../../shared/data/types.ts';
@@ -18,6 +19,7 @@ export class Quiz {
   private i = 0;
   private score = 0;
   private book: Book | '' = '';
+  private era = '';
   private mode: 'events' | 'locate' | 'mistakes' = 'events';
   /** where the quiz is, so a language switch re-renders it in place */
   private phase: 'setup' | 'ask' | 'done' = 'setup';
@@ -52,7 +54,18 @@ export class Quiz {
       h('option', { value: '', text: t('allBooks') }),
       ...(Object.keys(BOOKS) as Book[]).map(b => h('option', { value: b, text: tr(BOOKS[b].name, lang) })));
     sel.value = this.book;
-    sel.addEventListener('change', () => (this.book = sel.value as Book | ''));
+    const eraSel = h('select', { 'data-testid': 'quiz-era', 'aria-label': t('dynasty') },
+      h('option', { value: '', text: t('allEras') }),
+      ...ERAS.filter(e => e.scope === 'china').map(e => h('option', { value: e.id, text: tr(e.name, lang) })));
+    eraSel.value = this.era;
+    sel.addEventListener('change', () => {
+      this.book = sel.value as Book | '';
+      if (this.book && this.era) { this.era = ''; eraSel.value = ''; }
+    });
+    eraSel.addEventListener('change', () => {
+      this.era = eraSel.value;
+      if (this.era && this.book) { this.book = ''; sel.value = ''; }
+    });
     const modeTitle = (m: 'events' | 'locate' | 'mistakes') => m === 'events' ? t('qmEvents') : m === 'locate' ? t('qmLocate') : t('qmMistakes');
     const modeDesc = (m: 'events' | 'locate' | 'mistakes') => m === 'events' ? t('qmEventsDesc') : m === 'locate' ? t('qmLocateDesc') : mistakeCount ? t('qmMistakesDesc', { n: mistakeCount }) : t('noMistakes');
     const modes = h('div', { class: 'qz-modes', role: 'radiogroup' }, ...(['events', 'locate', 'mistakes'] as const).map(m => h('button', {
@@ -63,7 +76,12 @@ export class Quiz {
     this.body.replaceChildren(
       this.head(this.progress.best ? t('best', { n: this.progress.best }) : ''),
       modes,
-      h('div', { class: 'qz-row' }, this.mode === 'events' ? h('label', {}, h('span', { text: t('quizBook') + ' ' }), sel) : h('span'),
+      h('div', { class: 'qz-row qz-filters' },
+        this.mode === 'events'
+          ? h('div', { class: 'qz-selects' },
+              h('label', {}, h('span', { text: t('quizBook') + ' ' }), sel),
+              h('label', {}, h('span', { text: t('dynasty') + ' ' }), eraSel))
+          : h('span'),
         h('button', { type: 'button', class: 'btn primary', 'data-act': 'start', disabled: this.mode === 'mistakes' && mistakeCount === 0, text: t('start'), onclick: () => this.start() })));
   }
 
@@ -74,12 +92,21 @@ export class Quiz {
     this.start(seed);
   }
 
+  /** Opens the quiz directly filtered to a specific dynasty/era. */
+  startEra(eraId: string, seed = Date.now()): void {
+    this.mode = 'events';
+    this.book = '';
+    this.era = eraId;
+    this.el.hidden = false;
+    this.start(seed);
+  }
+
   start(seed = Date.now()): void {
     this.qs = this.mode === 'locate'
       ? makeLocateQuiz(PLACES, { n: 10, seed })
       : this.mode === 'mistakes'
         ? makeMistakeQuiz(EVENTS, this.progress.mistakes, seed)
-        : makeQuiz(EVENTS, { n: 9, seed, book: this.book || undefined });
+        : makeQuiz(EVENTS, { n: 9, seed, book: this.book || undefined, era: this.era || undefined });
     this.i = 0;
     this.score = 0;
     this.ask();

@@ -9,6 +9,7 @@ import { PLACE, isCapital, placeName } from '../../shared/data/places.ts';
 import { SNAPSHOTS } from '../../shared/data/territories.ts';
 import { trailsForEvent, trailsForPlace, type Trail } from '../../shared/data/trails.ts';
 import type { Era, EventKind, HistEvent, I18n, Lesson, ModelRecipe, Place, Wiki, Year } from '../../shared/data/types.ts';
+import { phaseAt } from '../../shared/lib/chronicle.ts';
 import { eraAt, formatYear } from '../../shared/lib/timeline.ts';
 import { kindName, lang, t } from '../lib/i18n.ts';
 import type { Progress } from '../lib/storage.ts';
@@ -30,6 +31,8 @@ export interface CardHooks {
   lesson?(l: Lesson): void;
   trail?(trail: Trail, stopIndex: number): void;
   compare?(year: Year): void;
+  compareYear?(): Year | null;
+  eraQuiz?(eraId: string): void;
   close(): void;
   learned(e: HistEvent, on: boolean): void;
   journey(j: Journey): void;
@@ -457,6 +460,12 @@ export class Card {
     const life = lifeOf(era.id).filter(x => x.kind !== 'person');
     const worldList = worldForRange(era.start, era.end, 3);
     const phases = SNAPSHOTS.filter(s => era.lane ? polityArea(s.id, era.id) > 0 : (s.year >= era.start && s.year <= era.end));
+    const cmpY = this.hooks.compareYear?.() ?? null;
+    const cmpSnapId = cmpY != null ? phaseAt(cmpY)?.snap.id : null;
+    const canQuiz = evs.some(e => e.year > -10_000) && !!this.hooks.eraQuiz;
+    const quizBtn = canQuiz
+      ? h('button', { type: 'button', class: 'btn', 'data-act': 'era-quiz', onclick: () => this.hooks.eraQuiz?.(era.id) }, icon('quiz'), h('span', { text: t('eraQuiz') }))
+      : null;
     const seat = cap ? tr(placeName(cap, era.start), L) : dy?.seat.zh ? tr(dy.seat, L) : '';
     const seatEl = seat
       ? (cap && this.hooks.place
@@ -470,13 +479,14 @@ export class Card {
       this.title(seatEl, tr(era.name, L)),
       this.stats([t('when'), `${formatYear(era.start, L, { short: true })} – ${formatYear(era.end, L, { short: true })}`], era.start > -5000 ? [t('duration'), t('years', { n: Math.max(1, era.end - era.start) })] : null),
       h('p', { class: 'sum', text: tr(era.summary, L) }),
-      era.wiki ? h('div', { class: 'acts' }, this.wikiBtn(era.wiki, tr(era.name, L))) : null,
+      (era.wiki || quizBtn) ? h('div', { class: 'acts' }, era.wiki ? this.wikiBtn(era.wiki, tr(era.name, L)) : null, quizBtn) : null,
       overview?.zh ? this.sec(t('overview'), true, h('p', { class: 'sum', text: tr(overview, L) })) : null,
       phases.length ? this.sec(t('eraPhases'), true,
         h('ul', { class: 'periods era-phases', 'data-testid': 'era-phases' },
           ...phases.map(s => {
             const area = era.lane ? polityArea(s.id, era.id) : realmArea(s.id);
             const cleanTitle = tr(s.title, L).replace(/^[^·（(]*\d[^·（(]*·\s*(?=\S)/, '');
+            const isCmp = cmpSnapId === s.id;
             return h('li', { class: 'era-phase-row' },
               h('button', {
                 type: 'button',
@@ -490,12 +500,13 @@ export class Card {
                 area > 0 ? h('span', { class: 'ep-area', text: formatArea(area, L, true) }) : null),
               this.hooks.compare ? h('button', {
                 type: 'button',
-                class: 'era-phase-cmp',
+                class: 'era-phase-cmp' + (isCmp ? ' on' : ''),
                 'data-act': 'era-compare',
                 'data-year': String(s.year),
+                'aria-pressed': String(isCmp),
                 title: t('cmpTitle'),
                 onclick: () => this.hooks.compare?.(s.year),
-              }, `⇄ ${t('cmpBtn')}`) : null);
+              }, isCmp ? `✓ ${t('cmpActive')}` : `⇄ ${t('cmpBtn')}`) : null);
           }))) : null,
       worldList.length ? this.sec(t('worldSync'), true,
         h('ul', { class: 'periods world-list', 'data-testid': 'card-world' },

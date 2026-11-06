@@ -8,6 +8,7 @@ import { SNAPSHOTS } from '../../shared/data/territories.ts';
 import type { Lang, Polity, Snapshot, Year } from '../../shared/data/types.ts';
 import { worldForRange } from '../../shared/data/world-sync.ts';
 import { phaseAt, previousSnap, type Phase } from '../../shared/lib/chronicle.ts';
+import { periodQuestion } from '../../shared/lib/quiz.ts';
 import { eraAt, formatYear } from '../../shared/lib/timeline.ts';
 import { lang, t, type Key } from '../lib/i18n.ts';
 import { fill, h, iconBtn } from './dom.ts';
@@ -49,6 +50,10 @@ export class Period {
   private pols: HTMLDetailsElement;
   private polsSum: HTMLElement;
   private polsBody: HTMLElement;
+  private qbox: HTMLDetailsElement;
+  private qSum: HTMLElement;
+  private qBody: HTMLElement;
+  private answered = new Map<string, number>();
   readonly btn: HTMLButtonElement;
   private sig = '';
   private year: Year = 0;
@@ -73,7 +78,10 @@ export class Period {
     this.polsSum = h('summary', { class: 'pv-h' });
     this.polsBody = h('div', { class: 'pv-fb' });
     this.pols = h('details', { class: 'pv-sec pv-fold pv-pols' }, this.polsSum, this.polsBody);
-    this.body = h('div', { class: 'view-body' }, this.overview, this.pols);
+    this.qSum = h('summary', { class: 'pv-h' });
+    this.qBody = h('div', { class: 'pv-fb pv-qbody' });
+    this.qbox = h('details', { class: 'pv-sec pv-fold pv-q', open: true, 'data-testid': 'period-check' }, this.qSum, this.qBody);
+    this.body = h('div', { class: 'view-body' }, this.overview, this.pols, this.qbox);
     this.view = h('div', { class: 'pop menu pv', hidden: true, role: 'dialog' }, this.body);
     this.relabel();
   }
@@ -106,9 +114,10 @@ export class Period {
     this.line.hidden = !ph;
     if (ph) this.line.textContent = tr(ph.snap.title, lang);
     this.overview.hidden = this.pols.hidden = !ph;
-    if (!ph) return;
+    if (!ph) { this.qbox.hidden = true; return; }
     this.renderOverview(ph);
     this.renderPolities(ph.snap);
+    this.renderCheck(ph.snap);
   }
 
   // ------------------------------------------------------------ map overlay
@@ -173,7 +182,7 @@ export class Period {
     const cmpSel = h('select', { class: 'pv-cmp-sel', 'data-testid': 'compare-select', 'aria-label': t('cmpTitle') },
       h('option', { value: '', text: t('cmpNone') }),
       prev ? h('option', { value: String(prev.year), text: t('cmpPrev', { t: `${formatYear(prev.year, L, { short: true })} · ${stripTitleDate(tr(prev.title, L))}` }) }) : null,
-      ...SNAPSHOTS.filter(x => x.id !== s.id && x.id !== prev?.id).map(x => h('option', {
+      ...SNAPSHOTS.filter(x => (x.id !== s.id || x.id === cmpSnap?.id) && x.id !== prev?.id).map(x => h('option', {
         value: String(x.year),
         text: `${formatYear(x.year, L, { short: true })} · ${stripTitleDate(tr(x.title, L))}`,
       })));
@@ -251,6 +260,46 @@ export class Period {
     }
     fill(this.polsSum, h('h3', { text: t('pPolities') }), h('small', { text: `${list.length} · ${t('pPolUnit')}` }));
     fill(this.polsBody, h('div', { class: 'pv-grid' }, ...list.map(p => this.polBtn(p, 'pv-pol'))));
+  }
+
+  private renderCheck(s: Snapshot): void {
+    const q = periodQuestion(s);
+    this.qbox.hidden = !q;
+    if (!q) return;
+    const L = lang;
+    const picked = this.answered.get(s.id);
+    fill(this.qSum,
+      h('h3', { text: t('pqTitle') }),
+      picked != null
+        ? h('small', { class: picked === q.answer ? 'ok' : 'bad', text: picked === q.answer ? `✓ ${t('pqRight')}` : t('pqWrong') })
+        : h('small', { text: t('pqHint') }));
+    fill(this.qBody,
+      h('p', { class: 'pv-q-prompt', text: tr(q.prompt, L) }),
+      h('div', { class: 'pv-q-opts' }, ...q.options.map((opt, idx) => {
+        let cls = 'pv-q-opt';
+        if (picked != null) {
+          if (idx === q.answer) cls += ' ok';
+          else if (idx === picked) cls += ' no';
+        }
+        return h('button', {
+          type: 'button',
+          class: cls,
+          'data-act': 'period-opt',
+          'data-idx': String(idx),
+          disabled: picked != null,
+          text: tr(opt, L),
+          onclick: () => {
+            this.answered.set(s.id, idx);
+            this.renderCheck(s);
+          },
+        });
+      })),
+      h('p', {
+        class: 'pv-q-why',
+        'data-testid': 'period-check-why',
+        hidden: picked == null,
+        text: tr(q.why, L),
+      }));
   }
 
   private polBtn(p: Pol, cls: string): HTMLButtonElement {

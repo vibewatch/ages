@@ -813,6 +813,15 @@ i.seen { color: var(--k-economy); font-style: normal; margin-left: auto; }
 .pv-cmp-top { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; margin-bottom: 4px; }
 .pv-cmp-title { margin: 0 0 6px; font-size: var(--t-s); font-weight: 700; color: var(--ink); }
 .pv-cmp-delta { margin-top: 6px; font-size: var(--t-2xs); color: var(--ink-2); }
+.pv-q { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--rule); }
+.pv-q-prompt { margin: 4px 0 6px; font-size: var(--t-xs); font-weight: 700; color: var(--ink); line-height: 1.5; }
+.pv-q-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.pv-q-opt { border: 1px solid var(--rule); background: var(--well); padding: 6px 8px; font: inherit; font-size: var(--t-2xs); text-align: left; color: var(--ink); cursor: pointer; line-height: 1.4; }
+.pv-q-opt:hover:not(:disabled) { background: var(--well-2); border-color: var(--gold); }
+.pv-q-opt:disabled { opacity: 0.55; cursor: default; }
+.pv-q-opt.ok { background: rgba(29, 145, 82, 0.14); border-color: var(--ok); color: var(--ok); opacity: 1; font-weight: 700; }
+.pv-q-opt.no { background: var(--zhu-fill); border-color: var(--zhu); color: var(--zhu); opacity: 1; }
+.pv-q-why { margin: 6px 0 0; padding: 6px 8px; background: var(--well); font-size: var(--t-2xs); line-height: 1.55; color: var(--ink-2); }
 .amb-cmp { color: var(--zhu); font-weight: 600; }
 
 /* ================================================================ reader — unfolds to the right of the card */
@@ -904,9 +913,10 @@ i.seen { color: var(--k-economy); font-style: normal; margin-left: auto; }
 .opt.no, .qz-order li.no { background: var(--zhu-fill); color: var(--zhu); opacity: 1; }
 .qz-order { margin: 8px 18px; padding-left: 22px; font-size: var(--t-s); }
 .qz-order li { padding: 4px 6px; border-radius: 0; margin-bottom: 3px; }
-.qz-row { display: flex; gap: 8px; align-items: center; justify-content: space-between; padding: 12px 18px 0; font-size: var(--t-s); }
+.qz-row { display: flex; gap: 8px; align-items: center; justify-content: space-between; padding: 12px 18px 0; font-size: var(--t-s); flex-wrap: wrap; }
 .qz-row.end { justify-content: flex-end; }
-.qz-row select { font: inherit; padding: 6px 8px; border: 0; border-radius: 0; background: var(--well); color: var(--ink); max-width: 230px; }
+.qz-selects { display: flex; gap: 6px; flex-wrap: wrap; }
+.qz-row select { font: inherit; padding: 6px 8px; border: 0; border-radius: 0; background: var(--well); color: var(--ink); max-width: 195px; font-size: var(--t-xs); }
 .qz-fb { margin: 10px 18px 0; font-weight: 700; font-size: var(--t-m); min-height: 1em; }
 .qz-fb.ok { color: var(--ok); } .qz-fb.no { color: var(--zhu); }
 .qz-fb:empty { display: none; }
@@ -1271,19 +1281,20 @@ i.seen { color: var(--k-economy); font-style: normal; margin-left: auto; }
   font-weight: 600; font-size: var(--t-s);
 }
 .era-phase-jump .ep-area {
-  flex: none; font-size: var(--t-xs); color: var(--muted); font-variant-numeric: tabular-nums;
+  flex: none; font-size: var(--t-xs); color: var(--ink-3); font-variant-numeric: tabular-nums;
 }
 .era-phase-cmp {
   flex: none; padding: 2px 7px; border-radius: 999px; border: 1px solid var(--rule);
-  background: var(--well); color: var(--muted); font: inherit; font-size: var(--t-xs); cursor: pointer;
+  background: var(--well); color: var(--ink-2); font: inherit; font-size: var(--t-xs); cursor: pointer;
 }
 .era-phase-cmp:hover { border-color: var(--gold); color: var(--ink); }
+.era-phase-cmp.on { border-color: var(--zhu); background: var(--zhu-fill); color: var(--zhu); font-weight: 700; }
 .ch-kinds {
   display: flex; flex-wrap: wrap; gap: 4px; padding: 0 12px 6px;
 }
 .ch-kind-chip {
   padding: 2px 8px; border-radius: 999px; border: 1px solid var(--rule);
-  background: var(--well); color: var(--muted); font: inherit; font-size: var(--t-xs);
+  background: var(--well); color: var(--ink-2); font: inherit; font-size: var(--t-xs);
   cursor: pointer; line-height: 1.4;
 }
 .ch-kind-chip:hover { color: var(--ink); border-color: var(--rule-2); }
@@ -1291,6 +1302,6 @@ i.seen { color: var(--k-economy); font-style: normal; margin-left: auto; }
   background: rgba(201, 164, 92, .18); border-color: var(--gold); color: var(--ink); font-weight: 600;
 }
 .ch-ok {
-  flex: none; font-style: normal; font-size: var(--t-xs); color: #3f9b6f; font-weight: 700;
+  flex: none; font-style: normal; font-size: var(--t-xs); color: var(--ok); font-weight: 700;
 }
 

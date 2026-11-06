@@ -1,4 +1,5 @@
 import { formatArea, snapPolities } from '../data/areas.ts';
+import { ERAS } from '../data/eras.ts';
 import { LESSON, LESSONS } from '../data/lessons/index.ts';
 import { PLACE, mapName } from '../data/places.ts';
 import { POLITY } from '../data/polities.ts';
@@ -27,23 +28,43 @@ function shuffle<T>(a: T[], r: () => number): T[] {
 
 /** Plausible wrong years: nearby, distinct, and on the same side of the BCE/CE line where possible. */
 function distractors(y: number, r: () => number): number[] {
-  const span = y < -1000 ? 300 : y < 0 ? 120 : y < 1800 ? 90 : 12;
+  const span = y <= -10000 ? Math.max(5000, Math.round(Math.abs(y) * 0.4)) : y < -1000 ? 300 : y < 0 ? 120 : y < 1800 ? 90 : 12;
   const out = new Set<number>();
   let guard = 0;
   while (out.size < 3 && guard++ < 100) {
     let d = Math.round((r() * 2 - 1) * span);
     if (Math.abs(d) < span / 8) continue;
-    if (span > 50) d = Math.round(d / 5) * 5 || 5;
+    if (span >= 5000) d = Math.round(d / 1000) * 1000 || 1000;
+    else if (span > 50) d = Math.round(d / 5) * 5 || 5;
     const c = y + d;
     if (c !== y && c !== 0 && (y < 0) === (c < 0)) out.add(c);
   }
   return [...out];
 }
 
-/** Builds a quiz from curriculum events (optionally restricted to a textbook), mixing question types. */
-export function makeQuiz(events: HistEvent[], opts: { n?: number; seed?: number; book?: Book } = {}): Question[] {
+const LANE_ERA_RE: Record<string, RegExp> = {
+  liao: /契丹|辽|耶律|澶渊|燕云/,
+  xixia: /西夏|党项|元昊|兴庆/,
+  jin: /女真|金朝|金军|完颜|阿骨打|靖康|岳飞|绍兴和议/,
+};
+
+/** Builds a quiz from curriculum events (optionally restricted to a textbook or dynasty/era), mixing question types. */
+export function makeQuiz(events: HistEvent[], opts: { n?: number; seed?: number; book?: Book; era?: string } = {}): Question[] {
   const r = rng(opts.seed ?? Date.now());
-  const pool = events.filter(e => e.weight <= 2 && e.year > -10_000 && (!opts.book || e.curriculum.some(c => c.book === opts.book)));
+  const eraObj = opts.era ? ERAS.find(x => x.id === opts.era) : undefined;
+  const minYear = eraObj ? eraObj.start : -9_999;
+  const inEra = (e: HistEvent) => !eraObj || (
+    e.year >= eraObj.start &&
+    e.year <= eraObj.end &&
+    (!eraObj.lane || (LANE_ERA_RE[eraObj.id]?.test(e.title.zh + e.summary.zh) ?? true))
+  );
+  let pool = events.filter(e => e.weight <= 2 && e.year >= minYear && (!opts.book || e.curriculum.some(c => c.book === opts.book)) && inEra(e));
+  if (eraObj && pool.length < 3) {
+    pool = events.filter(e => e.scope === 'china' && e.year >= minYear && (!opts.book || e.curriculum.some(c => c.book === opts.book)) && inEra(e));
+  }
+  if (!pool.length && opts.book && eraObj) {
+    pool = events.filter(e => e.scope === 'china' && e.year >= minYear && inEra(e));
+  }
   const picks = shuffle(pool, r).slice(0, opts.n ?? 8);
   return picks.map((e, i): Question => {
     const kind = i % 3;

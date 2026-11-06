@@ -29,6 +29,7 @@ const S = {
   lgCoexist: { zh: '并立 {n} 个政权', en: '{n} polities' },
   // course
   pqTitle: { zh: '随堂检测', en: 'Check yourself' },
+  pqHint: { zh: '点击作答', en: 'Click to answer' },
   pqRight: { zh: '回答正确', en: 'Correct' },
   pqWrong: { zh: '回答错误', en: 'Not quite' },
   lsStart: { zh: '开始学习', en: 'Start lesson' },
@@ -121,6 +122,9 @@ const S = {
   trailExit: { zh: '退出专题', en: 'Exit trail' },
   eraPhases: { zh: '疆域阶段与对比', en: 'Territorial phases & compare' },
   cmpBtn: { zh: '对比', en: 'Compare' },
+  cmpActive: { zh: '对比中', en: 'Comparing' },
+  eraQuiz: { zh: '本朝测验', en: 'Quiz this period' },
+  allEras: { zh: '全部朝代', en: 'All dynasties' },
   chrAll: { zh: '全部', en: 'All' },
   chrStory: { zh: '▶ 动画', en: '▶ 3D Story' },
   cmpTitle: { zh: '疆域对比', en: 'Compare periods' },

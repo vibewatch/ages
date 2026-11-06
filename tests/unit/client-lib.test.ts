@@ -109,6 +109,7 @@ describe('deep links', () => {
       place: 'kaifeng', year: 1100, lang: 'en',
     });
     expect(readLink('#person=sushi', '?place=kaifeng&year=1100')).toEqual({ person: 'sushi', year: 1100 });
+    expect(readLink('#era=tang&y=669&cmp=-221', '?event=qin_unify')).toEqual({ era: 'tang', year: 669, compare: -221 });
     expect(readLink('#y=1405', '?event=qin_unify')).toEqual({ year: 1405 });
     expect(readLink('#lang=en', '?event=qin_unify')).toEqual({ event: 'qin_unify', lang: 'en' });
   });

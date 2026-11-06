@@ -1121,14 +1121,21 @@ test.describe('Ages atlas', () => {
     await expect(trailBar).toBeVisible();
     await trailBar.locator('[data-act=trail-close]').click();
 
-    // Open Tang Era card from timeline band and verify territorial phases + one-click compare
+    // Open Tang Era card from timeline band and verify #era=tang deep link, territorial phases + toggle compare
     await page.locator('.tl-band[data-era=tang]').click();
+    await expect(page).toHaveURL(/#era=tang/);
     const eraPhases = page.locator('[data-testid=era-phases]');
     await expect(eraPhases).toBeVisible();
-    await eraPhases.locator('[data-act=era-compare]').first().click();
+    const firstCmpBtn = eraPhases.locator('[data-act=era-compare]').first();
+    await firstCmpBtn.click();
     await expect(page).toHaveURL(/cmp=/);
+    await expect(firstCmpBtn).toHaveClass(/on/);
+    // Clicking the same phase compare button again toggles comparison off
+    await firstCmpBtn.click();
+    await expect(page).not.toHaveURL(/cmp=/);
+    await expect(firstCmpBtn).not.toHaveClass(/on/);
 
-    // Open Period Details and filter Chronicle by 3D Story / event kind
+    // Open Period Details, filter Chronicle by 3D Story, and answer the Phase Quick Check ([data-testid="period-check"])
     await page.locator('.b-details').click();
     const chKinds = pv.locator('[data-testid=chronicle-kinds]');
     await expect(chKinds).toBeVisible();
@@ -1137,6 +1144,17 @@ test.describe('Ages atlas', () => {
     const storyCount = await pv.locator('.ch-list > li').count();
     expect(storyCount).toBeGreaterThan(0);
     expect(storyCount).toBeLessThan(allCount);
+
+    const periodCheck = pv.locator('[data-testid=period-check]');
+    await expect(periodCheck).toBeVisible();
+    await periodCheck.locator('[data-act=period-opt]').first().click();
+    await expect(periodCheck.locator('[data-testid=period-check-why]')).toBeVisible();
+    await page.keyboard.press('Escape');
+
+    // Launch Era Quiz directly from the open Tang Era card ([data-act="era-quiz"])
+    await page.locator('.card [data-act=era-quiz]').click();
+    const qz = page.locator('section.quiz');
+    await expect(qz).toBeVisible();
     expect(errs).toEqual([]);
   });
 });
