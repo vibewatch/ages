@@ -304,16 +304,17 @@ export class Atlas {
   private modelBounds(m: Mark): ScreenBox | null {
     const ud = m.g.userData as SpawnState;
     const epoch = this.view.camEpoch;
-    const baseScale = (ud.top || 0) / (ud.k || 1);
+    const baseScale = ud.baseZ ?? (ud.top || 0) / ((ud.k || 1) * (ud.grow || 1));
     if (m.boundsEpoch === epoch && m.boundsScale === baseScale && m.cachedBounds !== undefined) {
       return m.cachedBounds;
     }
-    // Include rotated scenery, its base and shadow, reserving hover growth without moving neighbours.
-    const boost = 1.06 / ud.k;
+    // Include rotated scenery, its base and shadow at resting scale, reserving hover growth without moving neighbours.
+    const mdlBoost = 1.06 / ((ud.k || 1) * (ud.grow || 1));
+    const ringBoost = 1.06 / (ud.k || 1);
     const b: ScreenBox = { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity };
     const v = this.boundVec;
     let clipped = false;
-    const addPt = () => {
+    const addPt = (boost = mdlBoost) => {
       v.sub(m.g.position).multiplyScalar(boost).add(m.g.position);
       this.view.project(v, v);
       if (v.z < -1 || v.z > 1) clipped = true;
@@ -330,14 +331,14 @@ export class Atlas {
       const mw = mdl.matrixWorld;
       for (let i = 0; i < 8; i++) {
         v.set(i & 1 ? max[0] : min[0], i & 2 ? max[1] : min[1], i & 4 ? max[2] : min[2]).applyMatrix4(mw);
-        addPt();
+        addPt(mdlBoost);
       }
       const br = (ud.baseR ?? 0) * (ud.z ?? 1);
       if (br > 0) {
         const gp = m.g.position;
         for (let i = 0; i < 8; i++) {
           v.set(gp.x + (i & 1 ? br : -br), gp.y + (i & 2 ? 0.006 : 0), gp.z + (i & 4 ? br : -br));
-          addPt();
+          addPt(ringBoost);
         }
       }
     } else {
@@ -348,7 +349,7 @@ export class Atlas {
         const box = o.geometry.boundingBox!;
         for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) {
           v.set(x, y, z).applyMatrix4(o.matrixWorld);
-          addPt();
+          addPt(mdlBoost);
         }
       });
     }
@@ -384,6 +385,7 @@ export class Atlas {
       else if (this.fx.dist < m.modelMaxD - 2) m.modelForm = true;
       const model = active && (selected || m.modelForm);
       l.modelHit = model;
+      l.prio = model ? m.prio : Math.min(m.prio, 48);
       l.model = undefined; m.layout = undefined;
       l.pinned = selected;
       l.off = !active || (!model && !!m.place);
@@ -861,8 +863,8 @@ export class Atlas {
       el.innerHTML = '<span class="b" aria-hidden="true"></span><span class="t"></span>';
       const l = this.labels.add({
         el, pos: this.geo.pos(p.lon, p.lat, 0.05), group: 'places',
-        prio: p.tier === 1 ? 40 : p.tier === 2 ? 22 : 8,
-        maxD: p.tier === 1 ? Infinity : p.tier === 2 ? 48 : 20,
+        prio: p.tier === 1 ? 74 : p.tier === 2 ? 66 : 56,
+        maxD: p.tier === 1 || p.capital?.length ? Infinity : p.tier === 2 ? 48 : p.minor ? 12 : 20,
         owner: `place:${p.id}`,
       });
       const target: MapTarget = {
@@ -933,14 +935,17 @@ export class Atlas {
       const text = tr(name, this.lang);
       if (l.el.dataset.text !== text || l.el.classList.contains('cap') !== cap) {
         l.el.dataset.text = text;
-        l.el.querySelector('.b')!.innerHTML = glyph(target.icon);
+        if (l.el.dataset.icon !== target.icon) {
+          l.el.dataset.icon = target.icon;
+          l.el.querySelector('.b')!.innerHTML = glyph(target.icon);
+        }
         l.el.querySelector('.t')!.textContent = text;
         l.el.setAttribute('aria-label', text);
         l.el.classList.toggle('cap', cap);
         this.labels.remeasure(l);
       }
-      l.prio = cap ? 70 : p.tier === 1 ? 40 : p.tier === 2 ? 22 : 8;
-      l.maxD = cap ? Infinity : p.tier === 1 ? Infinity : p.tier === 2 ? 48 : p.minor ? 12 : 20;
+      l.prio = p.tier === 1 ? 74 : p.tier === 2 ? 66 : 56;
+      l.maxD = p.tier === 1 || p.capital?.length ? Infinity : p.tier === 2 ? 48 : p.minor ? 12 : 20;
     }
   }
 
@@ -978,22 +983,27 @@ export class Atlas {
     this.labels.setGroupVisible('polity', this.layers.territory);
   }
 
-  /** Events of the current era (plus the selected one) as clickable pins. */
+  /** Events of the current era (plus the selected one) as clickable pins, diffed incrementally to avoid DOM churn. */
   private buildPins(): void {
-    this.labels.clear('pins');
-    this.pins.clear();
     const era = eraAt(this.year);
     const near = (e: HistEvent) => Math.abs(e.year - this.year) <= CHRONICLE_WINDOW || (e.end !== undefined && e.year <= this.year && e.end >= this.year);
     const list = EVENTS.filter(e => e.scope === 'china' && (era ? e.year >= era.start && e.year <= era.end : false) && (e.source !== 'jiangshan' || near(e)));
     if (this.selected && !list.includes(this.selected)) list.push(this.selected);
-    for (const e of list) this.addPin(e);
+    const want = new Set(list.map(e => e.id));
+    for (const [id, target] of this.pins) {
+      if (!want.has(id)) {
+        this.labels.remove(target.label);
+        this.pins.delete(id);
+      }
+    }
+    for (const e of list) if (!this.pins.has(e.id)) this.addPin(e);
     this.labels.setGroupVisible('pins', this.layers.events && !this.pickHandler);
   }
 
   private addPin(e: HistEvent): void {
     const key = `event:${e.id}`;
     const label = this.badge(key, e.kind, this.geo.pos(e.lon, e.lat, 0.02),
-      66 - e.weight * 10 - (e.source ? 4 : 0), 'pins', e.weight === 1 ? Infinity : e.weight === 2 ? 75 : 38);
+      50 - e.weight * 8 - (e.source ? 4 : 0), 'pins', e.weight === 1 ? Infinity : e.weight === 2 ? 75 : 38);
     label.el.dataset.id = e.id;
     label.el.setAttribute('aria-label', tr(e.title, this.lang));
     const target: MapTarget = { key, icon: e.kind, label, open: () => this.onPin(e), info: () => ({ title: tr(e.title, this.lang), sub: this.eventSub(e) }) };
@@ -1007,15 +1017,21 @@ export class Atlas {
     const key = this.layers.models && cap ? `${cap.id}:${era!.id}` : '';
     if (key !== this.capitalKey) {
       this.capitalKey = key;
-      this.fx.clear('base');
-      if (cap && key && era) {
+      if (!cap || !key || !era) {
+        this.fx.clear('base');
+      } else {
         const capRecipe = capitalModel(era);
         warmHeroes([capRecipe.hero]);
         this.fx.spawn({
           lon: cap.lon, lat: cap.lat, model: capRecipe, scale: 1.9, yaw: 0, ring: KIND_COLOR.capital,
           priority: 100, tag: `era:${era.id}`,
         }, 'base').then(g => {
-          if (!g || this.capitalKey !== key) return;
+          if (!g) return;
+          if (this.capitalKey !== key) { this.fx.removeGroup(g); return; }
+          for (const m of this.marks.filter(x => x.layer === 'base')) {
+            this.fx.removeGroup(m.g);
+            this.labels.remove(m.label);
+          }
           const target = this.places.get(cap.id)!;
           this.addMark({
             ...target, g, icon: 'capital', place: cap, layer: 'base', prio: 90, modelMaxD: Infinity, maxD: Infinity,
@@ -1034,7 +1050,7 @@ export class Atlas {
    */
   private updateScenery(): void {
     const era = eraAt(this.year);
-    const key = this.layers.models && era ? `${era.id}:${this.lang}` : '';
+    const key = this.layers.models && era ? era.id : '';
     if (key === this.sceneryKey) return;
     const prevEra = this.lastSceneryEra;
     this.sceneryKey = key;
@@ -1043,9 +1059,11 @@ export class Atlas {
     // Drop any unstarted worker builds from the previous dynasty or background prefetch
     cancelByTag('era:');
     cancelByTag('prefetch:');
-    this.fx.clear('scenery');
-    this.labels.clear('badges');
-    if (!era || !key) return;
+    if (!era || !key) {
+      this.fx.clear('scenery');
+      this.labels.clear('badges');
+      return;
+    }
     const items = sceneryOf(era);
     const tag = `era:${era.id}`;
     // Pre-fetch all lazy hero chunks required by this single dynasty in parallel
@@ -1055,9 +1073,17 @@ export class Atlas {
       const cap = PLACE.get(era.capital);
       if (cap) this.fx.dustOfAges(cap.lon, cap.lat, 11, 0.7);
     }
+    const hasOldScenery = this.marks.some(x => x.layer === 'scenery' && x.g.parent);
+    const pendingMarks: Mark[] = [];
     const total = items.length;
     let done = 0;
     this.onEraProgress(era, 0, total);
+    if (total === 0 && hasOldScenery) {
+      for (const m of this.marks.filter(x => x.layer === 'scenery')) {
+        this.fx.removeGroup(m.g);
+        this.labels.remove(m.label);
+      }
+    }
     for (const s of items) {
       const p = s.person, l = s.life;
       const ev = !p && !l && s.event ? EVENTS.find(x => x.id === s.event) : undefined;
@@ -1065,34 +1091,57 @@ export class Atlas {
       const scale = s.kind === 'person' ? 1.8 : s.kind === 'food' ? 1.3 : 1.5;
       const priority = s.level === 1 ? 85 : s.level === 2 ? 60 : 40;
       this.fx.spawn({ lon: s.lon, lat: s.lat, model: s.model, scale, yaw: s.yaw, ring: KIND_COLOR[s.kind], priority, tag }, 'scenery').then(g => {
-        if (this.sceneryKey !== key) return;
+        if (this.sceneryKey !== key) {
+          if (g) this.fx.removeGroup(g);
+          return;
+        }
         done++;
         this.onEraProgress(era, done, total);
-        if (done === total) this.scheduleAdjacentEraPrefetch(era);
-        if (!g) return;
-        const twin = l ? lifeEvent(l) : undefined;
-        let target: Omit<MapTarget, 'label'> | undefined;
-        if (l) {
-          target = {
-            key: `life:${l.id}`, g, icon: l.kind, open: () => this.onLife(l),
-            info: () => ({ title: tr(l.name, this.lang), sub: l.kind === 'person' && l.person ? tr(l.person.title, this.lang) : `${ui(l.kind)} · ${tr(era.name, this.lang)}` }),
-          };
-        } else if (p) {
-          target = { key: `person:${p.id}`, g, icon: 'person', open: () => this.onPerson(p), info: () => ({ title: tr(p.name, this.lang), sub: tr(p.title, this.lang) }) };
-        } else if (ev) {
-          target = { key: `event:${ev.id}`, g, icon: ev.kind, open: () => this.onPin(ev), info: () => ({ title: tr(ev.title, this.lang), sub: this.eventSub(ev) }) };
+        if (g) {
+          const twin = l ? lifeEvent(l) : undefined;
+          let target: Omit<MapTarget, 'label'> | undefined;
+          if (l) {
+            target = {
+              key: `life:${l.id}`, g, icon: l.kind, open: () => this.onLife(l),
+              info: () => ({ title: tr(l.name, this.lang), sub: l.kind === 'person' && l.person ? tr(l.person.title, this.lang) : `${ui(l.kind)} · ${tr(era.name, this.lang)}` }),
+            };
+          } else if (p) {
+            target = { key: `person:${p.id}`, g, icon: 'person', open: () => this.onPerson(p), info: () => ({ title: tr(p.name, this.lang), sub: tr(p.title, this.lang) }) };
+          } else if (ev) {
+            target = { key: `event:${ev.id}`, g, icon: ev.kind, open: () => this.onPin(ev), info: () => ({ title: tr(ev.title, this.lang), sub: this.eventSub(ev) }) };
+          }
+          if (target) {
+            const alias = target.key;
+            if (place) target = this.places.get(place.id)!;
+            const event = s.kind === 'landmark' ? s.event : twin?.id;
+            const prio = LEVEL_PRIORITY[s.level];
+            const mark: Mark = {
+              ...target, g, place, event, layer: 'scenery', prio,
+              aliases: [alias, ...(event ? [`event:${event}`] : [])],
+              modelMaxD: s.level === 1 ? Infinity : ZOOM.model, maxD: s.level === 3 ? ZOOM.detail : Infinity,
+              label: this.badge(target.key, target.icon, g.position.clone(), prio, 'badges'),
+            };
+            if (hasOldScenery && done < total) {
+              g.visible = false;
+              mark.label.off = true;
+              pendingMarks.push(mark);
+            } else {
+              pendingMarks.push(mark);
+            }
+          }
         }
-        if (!target) return;
-        const alias = target.key;
-        if (place) target = this.places.get(place.id)!;
-        const event = s.kind === 'landmark' ? s.event : twin?.id;
-        const prio = LEVEL_PRIORITY[s.level];
-        this.addMark({
-          ...target, g, place, event, layer: 'scenery', prio,
-          aliases: [alias, ...(event ? [`event:${event}`] : [])],
-          modelMaxD: s.level === 1 ? Infinity : ZOOM.model, maxD: s.level === 3 ? ZOOM.detail : Infinity,
-          label: this.badge(target.key, target.icon, g.position.clone(), prio, 'badges'),
-        });
+        if (done === total) {
+          if (hasOldScenery) {
+            for (const m of this.marks.filter(x => x.layer === 'scenery')) {
+              this.fx.removeGroup(m.g);
+              this.labels.remove(m.label);
+            }
+            for (const mark of pendingMarks) this.addMark(mark);
+          }
+          this.scheduleAdjacentEraPrefetch(era);
+        } else if (!hasOldScenery && pendingMarks.length) {
+          this.addMark(pendingMarks.pop()!);
+        }
       });
     }
   }

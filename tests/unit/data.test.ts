@@ -16,6 +16,7 @@ import { STORIES, TRAVELLER, journeyStory } from '../../src/shared/data/stories.
 import { SNAPSHOTS, snapshotAt } from '../../src/shared/data/territories.ts';
 import { formatArea, realmArea } from '../../src/shared/data/areas.ts';
 import { decodeRing } from '../../src/shared/lib/rings.ts';
+import { eraAt } from '../../src/shared/lib/timeline.ts';
 import type { I18n, LonLat, Snapshot, StoryStep } from '../../src/shared/data/types.ts';
 import { readFileSync } from 'node:fs';
 
@@ -409,6 +410,37 @@ describe('imported jiangshan-map content', () => {
     }
     for (const p of [...FIGURES, ...EXTRA_PEOPLE]) {
       bilingual(p.bio, `person bio: ${p.id}`);
+    }
+  });
+  it('keeps place names, eras and city-adjacent scenery steady during timeline playback', () => {
+    for (let y = -2070; y <= 2000; y++) {
+      expect(eraAt(y), `eraAt(${y})`).toBeDefined();
+    }
+    for (const p of PLACES) {
+      if (!p.names?.length) continue;
+      let start = Infinity, end = -Infinity;
+      for (const n of p.names) {
+        if (n.from < start) start = n.from;
+        if (n.to > end) end = n.to;
+      }
+      for (let y = Math.max(-2070, start); y <= Math.min(2000, end); y += 6) {
+        expect(mapName(p, y), `${p.id} @ ${y}`).not.toBeNull();
+      }
+    }
+    const majorCities = PLACES.filter(p => p.scope === 'china' && p.kind === 'city' && (p.tier <= 2 || p.capital?.length));
+    const tier1Cities = majorCities.filter(p => p.tier === 1);
+    for (const era of ERAS.filter(e => e.scope === 'china')) {
+      for (const it of sceneryOf(era)) {
+        if (it.life && lifePlace(it.life)) continue;
+        for (const c of majorCities) {
+          expect(Math.hypot(it.lon - c.lon, it.lat - c.lat), `${era.id} ${it.life?.id ?? it.event} vs ${c.id}`).toBeGreaterThanOrEqual(1.1 - 1e-9);
+        }
+        if (!it.life) continue;
+        for (const c of tier1Cities) {
+          const inBox = it.lon > c.lon - 1.7 && it.lon < c.lon + 3.1 && it.lat > c.lat - 2.0 && it.lat < c.lat + 1.1;
+          expect(inBox, `${era.id} ${it.life.id} overlaps tier-1 city box ${c.id}`).toBe(false);
+        }
+      }
     }
   });
 });

@@ -52,7 +52,13 @@ export function eraAt(y: Year, eras: Era[] = ERAS): Era | undefined {
   for (const e of eras) {
     if (y >= e.start && y <= e.end && (e.lane ?? 0) === 0) best = e;
   }
-  return best ?? eras.find(e => y >= e.start && y <= e.end);
+  if (best) return best;
+  const any = eras.find(e => y >= e.start && y <= e.end);
+  if (any) return any;
+  for (const e of eras) {
+    if ((e.lane ?? 0) === 0 && y > e.end && y <= e.end + 5) best = e;
+  }
+  return best;
 }
 
 export function rulerAt(y: Year, rulers: Ruler[] = RULERS): Ruler | undefined {

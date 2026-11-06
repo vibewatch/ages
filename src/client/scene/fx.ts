@@ -49,6 +49,8 @@ export interface SpawnState {
   model?: THREE.Object3D;
   baseR?: number;
   z?: number;
+  baseZ?: number;
+  grow?: number;
 }
 
 function setModelLod(obj: THREE.Object3D, far: boolean): void {
@@ -199,6 +201,12 @@ export class Fx {
     for (const o of it.own) o.dispose();
     if (it.label) this.labels.remove(it.label);
     this.boundsDirty = true;
+  }
+
+  /** Removes a single spawned group (used when swapping dynasty models atomically). */
+  removeGroup(obj: THREE.Object3D): void {
+    const it = this.items.find(x => x.obj === obj);
+    if (it) this.remove(it);
   }
 
   /** Removes a layer (and, for 'story', finishes pending tweens so awaiting scripts unwind). */
@@ -1108,13 +1116,14 @@ export class Fx {
       const z = baseZ * ud.k;
       const vis = o.maxD === undefined || this.dist <= o.maxD;
       if (Math.abs(z - lastZ) > 1e-5 || grow !== lastGrow || vis !== lastVis) {
-        if (Math.abs(baseZ - lastBaseZ) > 1e-5 || grow !== lastGrow || vis !== lastVis) {
+        if (Math.abs(baseZ - lastBaseZ) > 1e-5 || vis !== lastVis) {
           lastBaseZ = baseZ;
           this.boundsDirty = true;
         }
         lastZ = z; lastGrow = grow; lastVis = vis;
-        const e = easeBack(grow);
-        m.scale.setScalar(Math.max(0.001, z * e));
+        const e = layer === 'base' || layer === 'scenery' ? easeOut(grow) : easeBack(grow);
+        const ge = Math.max(0.001, e);
+        m.scale.setScalar(z * ge);
         m.updateMatrix();
         sh.scale.setScalar(Math.max(0.001, z * r * 2.6 * Math.min(1, grow * 2)));
         sh.updateMatrix();
@@ -1124,9 +1133,9 @@ export class Fx {
         }
         m.visible = sh.visible = vis;
         if (base0) base0.visible = vis;
-        ud.top = h * z * e; ud.rad = r * z; ud.shown = vis; ud.z = z;
+        ud.top = h * z * ge; ud.rad = r * z; ud.shown = vis; ud.z = z; ud.baseZ = baseZ; ud.grow = ge;
         // the name clears the model's far rim too (wide dioramas would otherwise wear it on their back half)
-        if (it.label) { it.label.pos.set(base.x, base.y + (h * e + r * 0.5 + 0.05) * z, base.z); it.label.off = !g.visible || !vis; }
+        if (it.label) { it.label.pos.set(base.x, base.y + (h * ge + r * 0.5 + 0.05) * z, base.z); it.label.off = !g.visible || !vis; }
       } else if (it.label) {
         it.label.off = !g.visible || !vis;
       }

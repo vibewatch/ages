@@ -49,24 +49,48 @@ const MAX_LANDMARKS = 6;
 const MAX_PEOPLE = 4;
 /** curated items may stand a little closer together (detail ones only show when zoomed in) */
 const LIFE_SPACING = 1.1;
-const LIFE_RINGS = [0, 0.7, 1.1, 1.5, 1.9];
+const LIFE_RINGS = [0, 0.7, 1.1, 1.5, 1.9, 2.4, 3.0];
 /** degrees kept clear between any two models (and the capital's palace), so the map doesn't turn into a heap */
 const SPACING = 1.5;
 /** how far (degrees) a model may step off its event's spot to find room: landmarks stay close, people stand beside */
-const LANDMARK_RINGS = [0, 0.9, 1.4];
-const PERSON_RINGS = [1.1, 1.6, 2.1];
+const LANDMARK_RINGS = [0, 0.9, 1.4, 2.0, 2.6, 3.2];
+const PERSON_RINGS = [1.1, 1.6, 2.1, 2.7, 3.3];
+
+const MAJOR_CITIES = PLACES.filter(p => p.scope === 'china' && p.kind === 'city' && (p.tier <= 2 || p.capital?.length));
+const TIER1_CITIES = MAJOR_CITIES.filter(p => p.tier === 1);
+const ANGLES = [Math.PI, (3 * Math.PI) / 4, (-3 * Math.PI) / 4, Math.PI / 2, -Math.PI / 2, Math.PI / 4, -Math.PI / 4, 0];
 
 /** Generic figures stand straight on the map; named heroes keep their own model. */
 const bare = (m: ModelRecipe): ModelRecipe => (m.hero ? m : { ...m, bare: true });
 
 type Pt = { lon: number; lat: number };
-/** The first free spot at `at` or on a ring around it (8 directions, starting south-east, the side facing the camera). */
-function room(at: Pt, taken: Pt[], rings: number[], gap = SPACING): Pt | null {
-  for (const r of rings) {
-    for (let k = 0; k < (r ? 8 : 1); k++) {
-      const a = -Math.PI / 4 + (k * Math.PI) / 4;
-      const p = { lon: at.lon + r * Math.cos(a) * 1.2, lat: at.lat + r * Math.sin(a) };
-      if (!taken.some(q => near(q, p, gap))) return p;
+
+function hitsCityBox(p: Pt, cities: typeof MAJOR_CITIES): boolean {
+  for (const c of cities) {
+    if (p.lon > c.lon - 1.7 && p.lon < c.lon + 3.1 && p.lat > c.lat - 2.0 && p.lat < c.lat + 1.1) return true;
+  }
+  return false;
+}
+
+/** The first free spot at `at` or on a ring around it, stepping clear of city dots and labels unless attached to a landmark place. */
+function room(at: Pt, taken: Pt[], rings: number[], gap = SPACING, avoidCities = true): Pt | null {
+  const passes: ((p: Pt) => boolean)[] = avoidCities
+    ? [
+        p => !hitsCityBox(p, MAJOR_CITIES),
+        p => !hitsCityBox(p, TIER1_CITIES) && !MAJOR_CITIES.some(c => near(c, p, 1.35)),
+        p => !MAJOR_CITIES.some(c => near(c, p, 1.35)),
+        () => true,
+      ]
+    : [() => true];
+  for (const ok of passes) {
+    for (const r of rings) {
+      for (let k = 0; k < (r ? 8 : 1); k++) {
+        const a = avoidCities ? ANGLES[k] : -Math.PI / 4 + (k * Math.PI) / 4;
+        const p = { lon: at.lon + r * Math.cos(a) * 1.2, lat: at.lat + r * Math.sin(a) };
+        if (taken.some(q => near(q, p, gap))) continue;
+        if (!ok(p)) continue;
+        return p;
+      }
     }
   }
   return null;
@@ -118,7 +142,7 @@ export function sceneryOf(era: Era, events: HistEvent[] = EVENTS): SceneryItem[]
   // curated life of the era first: its people, buildings, customs and foods
   const life: SceneryItem[] = [];
   for (const l of era.scope === 'china' ? lifeOf(era.id) : []) {
-    const at = room(l, taken, LIFE_RINGS, LIFE_SPACING);
+    const at = room(l, taken, LIFE_RINGS, LIFE_SPACING, !lifePlace(l));
     if (!at) continue;
     taken.push(at);
     life.push({ event: '', kind: l.kind, ...at, model: l.model, name: l.name, ...(l.person ? { person: l.person } : {}), life: l, level: l.tier === 2 ? 3 : 2, yaw: l.kind === 'person' ? -0.4 : 0.3 });

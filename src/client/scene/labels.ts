@@ -134,9 +134,10 @@ export class Labels {
         l.markerX = marker ? marker.offsetLeft + marker.offsetWidth / 2 : l.w / 2;
       }
       const w = l.w ?? 0, h = l.h ?? 0;
+      const rw = l.group === 'places' && l.anchor === 'beside' ? Math.max(w, Math.round(56 * this.lz)) : w;
       const left = x - (l.anchor === 'beside' ? l.markerX ?? w / 2 : w / 2), top = l.anchor === 'above' ? y - h : y - h / 2;
       if (show) {
-        const bounds = l.modelHit && l.model ? l.model.bounds : { left, top, right: left + w, bottom: top + h };
+        const bounds = l.modelHit && l.model ? l.model.bounds : { left, top, right: left + rw, bottom: top + h };
         candidates.set(l, { bounds, prio: l.prio, pinned: l.pinned, primary: l.primary, owner: l.owner, model: l.model, passive: l.modelHit });
       }
     }

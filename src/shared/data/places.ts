@@ -342,15 +342,36 @@ export const PLACES: Place[] = [...CURATED, ...importedPlaces(CURATED)];
 
 export const PLACE = new Map(PLACES.map(p => [p.id, p]));
 
-/** Whether a place exists in `year` (period-only places vanish outside their named periods). */
-export const placeExists = (p: Place, year: Year): boolean => !p.periodOnly || !!p.names?.some(n => year >= n.from && year <= n.to);
-
 const named = (p: Place, year: Year): I18n | undefined =>
   (p.names?.find(n => year >= n.from && year <= n.to) ?? p.periods?.find(n => year >= n.from && year <= n.to))?.name;
 
+/**
+ * Bridges unannotated intermediate dynasties in imported settlement spans so cities do not blink off between
+ * recorded periods before their next period or modern `since` year.
+ */
+function bridgedName(p: Place, year: Year): I18n | undefined {
+  const spans = [...(p.names ?? []), ...(p.periods ?? [])];
+  if (!spans.length) return undefined;
+  let prev: { from: Year; to: Year; name: I18n } | undefined;
+  let hasLater = false;
+  for (const r of spans) {
+    if (r.to < year && (!prev || r.to > prev.to)) prev = r;
+    if (r.from > year) hasLater = true;
+  }
+  if (!prev || prev.to < -1100) return undefined;
+  if (hasLater || (p.since != null && year < p.since)) return prev.name;
+  if (p.periodOnly && p.modern?.zh && prev.to >= 900) return year >= 1912 ? p.modern : prev.name;
+  return undefined;
+}
+
+/** Whether a place exists in `year` (period-only places vanish outside their named periods). */
+export const placeExists = (p: Place, year: Year): boolean =>
+  !p.periodOnly || !!p.names?.some(n => year >= n.from && year <= n.to) || !!bridgedName(p, year);
+
 /** The name a place had in `year` (falls back to the modern name). */
 export function placeName(p: Place, year: Year): I18n {
-  return named(p, year) ?? p.name;
+  if (p.since != null && year >= p.since) return named(p, year) ?? p.name;
+  return named(p, year) ?? bridgedName(p, year) ?? p.name;
 }
 
 /**
@@ -361,8 +382,10 @@ export function mapName(p: Place, year: Year): I18n | null {
   if (!placeExists(p, year) || (p.until != null && year > p.until)) return null;
   const n = named(p, year);
   if (n) return n;
-  if (p.periodOnly) return null;
-  if (p.since != null) return year >= p.since ? p.name : null;
+  if (p.since != null && year >= p.since) return p.name;
+  const b = bridgedName(p, year);
+  if (b) return b;
+  if (p.periodOnly || p.since != null) return null;
   return p.kind === 'city' ? null : p.name;
 }
 
