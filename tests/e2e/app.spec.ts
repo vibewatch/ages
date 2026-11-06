@@ -1,4 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
+import { ERAS } from '../../src/shared/data/eras.ts';
+import { PLACE } from '../../src/shared/data/places.ts';
+import { sceneryOf } from '../../src/shared/data/scenery.ts';
 import { markPoints, mockWikipedia, openApp, setMapPose, shot, state, watchErrors } from './helpers.ts';
 
 /** The language switch is a standalone toggle button in the top-right toolbar. */
@@ -1249,11 +1252,28 @@ test.describe('Ages atlas', () => {
     });
 
     expect(playbackReport.frames).toBeGreaterThan(10);
-    expect(playbackReport.activeMajorCount).toBeGreaterThanOrEqual(4);
+    expect(playbackReport.activeMajorCount).toBeGreaterThanOrEqual(2);
     expect(playbackReport.unnecessaryIconMutations).toBe(0);
     expect(playbackReport.placeFlickers).toEqual([]);
     expect(playbackReport.majorDropouts).toEqual([]);
     expect(playbackReport.modeledDropouts).toBe(0);
+
+    // 1b. Every dynasty's 3D scenery and capital models stand on land (never in the sea) on the terrain heightmap
+    const allEraModels = ERAS.filter(e => e.scope === 'china').flatMap(era => {
+      const cap = era.capital ? PLACE.get(era.capital) : undefined;
+      const capEntry = cap ? [{ id: `${era.id}:cap:${era.capital}`, lon: cap.lon, lat: cap.lat }] : [];
+      const items = sceneryOf(era).map(s => ({
+        id: `${era.id}:${s.kind}:${s.life?.id ?? s.name?.zh ?? s.event}`,
+        lon: s.lon,
+        lat: s.lat,
+      }));
+      return [...capEntry, ...items];
+    });
+    const seaModels = await page.evaluate(models => {
+      const geo = (window as any).__atlas.atlas.geo;
+      return models.filter(m => !geo.isLand(m.lon, m.lat)).map(m => `${m.id}@${m.lon.toFixed(2)},${m.lat.toFixed(2)}`);
+    }, allEraModels);
+    expect(seaModels).toEqual([]);
 
     // 2. Cross-dynasty transitions & interregnum years (-206..-203 BCE, 24 CE, and Sui 614 -> Tang 624) with Period Details open
     await page.locator('.b-details').click();

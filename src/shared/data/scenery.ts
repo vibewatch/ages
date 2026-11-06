@@ -4,6 +4,7 @@ import { personNamed, type Person } from './jiangshan.ts';
 import { LIFE, lifeOf, type LifeItem, type LifeKind } from './life.ts';
 import { ERAS } from './eras.ts';
 import { PLACE, PLACES } from './places.ts';
+import { STAGES } from './stage.ts';
 import type { Era, HistEvent, I18n, ModelRecipe, Place } from './types.ts';
 
 /**
@@ -49,48 +50,89 @@ const MAX_LANDMARKS = 6;
 const MAX_PEOPLE = 4;
 /** curated items may stand a little closer together (detail ones only show when zoomed in) */
 const LIFE_SPACING = 1.1;
-const LIFE_RINGS = [0, 0.7, 1.1, 1.5, 1.9, 2.4, 3.0];
+const LIFE_RINGS = [0, 0.7, 1.1, 1.5, 1.9];
 /** degrees kept clear between any two models (and the capital's palace), so the map doesn't turn into a heap */
 const SPACING = 1.5;
 /** how far (degrees) a model may step off its event's spot to find room: landmarks stay close, people stand beside */
-const LANDMARK_RINGS = [0, 0.9, 1.4, 2.0, 2.6, 3.2];
-const PERSON_RINGS = [1.1, 1.6, 2.1, 2.7, 3.3];
+const LANDMARK_RINGS = [0, 0.9, 1.4];
+const PERSON_RINGS = [1.1, 1.6, 2.1];
 
-const MAJOR_CITIES = PLACES.filter(p => p.scope === 'china' && p.kind === 'city' && (p.tier <= 2 || p.capital?.length));
-const TIER1_CITIES = MAJOR_CITIES.filter(p => p.tier === 1);
-const ANGLES = [Math.PI, (3 * Math.PI) / 4, (-3 * Math.PI) / 4, Math.PI / 2, -Math.PI / 2, Math.PI / 4, -Math.PI / 4, 0];
+/**
+ * 220×170 solid-land mask derived from `public/data/terrain/east-asia.webp` (10×10 px cells over STAGES.china.bounds).
+ * Used when stepping off an item's origin (`r > 0`) so ring-offset models never step into rivers, bays, or seas.
+ */
+const LW = 220;
+const LH = 170;
+const LAND_RLE =
+  '9,5,3c,28,73,3,32,31,8,7,2,8,c,4,2,1,48,4,33,31,1,22,1,b,44,4,1c,7,14,5c,17,c,22,4,1b,6,5,2,3,1,3,5,6,59,17,12,1d,4,' +
+  '19,7,5,2,7,7,3,5b,6,3,3,8,1,16,36,a,4,7,1,8,3,5c,4,28,5,8,26,9,5,12,1,97,25,9,3,ab,17,7,8,8,9,a6,11,1,4,a,7,6,7,1,3,' +
+  'a4,2,5,3,8,2,10,2,8,4,4,2,d1,5,4,3,cf,5,d3,1,1,6,d3,6,864,7,d4,8,d3,9,d0,c,c6,5,5,c,b8,15,1,e,b6,26,b5,25,b5,24,b6,' +
+  '25,b6,25,b5,26,b4,28,b2,2a,b2,2a,b5,27,7,1,ad,5,2,20,7,1,b5,4,1,1b,4,3,b6,2,2,1b,4,3,b6,2,2,1b,3,4,b5,3,2,1c,1,5,b5,' +
+  '4,1,22,b4,5,2,21,b5,4,2,21,3,2,af,5,3,25,af,5,1,28,ae,4,1,2b,ab,32,a9,33,a8,7,1,2d,a6,36,a5,38,a3,38,a3,37,a4,c,1,25,' +
+  '2,3,a4,d,2,26,a6,e,5,23,9f,2,3,f,6,25,9b,17,3,29,98,45,96,47,95,47,83,4,d,45,84,6,b,18,3,2f,80,6,1,6,4,19,3,2f,7d,10,' +
+  '3,1a,3,2e,7e,10,4,19,3,2e,7e,10,5,17,2,31,7f,10,4,16,2,31,7f,3,4,a,4,13,5,26,1,8,84,c,5,11,6,27,8c,e,4,f,8,27,8b,f,4,' +
+  'f,6,29,8a,f,4,9,7,1,3,2b,8a,f,1,b,5,1,2,2f,8b,1b,3,2,1,30,8b,1b,2,34,8c,14,3,2,1,36,8d,14,2,39,8e,13,2,39,8d,4f,8e,' +
+  '4e,8d,50,8c,50,8e,4f,8c,51,8c,50,8b,53,88,56,5,2,7e,5e,7d,60,7c,53,1,f,79,53,1,8,1,16,67,53,1,9,2,17,65,6,1,4d,2,8,3,' +
+  '16,64,7,1,4d,e,17,61,7,2,4d,11,15,2b,1,2d,1,5,8,1,4e,12,17,28,3,2a,5e,13,15,4,2,23,3,29,5f,12,16,4,2,1c,a,20,4,3,61,' +
+  '11,18,2,3,1b,c,1e,5,1,63,10,1e,1b,d,1b,6b,f,1f,1a,f,19,6c,f,1f,18,12,17,8,2,63,f,1f,17,14,16,7,3,63,d,21,16,15,16,7,' +
+  '2,64,c,22,15,16,16,1f,1,4d,a,25,13,18,16,1d,3,4c,a,25,11,19,4,1,13,1c,3,4c,5,2a,11,19,4,2,13,1b,3,4c,4,2b,f,1b,2,5,' +
+  '13,1a,2,4d,3,2d,c,24,14,18,3,4d,1,2f,c,24,15,17,2,7f,b,24,15,19,1,7e,b,24,16,18,1,7f,a,25,15,98,a,25,3,2,10,98,a,26,' +
+  '1,5,e,18,1,80,8,27,1,7,c,99,8,27,1,7,c,66,2,32,7,27,1,9,8,1c,2,4a,2,32,7,32,6,69,1,34,5,27,1,c,2,6c,1,34,4,28,1,c,2,' +
+  '21,1,4a,1,34,3,29,1,b0,2,4,2,23,2,34,1,80,2,24,2,2e,1,2,3,80,3,24,1,31,3,80,3,56,2,81,3,55,2,ab,2,1e,2,e,1,ab,3,1c,4,' +
+  'b9,5,19,6,af,3,7,4,19,5,b1,3,6,4,16,7,b3,3,5,4,16,7,b4,3,5,3,15,7,b6,4,4,2,13,a,b6,3,5,2,10,c,b7,5,4,1,f,c,b7,7,d,13,' +
+  'b5,8,c,11,7,1,1,1,af,7,c,10,b9,7,c,f,bb,5,d,f,1e,2,9c,6,c,d,6,2,2,1,13,5,9a,6,d,b,7,3,16,4,7,1,92,7,c,b,7,3,20,4,91,8,' +
+  'd,8,6,2,2,2,16,2,5,8,8f,7,12,3,7,1,3,1,16,3,3,c,8d,6,20,1,19,12,8b,5,3d,11,8b,3,40,10,8a,1,1d,1,24,f,ce,f,6,4,82,1,40,' +
+  '12,8a,4,3d,f,8e,a,35,10,93,4,33,b,5,2,cf,6,6,3,9e,1,10,1,1e,4,8,2,da,3,ab,1,2f,2,1ce';
+
+const LAND_MASK = (() => {
+  const m = new Uint8Array(LW * LH);
+  let i = 0;
+  let v = 0;
+  for (const s of LAND_RLE.split(',')) {
+    const n = parseInt(s, 16);
+    if (v) m.fill(1, i, i + n);
+    i += n;
+    v ^= 1;
+  }
+  return m;
+})();
+
+const CHINA_BOUNDS = STAGES.china.bounds;
+/** True when `[lon, lat]` lies within a solid-land cell of the East Asia terrain heightmap. */
+export function onLand(lon: number, lat: number): boolean {
+  const u = (lon - CHINA_BOUNDS.west) / (CHINA_BOUNDS.east - CHINA_BOUNDS.west);
+  const v = (CHINA_BOUNDS.north - lat) / (CHINA_BOUNDS.north - CHINA_BOUNDS.south);
+  if (u < 0 || u >= 1 || v < 0 || v >= 1) return false;
+  return LAND_MASK[Math.floor(v * LH) * LW + Math.floor(u * LW)] === 1;
+}
 
 /** Generic figures stand straight on the map; named heroes keep their own model. */
 const bare = (m: ModelRecipe): ModelRecipe => (m.hero ? m : { ...m, bare: true });
 
 type Pt = { lon: number; lat: number };
 
-function hitsCityBox(p: Pt, cities: typeof MAJOR_CITIES): boolean {
-  for (const c of cities) {
-    if (p.lon > c.lon - 1.7 && p.lon < c.lon + 3.1 && p.lat > c.lat - 2.0 && p.lat < c.lat + 1.1) return true;
-  }
-  return false;
-}
-
-/** The first free spot at `at` or on a ring around it, stepping clear of city dots and labels unless attached to a landmark place. */
-function room(at: Pt, taken: Pt[], rings: number[], gap = SPACING, avoidCities = true): Pt | null {
-  const passes: ((p: Pt) => boolean)[] = avoidCities
-    ? [
-        p => !hitsCityBox(p, MAJOR_CITIES),
-        p => !hitsCityBox(p, TIER1_CITIES) && !MAJOR_CITIES.some(c => near(c, p, 1.35)),
-        p => !MAJOR_CITIES.some(c => near(c, p, 1.35)),
-        () => true,
-      ]
-    : [() => true];
-  for (const ok of passes) {
-    for (const r of rings) {
+/** The first free spot at `at` or on a land ring around it, keeping `gap` degrees clear of `taken`. */
+function room(at: Pt, taken: Pt[], rings: number[], gap = SPACING): Pt | null {
+  let hitWater = false;
+  for (const r of rings) {
+    for (const offset of [0, Math.PI / 8]) {
+      if (offset && !r) break;
       for (let k = 0; k < (r ? 8 : 1); k++) {
-        const a = avoidCities ? ANGLES[k] : -Math.PI / 4 + (k * Math.PI) / 4;
+        const a = -Math.PI / 4 + offset + (k * Math.PI) / 4;
         const p = { lon: at.lon + r * Math.cos(a) * 1.2, lat: at.lat + r * Math.sin(a) };
         if (taken.some(q => near(q, p, gap))) continue;
-        if (!ok(p)) continue;
+        if (r > 0 && !onLand(p.lon, p.lat)) { hitWater = true; continue; }
         return p;
       }
+    }
+  }
+  if (hitWater) {
+    const r = rings[rings.length - 1] + 0.6;
+    for (let k = 0; k < 16; k++) {
+      const a = -Math.PI / 4 + (k * Math.PI) / 8;
+      const p = { lon: at.lon + r * Math.cos(a) * 1.2, lat: at.lat + r * Math.sin(a) };
+      if (taken.some(q => near(q, p, gap)) || !onLand(p.lon, p.lat)) continue;
+      return p;
     }
   }
   return null;
@@ -142,7 +184,7 @@ export function sceneryOf(era: Era, events: HistEvent[] = EVENTS): SceneryItem[]
   // curated life of the era first: its people, buildings, customs and foods
   const life: SceneryItem[] = [];
   for (const l of era.scope === 'china' ? lifeOf(era.id) : []) {
-    const at = room(l, taken, LIFE_RINGS, LIFE_SPACING, !lifePlace(l));
+    const at = room(l, taken, LIFE_RINGS, LIFE_SPACING);
     if (!at) continue;
     taken.push(at);
     life.push({ event: '', kind: l.kind, ...at, model: l.model, name: l.name, ...(l.person ? { person: l.person } : {}), life: l, level: l.tier === 2 ? 3 : 2, yaw: l.kind === 'person' ? -0.4 : 0.3 });

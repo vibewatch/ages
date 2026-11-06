@@ -9,7 +9,7 @@ import { FIGURES } from '../../src/shared/data/figures.ts';
 import { EXTRA_PEOPLE } from '../../src/shared/data/journeys.ts';
 import { POLITY, POLITIES, polityMatches } from '../../src/shared/data/polities.ts';
 import { STAGES } from '../../src/shared/data/stage.ts';
-import { lifePlace, MAX_KEY, sceneryOf } from '../../src/shared/data/scenery.ts';
+import { lifePlace, MAX_KEY, onLand, sceneryOf } from '../../src/shared/data/scenery.ts';
 import { LIFE, lifeOf } from '../../src/shared/data/life.ts';
 import { capitalModel } from '../../src/shared/data/heroes.ts';
 import { STORIES, TRAVELLER, journeyStory } from '../../src/shared/data/stories.ts';
@@ -292,8 +292,13 @@ describe('dynasty scenery', () => {
         expect(Math.hypot(pts[i].lon - pts[j].lon, pts[i].lat - pts[j].lat), `${era.id} ${i}/${j}`).toBeGreaterThanOrEqual(gap - 1e-9);
       }
       for (const it of items) {
-        if (it.life) { expect(it.life.era).toBe(era.id); continue; }
+        if (it.life) {
+          expect(it.life.era).toBe(era.id);
+          if (it.lon !== it.life.lon || it.lat !== it.life.lat) expect(onLand(it.lon, it.lat), `${era.id} ${it.life.id}`).toBe(true);
+          continue;
+        }
         const e = EVENTS.find(x => x.id === it.event)!;
+        if (it.lon !== e.lon || it.lat !== e.lat) expect(onLand(it.lon, it.lat), `${era.id} ${it.event}`).toBe(true);
         if (it.kind === 'landmark') expect(e.kind === 'war' || ['flag', 'army'].includes(it.model.kind), it.event).toBe(false);
         else expect(it.model.kind === 'person' && !!it.name?.zh, it.event).toBe(true);
       }
@@ -427,18 +432,16 @@ describe('imported jiangshan-map content', () => {
         expect(mapName(p, y), `${p.id} @ ${y}`).not.toBeNull();
       }
     }
-    const majorCities = PLACES.filter(p => p.scope === 'china' && p.kind === 'city' && (p.tier <= 2 || p.capital?.length));
-    const tier1Cities = majorCities.filter(p => p.tier === 1);
     for (const era of ERAS.filter(e => e.scope === 'china')) {
+      const cap = era.capital ? PLACE.get(era.capital) : undefined;
       for (const it of sceneryOf(era)) {
-        if (it.life && lifePlace(it.life)) continue;
-        for (const c of majorCities) {
-          expect(Math.hypot(it.lon - c.lon, it.lat - c.lat), `${era.id} ${it.life?.id ?? it.event} vs ${c.id}`).toBeGreaterThanOrEqual(1.1 - 1e-9);
+        expect(inStage(it.lon, it.lat), `${era.id} ${it.life?.id ?? it.event}`).toBe(true);
+        if (cap) {
+          expect(Math.hypot(it.lon - cap.lon, it.lat - cap.lat), `${era.id} ${it.life?.id ?? it.event} vs capital ${cap.id}`).toBeGreaterThanOrEqual(1.1 - 1e-9);
         }
-        if (!it.life) continue;
-        for (const c of tier1Cities) {
-          const inBox = it.lon > c.lon - 1.7 && it.lon < c.lon + 3.1 && it.lat > c.lat - 2.0 && it.lat < c.lat + 1.1;
-          expect(inBox, `${era.id} ${it.life.id} overlaps tier-1 city box ${c.id}`).toBe(false);
+        const orig = it.life ?? EVENTS.find(e => e.id === it.event)!;
+        if (it.lon !== orig.lon || it.lat !== orig.lat) {
+          expect(onLand(it.lon, it.lat), `${era.id} ${it.life?.id ?? it.event} stepped into water`).toBe(true);
         }
       }
     }

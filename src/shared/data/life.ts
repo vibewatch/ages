@@ -148,7 +148,7 @@ C('touhu', ['投壶', 'Pitch-pot'], [118.35, 36.85], hero(C1 + 'lf_touhu', 'bell
   ['宴饮时把箭投入壶中的礼仪游戏，源自射礼。', 'A banquet game of tossing arrows into a pot, a gentler form of the archery rite.'], { wiki: ['投壶', 'Touhu'] });
 C('archery', ['射礼', 'Archery rite'], [114.0, 33.2], hero(C1 + 'lf_archery', 'bell'),
   ['“六艺”之一，以射箭观德行，宾主揖让而升。', 'One of the Six Arts: archery judged a gentleman\'s virtue, with bows and courtesies.'], { wiki: ['射礼', 'Archery rite'], tier: 2 });
-F('salt', ['煮海为盐', 'Sea salt of Qi'], [119.6, 37.2], hero(FD + 'lf_salt', 'boat'),
+F('salt', ['煮海为盐', 'Sea salt of Qi'], [119.6, 36.95], hero(FD + 'lf_salt', 'boat'),
   ['管仲“官山海”，齐国煮海水制盐、捕鱼，富甲天下。', 'Guan Zhong put salt and iron under the state; Qi boiled sea water for salt and grew rich.'], { wiki: ['管仲', 'Guan Zhong'] });
 B('qiwall', ['齐长城', 'Great Wall of Qi'], [117.4, 36.3], { kind: 'wall' },
   ['春秋战国时齐国修筑，是中国现存最早的长城。', 'Built by Qi in the Spring and Autumn period — the oldest surviving great wall in China.'], { wiki: ['齐长城', 'Great Wall of Qi'], tier: 2 });
@@ -376,7 +376,7 @@ F('tangyuan', ['汤圆', 'Tangyuan'], [121.55, 29.87], hero(FD + 'lf_tangyuan', 
   ['宋代元宵节吃“浮圆子”，象征团圆。', 'Floating rice balls eaten at the Lantern Festival since the Song, a sign of reunion.'], { wiki: ['汤圆', 'Tangyuan (food)'] });
 P('陆游', [120.58, 30.0], { prop: 'brush', tier: 2 });
 P('辛弃疾', [117.0, 36.4], { prop: 'sword', tier: 2 });
-P('文天祥', [113.8, 22.4], { prop: 'brush', tier: 2, desc: ['南宋末年抗元丞相，作《过零丁洋》：“人生自古谁无死，留取丹心照汗青。”', 'Southern Song loyalist prime minister who resisted the Yuan: "Since antiquity who has escaped death? Leave a loyal heart to shine in history."'] });
+P('文天祥', [113.95, 22.55], { prop: 'brush', tier: 2, desc: ['南宋末年抗元丞相，作《过零丁洋》：“人生自古谁无死，留取丹心照汗青。”', 'Southern Song loyalist prime minister who resisted the Yuan: "Since antiquity who has escaped death? Leave a loyal heart to shine in history."'] });
 
 era('liao');
 P('耶律阿保机', [119.3, 43.9], { en: 'Yelü Abaoji', role: 'ruler', year: 916, eth: 'steppe',
@@ -448,7 +448,7 @@ C('qinghua', ['景德镇青花瓷', 'Blue-and-white porcelain'], [117.2, 29.27],
   ['景德镇御窑烧造的青花瓷远销海外，“瓷都”闻名世界。', 'Blue-and-white from the imperial kilns of Jingdezhen, the Porcelain Capital, sold worldwide.'], { wiki: ['青花瓷', 'Blue and white pottery'] });
 F('duck', ['北京烤鸭', 'Peking duck'], [117.6, 39.1], hero(FD + 'lf_duck', 'ding'),
   ['明代随迁都传入北京，便宜坊始于1416年。', 'Came north with the capital; the Bianyifang restaurant opened in 1416.'], { wiki: ['北京烤鸭', 'Peking duck'] });
-C('kunqu', ['昆曲', 'Kunqu opera'], [121.2, 31.7], hero(C2 + 'lf_opera', 'temple', { style: 'kunqu' }),
+C('kunqu', ['昆曲', 'Kunqu opera'], [120.95, 31.38], hero(C2 + 'lf_opera', 'temple', { style: 'kunqu' }),
   ['魏良辅改良的昆山腔，汤显祖《牡丹亭》盛演不衰，“百戏之祖”。', 'Wei Liangfu\'s refined Kunshan melodies; The Peony Pavilion made it the mother of Chinese operas.'], { wiki: ['昆曲', 'Kunqu'], tier: 2 });
 C('lanternming', ['秦淮灯会', 'Qinhuai lanterns'], [118.79, 32.02], hero('festivals/fs_lantern', 'monument', { style: 'qinhuai' }),
   ['朱元璋定都南京，元宵张灯十日，秦淮灯彩由此兴盛。', 'Zhu Yuanzhang made the Lantern Festival ten days long in Nanjing; the Qinhuai lanterns date from then.'], { wiki: ['秦淮灯会', 'Qinhuai Lantern Fair'], tier: 2 });
@@ -497,7 +497,7 @@ B('sanxia', ['三峡大坝', 'Three Gorges Dam'], [111.0, 30.82], { kind: 'dam' 
   ['世界最大水电站，2006年大坝建成。', 'The world\'s largest hydropower station; the dam was finished in 2006.'], { wiki: ['三峡大坝', 'Three Gorges Dam'] });
 C('dongfanghong', ['东方红一号', 'Dong Fang Hong I'], [100.3, 40.96], { kind: 'rocket' },
   ['1970年长征一号从酒泉发射中国第一颗人造卫星。', 'In 1970 a Long March 1 from Jiuquan put China\'s first satellite in orbit.'], { wiki: ['东方红一号', 'Dong Fang Hong I'] });
-B('pudong', ['浦东陆家嘴', 'Lujiazui'], [122.3, 31.0], { kind: 'skyline' },
+B('pudong', ['浦东陆家嘴', 'Lujiazui'], [121.52, 31.22], { kind: 'skyline' },
   ['改革开放后崛起的金融城，东方明珠与上海中心大厦。', 'The finance district risen since reform: the Oriental Pearl and Shanghai Tower.'], { wiki: ['陆家嘴', 'Lujiazui'] });
 B('niaochao', ['国家体育场“鸟巢”', 'Bird\'s Nest'], [116.39, 40.0], { kind: 'stadium' },
   ['2008年北京奥运会主体育场，钢结构如鸟巢交织。', 'Main stadium of the 2008 Beijing Olympics, a woven steel nest.'], { wiki: ['国家体育场', 'Beijing National Stadium'] });
