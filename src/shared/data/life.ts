@@ -268,7 +268,7 @@ B('mogao', ['莫高窟', 'Mogao Caves'], [94.8, 40.04], hero('china/cn_mogao', '
   ['366年乐僔开凿第一窟，千年间凿成七百多窟，壁画与彩塑辉煌。', 'Begun in 366 by the monk Le Zun; over a thousand years 700 caves of murals and statues were cut.'], { wiki: ['莫高窟', 'Mogao Caves'] });
 P('顾恺之', [118.0, 31.2], { prop: 'brush', year: 380, en: 'Gu Kaizhi', tier: 2,
   desc: ['画家，作《洛神赋图》《女史箴图》，主张“以形写神”。', 'Painter of Nymph of the Luo River, who held that form must convey spirit.'] });
-P('法显', [120.38, 36.07], { en: 'Faxian', role: 'monk', year: 410, prop: 'staff', tier: 2,
+P('法显', [118.48, 36.68], { en: 'Faxian', role: 'monk', year: 410, prop: 'staff', tier: 2,
   desc: ['东晋高僧，西行天竺求法十四年，自海路归国于青州牢山登陆，著《佛国记》。', 'Eastern Jin monk who walked to India and returned by sea to Laoshan in 412, writing A Record of Buddhistic Kingdoms.'], wiki: ['法显', 'Faxian'] });
 
 era('nanbei');

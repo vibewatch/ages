@@ -63,11 +63,11 @@ describe('offline service worker', () => {
     expect(self.skipWaiting).not.toHaveBeenCalled();
   });
 
-  it('leaves an existing worker in control until its clients close', async () => {
+  it('activates immediately once the full precache succeeds', async () => {
     const { cache, self, dispatch } = harness();
     await dispatch('install');
     expect(cache.addAll).toHaveBeenCalledOnce();
-    expect(self.skipWaiting).not.toHaveBeenCalled();
+    expect(self.skipWaiting).toHaveBeenCalledOnce();
   });
 
   it('deletes only obsolete caches for its own scope', async () => {

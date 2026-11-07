@@ -1271,7 +1271,15 @@ test.describe('Ages atlas', () => {
     });
     const seaModels = await page.evaluate(models => {
       const geo = (window as any).__atlas.atlas.geo;
-      return models.filter(m => !geo.isLand(m.lon, m.lat)).map(m => `${m.id}@${m.lon.toFixed(2)},${m.lat.toFixed(2)}`);
+      const footprintOnLand = (lon: number, lat: number, r = 0.32) => {
+        if (!geo.isLand(lon, lat)) return false;
+        for (let k = 0; k < 8; k++) {
+          const a = (k * Math.PI) / 4;
+          if (!geo.isLand(lon + r * Math.cos(a) * 1.15, lat + r * Math.sin(a))) return false;
+        }
+        return true;
+      };
+      return models.filter(m => !footprintOnLand(m.lon, m.lat)).map(m => `${m.id}@${m.lon.toFixed(2)},${m.lat.toFixed(2)}`);
     }, allEraModels);
     expect(seaModels).toEqual([]);
 

@@ -439,10 +439,7 @@ describe('imported jiangshan-map content', () => {
         if (cap) {
           expect(Math.hypot(it.lon - cap.lon, it.lat - cap.lat), `${era.id} ${it.life?.id ?? it.event} vs capital ${cap.id}`).toBeGreaterThanOrEqual(1.1 - 1e-9);
         }
-        const orig = it.life ?? EVENTS.find(e => e.id === it.event)!;
-        if (it.lon !== orig.lon || it.lat !== orig.lat) {
-          expect(onLand(it.lon, it.lat), `${era.id} ${it.life?.id ?? it.event} stepped into water`).toBe(true);
-        }
+        expect(onLand(it.lon, it.lat, 0.2), `${era.id} ${it.life?.id ?? it.event} footprint near water`).toBe(true);
       }
     }
   });

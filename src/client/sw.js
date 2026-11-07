@@ -16,6 +16,7 @@ self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE)
     .then(c => c.addAll([SCOPE.href, ...PRECACHE.map(f => new URL(f, SCOPE).href)]
       .map(u => new Request(u, { cache: 'no-cache' }))))
+    .then(() => self.skipWaiting())
     .catch(async err => {
       try { await caches.delete(CACHE); } catch (cleanupErr) { console.warn('Failed to remove incomplete offline cache.', cleanupErr); }
       throw err;

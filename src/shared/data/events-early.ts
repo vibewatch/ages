@@ -310,7 +310,7 @@ export const EVENTS_EARLY: HistEvent[] = [
       'As chancellor of Shu Han, Zhuge Liang developed the southwest and pacified the southern borderlands, then submitted the Memorial on Deploying the Troops and led five northern expeditions (228–234) against Sima Yi until his death on the Wuzhang Plains.'],
     p: [['发展西南与改善民族关系', 'developing the southwest'], ['《出师表》与五次北伐', 'Memorial on Deploying the Troops; five northern expeditions'], ['五丈原对峙司马懿', 'standoff with Sima Yi at Wuzhang Plains']],
     wiki: ['诸葛亮北伐', 'Zhuge Liang’s Northern Expeditions'] }),
-  ev({ id: 'weiwen_yizhou', y: 230, k: 'diplomacy', at: [120.2, 23.0], w: 2, m: 'warship', c: 'g7a.4 hs1.2', who: [['孙权', 'Sun Quan']],
+  ev({ id: 'weiwen_yizhou', y: 230, k: 'diplomacy', at: [120.85, 23.65], w: 2, m: 'warship', c: 'g7a.4 hs1.2', who: [['孙权', 'Sun Quan']],
     t: ['孙吴开发江南与卫温赴夷洲', 'Eastern Wu develops Jiangnan; fleet to Yizhou'],
     s: ['孙吴大力兴修江南水利、发展造船与海外贸易。230年，孙权派将军卫温、诸葛直率万人船队到达夷洲（今台湾），加强了大陆与台湾地区的早期联系。',
       'Eastern Wu expanded Jiangnan irrigation and shipbuilding. In 230 CE Sun Quan dispatched General Wei Wen with a fleet of ten thousand men to Yizhou (Taiwan), a milestone in early mainland–Taiwan ties.'],

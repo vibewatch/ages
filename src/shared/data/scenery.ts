@@ -98,12 +98,22 @@ const LAND_MASK = (() => {
 })();
 
 const CHINA_BOUNDS = STAGES.china.bounds;
-/** True when `[lon, lat]` lies within a solid-land cell of the East Asia terrain heightmap. */
-export function onLand(lon: number, lat: number): boolean {
+function cellOnLand(lon: number, lat: number): boolean {
   const u = (lon - CHINA_BOUNDS.west) / (CHINA_BOUNDS.east - CHINA_BOUNDS.west);
   const v = (CHINA_BOUNDS.north - lat) / (CHINA_BOUNDS.north - CHINA_BOUNDS.south);
   if (u < 0 || u >= 1 || v < 0 || v >= 1) return false;
   return LAND_MASK[Math.floor(v * LH) * LW + Math.floor(u * LW)] === 1;
+}
+
+/** True when `[lon, lat]` (and an optional `pad`-degree footprint radius) lies within solid land of the East Asia terrain heightmap. */
+export function onLand(lon: number, lat: number, pad = 0): boolean {
+  if (!cellOnLand(lon, lat)) return false;
+  if (pad <= 0) return true;
+  for (let k = 0; k < 8; k++) {
+    const a = (k * Math.PI) / 4;
+    if (!cellOnLand(lon + pad * Math.cos(a) * 1.15, lat + pad * Math.sin(a))) return false;
+  }
+  return true;
 }
 
 /** Generic figures stand straight on the map; named heroes keep their own model. */
@@ -111,28 +121,29 @@ const bare = (m: ModelRecipe): ModelRecipe => (m.hero ? m : { ...m, bare: true }
 
 type Pt = { lon: number; lat: number };
 
-/** The first free spot at `at` or on a land ring around it, keeping `gap` degrees clear of `taken`. */
+const INLAND_ANGLES = [
+  (3 * Math.PI) / 4, Math.PI, -(3 * Math.PI) / 4, Math.PI / 2, -Math.PI / 2, (3 * Math.PI) / 8, Math.PI / 4, -Math.PI / 4, 0,
+  (5 * Math.PI) / 8, (7 * Math.PI) / 8, -(7 * Math.PI) / 8, -(5 * Math.PI) / 8,
+  -(3 * Math.PI) / 8, Math.PI / 8, -Math.PI / 8,
+];
+
+/** The first free spot at `at` or on an inland ring around it, keeping `gap` degrees clear of `taken` and coastlines. */
 function room(at: Pt, taken: Pt[], rings: number[], gap = SPACING): Pt | null {
-  let hitWater = false;
-  for (const r of rings) {
-    for (const offset of [0, Math.PI / 8]) {
-      if (offset && !r) break;
-      for (let k = 0; k < (r ? 8 : 1); k++) {
-        const a = -Math.PI / 4 + offset + (k * Math.PI) / 4;
+  const tryRings = rings[0] === 0
+    ? [0, 0.35, 0.6, ...rings.slice(1), rings[rings.length - 1] + 0.6]
+    : [...rings, rings[rings.length - 1] + 0.6];
+  for (const pad of [0.38, 0.2]) {
+    const padRings = pad < 0.3 && rings[0] > 0 ? [0.75, ...tryRings] : tryRings;
+    for (const r of padRings) {
+      if (r === 0) {
+        if (!taken.some(q => near(q, at, gap)) && onLand(at.lon, at.lat, pad)) return { lon: at.lon, lat: at.lat };
+        continue;
+      }
+      for (const a of INLAND_ANGLES) {
         const p = { lon: at.lon + r * Math.cos(a) * 1.2, lat: at.lat + r * Math.sin(a) };
-        if (taken.some(q => near(q, p, gap))) continue;
-        if (r > 0 && !onLand(p.lon, p.lat)) { hitWater = true; continue; }
+        if (taken.some(q => near(q, p, gap)) || !onLand(p.lon, p.lat, pad)) continue;
         return p;
       }
-    }
-  }
-  if (hitWater) {
-    const r = rings[rings.length - 1] + 0.6;
-    for (let k = 0; k < 16; k++) {
-      const a = -Math.PI / 4 + (k * Math.PI) / 8;
-      const p = { lon: at.lon + r * Math.cos(a) * 1.2, lat: at.lat + r * Math.sin(a) };
-      if (taken.some(q => near(q, p, gap)) || !onLand(p.lon, p.lat)) continue;
-      return p;
     }
   }
   return null;

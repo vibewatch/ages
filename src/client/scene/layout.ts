@@ -35,20 +35,11 @@ export function declutter(models: LayoutItem[], labels: LayoutItem[]): void {
   };
   const priorityLabels = labels.filter(l => l.pinned && !l.passive && (!l.model || l.model.pinned));
   for (const l of priorityLabels.sort(rank)) placeOnce(l);
-  for (const m of models.filter(m => m.pinned).sort(rank)) {
-    placeOnce(m);
-    if (m.shown) for (const l of labels.filter(x => x.model === m && !x.passive).sort(rank)) placeOnce(l);
-  }
-  for (const m of models.filter(m => !m.pinned && m.prio >= 90).sort(rank)) {
-    placeOnce(m);
-    if (m.shown) for (const l of labels.filter(x => x.model === m && !x.passive).sort(rank)) placeOnce(l);
-  }
+  for (const m of models.filter(m => m.pinned).sort(rank)) placeOnce(m);
+  for (const m of models.filter(m => !m.pinned && m.prio >= 90).sort(rank)) placeOnce(m);
   const primaryLabels = labels.filter(l => l.primary && !priorityLabels.includes(l));
   for (const l of primaryLabels.sort(rank)) placeOnce(l);
-  for (const m of models.filter(m => !m.pinned && m.prio < 90).sort(rank)) {
-    placeOnce(m);
-    if (m.shown) for (const l of labels.filter(x => x.model === m && !x.passive).sort(rank)) placeOnce(l);
-  }
+  for (const m of models.filter(m => !m.pinned && m.prio < 90).sort(rank)) placeOnce(m);
   for (const l of labels.slice().sort(rank)) {
     if (!l.model || l.model.shown) placeOnce(l);
   }
