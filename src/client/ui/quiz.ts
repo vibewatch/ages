@@ -1,3 +1,4 @@
+import type { Chapter } from '../../shared/data/chapters.ts';
 import { BOOKS } from '../../shared/data/curriculum.ts';
 import { ERAS } from '../../shared/data/eras.ts';
 import { EVENT, EVENTS } from '../../shared/data/events.ts';
@@ -21,6 +22,8 @@ export class Quiz {
   private book: Book | '' = '';
   private era = '';
   private mode: 'events' | 'locate' | 'mistakes' = 'events';
+  /** a learning-path chapter's check (5 questions from its years, its events to know first) */
+  private chapter: Chapter | null = null;
   /** where the quiz is, so a language switch re-renders it in place */
   private phase: 'setup' | 'ask' | 'done' = 'setup';
   private answered = false;
@@ -42,11 +45,13 @@ export class Quiz {
   }
 
   private head(extra: string): HTMLElement {
-    return h('header', {}, h('h2', { text: t('quizTitle') }), h('span', { class: 'qz-n', text: extra }), iconBtn('close', t('close'), () => this.toggle(false)));
+    const title = this.chapter ? t('chCheckTitle', { n: this.chapter.n, t: tr(this.chapter.title, lang) }) : t('quizTitle');
+    return h('header', {}, h('h2', { text: title }), h('span', { class: 'qz-n', text: extra }), iconBtn('close', t('close'), () => this.toggle(false)));
   }
 
   private setup(): void {
     this.phase = 'setup';
+    this.chapter = null;
     this.atlas.setPickMode(null);
     const mistakeCount = this.progress.mistakes.size;
     if (this.mode === 'mistakes' && mistakeCount === 0) this.mode = 'events';
@@ -87,6 +92,7 @@ export class Quiz {
 
   /** Opens the quiz directly in mistake-review mode. */
   startMistakes(seed = Date.now()): void {
+    this.chapter = null;
     this.mode = 'mistakes';
     this.el.hidden = false;
     this.start(seed);
@@ -94,6 +100,7 @@ export class Quiz {
 
   /** Opens the quiz directly filtered to a specific dynasty/era. */
   startEra(eraId: string, seed = Date.now()): void {
+    this.chapter = null;
     this.mode = 'events';
     this.book = '';
     this.era = eraId;
@@ -101,8 +108,18 @@ export class Quiz {
     this.start(seed);
   }
 
+  /** Opens a learning-path chapter's check. */
+  startChapter(c: Chapter, seed = Date.now()): void {
+    this.mode = 'events';
+    this.chapter = c;
+    this.el.hidden = false;
+    this.start(seed);
+  }
+
   start(seed = Date.now()): void {
-    this.qs = this.mode === 'locate'
+    const c = this.chapter;
+    this.qs = c ? makeQuiz(EVENTS, { n: 5, seed, range: c.span, prefer: c.keys })
+      : this.mode === 'locate'
       ? makeLocateQuiz(PLACES, { n: 10, seed })
       : this.mode === 'mistakes'
         ? makeMistakeQuiz(EVENTS, this.progress.mistakes, seed)
@@ -262,8 +279,21 @@ export class Quiz {
     this.phase = 'done';
     this.atlas.setPickMode(null);
     const locate = this.mode === 'locate';
-    if (this.mode === 'events') this.progress.quiz(this.score);
+    const c = this.chapter;
+    if (c) this.progress.score(`chapter:${c.id}`, this.score, this.qs.length);
+    else if (this.mode === 'events') this.progress.quiz(this.score);
     const max = this.qs.length * (locate ? 100 : 1);
+    if (c) {
+      const pass = this.score / Math.max(1, this.qs.length) >= 0.6;
+      fill(this.body,
+        this.head(''),
+        h('p', { class: 'qz-done', text: t('done', { s: this.score, n: max }) }),
+        h('p', { class: 'qz-verdict ' + (pass ? 'ok' : 'no'), 'data-testid': 'chapter-verdict', text: t(pass ? 'chPass' : 'chRetry', { n: c.n }) }),
+        h('div', { class: 'qz-row' },
+          h('button', { type: 'button', class: 'btn' + (pass ? '' : ' primary'), 'data-act': 'again', text: t('again'), onclick: () => this.start() }),
+          h('button', { type: 'button', class: 'btn' + (pass ? ' primary' : ''), 'data-act': 'to-path', text: t('chBackPath'), onclick: () => this.toggle(false) })));
+      return;
+    }
     fill(this.body,
       this.head(''),
       h('p', { class: 'qz-done', text: t('done', { s: this.score, n: max }) }),

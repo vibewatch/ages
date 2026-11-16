@@ -8,6 +8,7 @@ import { realmArea } from '../../shared/data/areas.ts';
 import { SNAPSHOTS } from '../../shared/data/territories.ts';
 import { clampYear, eraAt, formatYear, normYear, rulerAt, tToYear, ticks, yearToT, YEAR_MAX, YEAR_MIN } from '../../shared/lib/timeline.ts';
 import { lang, t } from '../lib/i18n.ts';
+import { load, save } from '../lib/storage.ts';
 import { h, iconBtn, setIcon } from './dom.ts';
 
 /**
@@ -46,6 +47,20 @@ export class Timeline {
   onRender: (y: Year) => void = () => {};
   private selected: string | null = null;
 
+  /** Simple (the default: dynasties and the key events) or detailed (every chronicle entry, territorial phases and the
+   * area curve). */
+  private detailBtn = h('button', { type: 'button', class: 'ib tl-detail', 'aria-pressed': 'false', onclick: () => this.setDetail(!this.detail, true) });
+  detail = false;
+  setDetail(on: boolean, remember = false): void {
+    this.detail = on;
+    this.el?.classList.toggle('detail', on);
+    this.detailBtn.setAttribute('aria-pressed', String(on));
+    this.detailBtn.classList.toggle('on', on);
+    this.detailBtn.textContent = t(on ? 'tlDetailOn' : 'tlDetailOff');
+    this.detailBtn.title = t('tlDetailTitle');
+    if (remember) save('tlDetail', on);
+  }
+
   constructor() {
     this.playBtn = iconBtn('play', t('play'), () => this.setPlaying(!this.playing), 'tl-play');
     this.speedBtn = h('button', {
@@ -72,8 +87,9 @@ export class Timeline {
     this.head = h('div', { class: 'tl-head' }, this.eraEl, this.yearEl, this.rulerEl);
     const ctl = h('div', { class: 'tl-ctl' },
       iconBtn('prev', t('prevStop'), () => this.step(-1), 'tl-prev'), this.playBtn, iconBtn('next', t('nextStop'), () => this.step(1), 'tl-next'),
-      h('i', { class: 'tools-sep', 'aria-hidden': 'true' }), this.speedBtn);
+      h('i', { class: 'tools-sep', 'aria-hidden': 'true' }), this.speedBtn, this.detailBtn);
     this.el = h('div', { class: 'tl' }, ctl, this.track);
+    this.setDetail(load<boolean>('tlDetail', false, v => typeof v === 'boolean'));
     this.build();
     this.bind();
     new ResizeObserver(() => this.layoutAxis()).observe(this.track);
@@ -260,6 +276,7 @@ export class Timeline {
     this.playBtn.title = this.playBtn.ariaLabel = t(this.playing ? 'pause' : 'play');
     this.speedBtn.title = t('speed');
     this.speedBtn.setAttribute('aria-label', `${t('speed')} ${this.speed}×`);
+    this.setDetail(this.detail);
     this.build();
     this.select(this.selected);
   }

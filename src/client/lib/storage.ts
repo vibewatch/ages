@@ -43,7 +43,21 @@ export interface ProgressBackup {
   lessons: Record<string, [number, number]>;
   mistakes: string[];
   lastLesson: LastLesson | null;
+  /** spaced review schedule (optional: older backups have none) */
+  spaced?: Record<string, Spaced>;
 }
+
+/** A missed question in spaced review: `box` = reviews passed so far; `due` = when it comes back (ms), null while it is
+ * in the review queue. */
+export interface Spaced { box: number; due: number | null }
+/** days until a reviewed mistake comes back, by box */
+export const REVIEW_GAPS = [1, 3, 7];
+const DAY = 86_400_000;
+
+const isValidSpaced = (v: unknown): v is Record<string, Spaced> =>
+  !!v && typeof v === 'object' && !Array.isArray(v)
+  && Object.values(v).every(x => !!x && typeof x === 'object' && Number.isInteger((x as Spaced).box) && (x as Spaced).box >= 0
+    && ((x as Spaced).due === null || (typeof (x as Spaced).due === 'number' && Number.isFinite((x as Spaced).due))));
 
 const isValidScores = (v: unknown): v is Record<string, [number, number]> =>
   !!v && typeof v === 'object' && !Array.isArray(v)
@@ -70,6 +84,7 @@ export class Progress {
   mistakes = new Set<string>(strings(load<string[]>('mistakes', [])));
   best = load<number>('quizBest', 0);
   lastLesson = load<LastLesson | null>('lastLesson', null, isValidLastLesson);
+  spaced = load<Record<string, Spaced>>('spaced', {}, isValidSpaced);
 
   watch(id: string): void { this.watched.add(id); save('watched', [...this.watched]); }
   toggleLearned(id: string): boolean {
@@ -78,16 +93,43 @@ export class Progress {
     return this.learned.has(id);
   }
   addMistake(id: string): void {
-    if (!id || this.mistakes.has(id)) return;
+    if (!id) return;
+    // missed again: its spacing starts over
+    if (this.spaced[id]?.box || this.spaced[id]?.due != null) { this.spaced[id] = { box: 0, due: null }; save('spaced', this.spaced); }
+    if (this.mistakes.has(id)) return;
     this.mistakes.add(id);
+    this.spaced[id] = { box: 0, due: null };
     save('mistakes', [...this.mistakes]);
+    save('spaced', this.spaced);
   }
-  resolveMistake(id: string): void {
-    let changed = this.mistakes.delete(id);
-    if (id.startsWith('when:')) changed = this.mistakes.delete(id.slice(5)) || changed;
-    if (!changed) return;
+  /** A missed question answered right: it leaves the queue and comes back after 1, 3 and then 7 days; right after the
+   * last gap it is learned. */
+  resolveMistake(id: string, now = Date.now()): void {
+    const keys = [id, ...(id.startsWith('when:') ? [id.slice(5)] : [])].filter(k => this.mistakes.delete(k));
+    if (!keys.length) return;
+    for (const k of keys) {
+      const box = this.spaced[k]?.box ?? 0;
+      if (box < REVIEW_GAPS.length) this.spaced[k] = { box: box + 1, due: now + REVIEW_GAPS[box] * DAY };
+      else delete this.spaced[k];
+    }
     save('mistakes', [...this.mistakes]);
+    save('spaced', this.spaced);
   }
+  /** Puts the mistakes whose review is due back into the queue; returns how many came back. */
+  promoteDue(now = Date.now()): number {
+    let n = 0;
+    for (const [k, s] of Object.entries(this.spaced)) {
+      if (s.due == null || s.due > now) continue;
+      this.spaced[k] = { box: s.box, due: null };
+      if (!this.mistakes.has(k)) { this.mistakes.add(k); n++; }
+    }
+    if (n) { save('mistakes', [...this.mistakes]); save('spaced', this.spaced); }
+    return n;
+  }
+  /** mistakes scheduled to come back later */
+  get scheduled(): number { return Object.values(this.spaced).filter(s => s.due != null).length; }
+  /** A learning-path chapter's check, as [right, asked]; passed at 60 %. */
+  chapterPassed(id: string): boolean { const b = this.scores[`chapter:${id}`]; return !!b && b[0] / b[1] >= 0.6; }
   saveLessonStep(id: string, phase: 'steps' | 'check', step: number, got?: (boolean | null)[], seed?: number): void {
     const next: LastLesson = { id, phase, step: Math.max(0, Math.floor(step)) };
     if (got && got.length) next.got = got.map(x => (typeof x === 'boolean' ? x : null));
@@ -119,6 +161,7 @@ export class Progress {
       quizBest: this.best,
       lessons: { ...this.scores },
       mistakes: [...this.mistakes],
+      spaced: { ...this.spaced },
       lastLesson: this.lastLesson
         ? {
           ...this.lastLesson,
@@ -142,6 +185,7 @@ export class Progress {
       if (!isValidScores(b.lessons)) return false;
       if (b.mistakes !== undefined && (!Array.isArray(b.mistakes) || !b.mistakes.every(x => typeof x === 'string'))) return false;
       if (b.lastLesson !== undefined && !isValidLastLesson(b.lastLesson)) return false;
+      if (b.spaced !== undefined && !isValidSpaced(b.spaced)) return false;
 
       this.watched = new Set(b.watched);
       this.learned = new Set(b.learned);
@@ -149,6 +193,8 @@ export class Progress {
       this.best = b.quizBest;
       this.scores = { ...b.lessons };
       this.lastLesson = b.lastLesson ?? null;
+      this.spaced = { ...(b.spaced ?? {}) };
+      save('spaced', this.spaced);
       save('watched', [...this.watched]);
       save('learned', [...this.learned]);
       save('mistakes', [...this.mistakes]);
@@ -169,6 +215,8 @@ export class Progress {
     this.best = 0;
     this.scores = {};
     this.lastLesson = null;
+    this.spaced = {};
+    save('spaced', {});
     save('watched', []);
     save('learned', []);
     save('mistakes', []);

@@ -1305,3 +1305,231 @@ i.seen { color: var(--k-economy); font-style: normal; margin-left: auto; }
   flex: none; font-style: normal; font-size: var(--t-xs); color: var(--ok); font-weight: 700;
 }
 
+
+/* ================================================================ design system v2 — "paper cards" (docs/design/learning-redesign.md)
+   The map stays the stage, but everything a learner reads sits on a calm, solid paper card: rounded corners, a soft
+   shadow and near-opaque fill, so text never competes with the relief behind it. Controls say what they do (icon +
+   word), targets are at least 36 px, and one accent (vermilion) marks the primary action and what is selected. These
+   rules override the older flat cut-corner slabs above. */
+:root {
+  --pp-clip: none;
+  --r: 12px;
+  --r-s: 8px;
+  --r-pill: 999px;
+  --panel: rgba(252, 250, 245, 0.97);
+  --card-line: rgba(60, 45, 25, 0.08);
+  --shadow-1: 0 1px 2px rgba(45, 35, 20, 0.08), 0 2px 8px rgba(45, 35, 20, 0.08);
+  --shadow-2: 0 2px 6px rgba(45, 35, 20, 0.08), 0 12px 32px rgba(45, 35, 20, 0.16);
+}
+:root[data-map=ink] { --panel: rgba(22, 23, 26, 0.95); --card-line: rgba(255, 240, 210, 0.1); --shadow-1: 0 2px 8px rgba(0, 0, 0, 0.35); --shadow-2: 0 12px 32px rgba(0, 0, 0, 0.5); }
+:root[data-map=plain] { --panel: rgba(248, 250, 252, 0.97); }
+
+/* surfaces: one card style for panels, popovers, dialogs and search results */
+.menu, .modal-box, .hits, .panel-l, .tools::before {
+  border-radius: var(--r); box-shadow: var(--shadow-2); clip-path: none; background: var(--panel);
+  outline: 1px solid var(--card-line); outline-offset: -1px;
+}
+.hits { overflow: auto; }
+.panel-l { overflow: hidden; }
+.menu { top: 52px; }
+
+/* controls: rounded, with clear hover and pressed states */
+.ib, .btn, .seg, .seg button, .chip, .hub-card, .hub-card > .ic, .search::before, .hits li { border-radius: var(--r-s); }
+.btn { height: 36px; }
+.btn.primary { box-shadow: 0 1px 2px rgba(150, 30, 20, 0.25); }
+.chip { border-radius: var(--r-pill); }
+:focus-visible { outline: 2px solid var(--zhu); outline-offset: 2px; }
+
+/* the toolbar: Learn · This period · Explore | search · settings · language — words, not only icons */
+.tools { gap: 4px; padding: 4px; }
+.tools > .ib { height: 36px; width: 36px; }
+.tools > .ib.lbl { width: auto; display: inline-flex; align-items: center; gap: 6px; padding: 0 12px 0 10px; font: inherit; font-size: var(--t-m); font-weight: 600; color: var(--ink); }
+.tools > .ib.lbl .ic { width: 18px; height: 18px; }
+.tools > .ib.primary-tool { color: var(--zhu); background: var(--zhu-fill); }
+.tools > .ib.primary-tool:hover { background: color-mix(in srgb, var(--zhu) 16%, transparent); }
+.tools > .ib.primary-tool.on { color: #fff; background: var(--zhu); }
+.tools > .ib.lbl.on:not(.primary-tool) { color: var(--zhu); background: var(--zhu-fill); }
+.tools-sep { transform: none; margin: 0 4px; }
+.search { width: 150px; }
+.search:focus-within { width: 220px; }
+
+/* level 1 readouts on small cards instead of bare text on the relief */
+.hud::before { opacity: 0; }
+.hud-tl { gap: 6px; }
+.hud-tl .brand { padding: 4px 10px 4px 6px; border-radius: var(--r-pill); background: var(--panel); box-shadow: var(--shadow-1); }
+.tl-head { margin-top: 0; padding: 10px 16px 10px 14px; border-radius: var(--r); background: var(--panel); box-shadow: var(--shadow-1); }
+.tl-era { font-size: var(--t-l); }
+.tl-year { font-size: 28px; font-weight: 600; }
+.tl-ruler { font-size: var(--t-s); }
+.hud-stats { padding: 10px 14px; border-radius: var(--r); background: var(--panel); box-shadow: var(--shadow-1); }
+.hud-stats:empty { display: none; }
+.map-key { padding: 8px 12px; border-radius: var(--r); background: var(--panel); box-shadow: var(--shadow-1); }
+.amb { padding: 4px 14px; border-radius: var(--r-pill); background: var(--panel); box-shadow: var(--shadow-1); }
+
+/* the timeline: a card, with dynasty names large enough to read and the event barcode kept quiet until pointed at */
+.hud::after { opacity: 0; }
+.tl { padding: 6px 16px 4px; border-radius: var(--r); background: var(--panel); box-shadow: var(--shadow-1); }
+.tl-band { height: 20px; border-radius: 3px; }
+.tl-band span { font-size: var(--t-xs); }
+.tl-phases i { opacity: 0.35; }
+.tl-dot.w3 { opacity: 0; transition: opacity .2s; }
+.tl-track:hover .tl-dot.w3, .tl-track:focus-visible .tl-dot.w3 { opacity: 0.35; }
+.tl-axis span { color: var(--ink-2); }
+.tl-ctl > .ib:not(.tl-play) { filter: none; }
+.tl-play { border-radius: var(--r-pill) !important; }
+
+/* ---------------------------------------------------------------- 学习路线 the learning path (ui/path.ts) */
+.panel-l:has(> .path.top) { width: 360px; height: calc(100% - var(--lt, 112px) - var(--lb, 44px)); max-height: none; }
+.path-head { padding: 14px 8px 8px 18px; align-items: flex-start; }
+.path-t { flex: 1; min-width: 0; }
+.path-t h2 { margin: 0; font-size: var(--t-xl); font-weight: 800; letter-spacing: .01em; }
+.path-t small { display: block; margin-top: 3px; font-size: var(--t-s); color: var(--ink-2); line-height: 1.4; }
+.path-body { padding: 4px 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+.path-intro { margin: 0; padding: 10px 12px; border-radius: var(--r-s); background: var(--well); font-size: var(--t-s); line-height: 1.6; color: var(--ink-2); }
+.path-cta {
+  position: relative; display: grid; grid-template-columns: 1fr auto; align-items: center; column-gap: 8px; width: 100%; padding: 12px 14px;
+  border: 0; border-radius: var(--r); background: var(--zhu); color: #fff; text-align: left; cursor: pointer; box-shadow: 0 2px 8px rgba(200, 55, 45, 0.3);
+  transition: background .15s, transform .15s;
+}
+.path-cta:hover { background: var(--zhu-hi); }
+.path-cta:active { transform: scale(0.99); }
+.path-cta .pc-k { grid-column: 1; font-size: var(--t-xs); font-weight: 600; letter-spacing: .04em; opacity: 0.88; }
+.path-cta b { grid-column: 1; font-size: var(--t-l); font-weight: 800; line-height: 1.3; }
+.path-cta small { grid-column: 1; font-size: var(--t-xs); opacity: 0.85; }
+.path-cta .ic { grid-column: 2; grid-row: 1 / span 3; width: 22px; height: 22px; fill: currentColor; }
+.path-cta.done { background: rgba(29, 145, 82, 0.12); color: var(--ok); box-shadow: none; font-size: var(--t-s); line-height: 1.5; cursor: default; }
+.path-meter { display: flex; flex-direction: column; gap: 6px; font-size: var(--t-xs); color: var(--ink-2); }
+.path-meter i { display: grid; grid-template-columns: repeat(10, 1fr); gap: 3px; }
+.path-meter b { height: 5px; border-radius: 3px; background: var(--well-2); }
+.path-meter b.half { background: color-mix(in srgb, var(--ok) 45%, var(--well-2)); }
+.path-meter b.on { background: var(--ok); }
+.path-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.pl { border-radius: var(--r-s); transition: background .15s; }
+.pl.open { background: var(--well); }
+.pl-head {
+  width: 100%; display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 6px; border: 0; background: none; border-radius: var(--r-s);
+  text-align: left; color: var(--ink); cursor: pointer; font: inherit;
+}
+.pl-head:hover { background: var(--well); }
+.pl-head > .ic { width: 18px; height: 18px; flex: none; fill: var(--ink-3); }
+.pl-n {
+  flex: none; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; font-style: normal; font-size: var(--t-s); font-weight: 800;
+  color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.pl-n.done { color: #fff; background: var(--ok); box-shadow: none; }
+.pl-t { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.pl-t b { font-size: var(--t-m); font-weight: 700; line-height: 1.3; }
+.pl-t small { font-size: var(--t-xs); color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.pl-here { flex: none; font-style: normal; font-size: var(--t-2xs); font-weight: 700; color: var(--zhu); padding: 2px 7px; border-radius: var(--r-pill); background: var(--zhu-fill); }
+.pl-frac { flex: none; font-size: var(--t-xs); color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.pl-body { padding: 0 12px 12px 46px; }
+.pl-idea { margin: 0 0 10px; font-size: var(--t-s); line-height: 1.65; color: var(--ink); }
+.pl-body h4 { margin: 10px 0 6px; font-size: var(--t-2xs); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
+.pl-keys { display: flex; flex-wrap: wrap; gap: 6px; }
+.pl-key {
+  display: inline-flex; align-items: baseline; gap: 6px; padding: 5px 10px; border: 0; border-radius: var(--r-pill); background: var(--panel-solid);
+  box-shadow: inset 0 0 0 1px var(--card-line); font: inherit; font-size: var(--t-s); color: var(--ink); cursor: pointer; text-align: left;
+}
+.pl-key small { font-size: var(--t-2xs); color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.pl-key .pl-play { font-style: normal; font-size: 9px; color: var(--zhu); }
+.pl-key:hover { color: var(--zhu); box-shadow: inset 0 0 0 1px var(--zhu); }
+.pl-lessons { display: flex; flex-direction: column; gap: 4px; }
+.pl-lesson {
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; border: 0; border-radius: var(--r-s); background: var(--panel-solid);
+  box-shadow: inset 0 0 0 1px var(--card-line); font: inherit; color: var(--ink); text-align: left; cursor: pointer;
+}
+.pl-lesson > i { flex: none; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; font-style: normal; font-size: var(--t-2xs); font-weight: 700; background: var(--well-2); color: var(--ink-2); }
+.pl-lesson.ok > i { background: var(--ok); color: #fff; }
+.pl-lesson > span { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.pl-lesson b { font-size: var(--t-s); font-weight: 600; line-height: 1.4; }
+.pl-lesson small { font-size: var(--t-2xs); color: var(--ink-3); }
+.pl-lesson em { flex: none; font-style: normal; font-size: var(--t-xs); font-weight: 700; color: var(--zhu); }
+.pl-lesson:hover { box-shadow: inset 0 0 0 1px var(--zhu); }
+.path-practice { display: flex; flex-direction: column; gap: 6px; padding-top: 6px; border-top: 1px solid var(--rule); }
+.path-practice h3 { margin: 6px 2px 2px; font-size: var(--t-2xs); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
+.path-tile { display: flex; align-items: center; gap: 12px; padding: 10px; border: 0; border-radius: var(--r-s); background: none; font: inherit; color: var(--ink); text-align: left; cursor: pointer; }
+.path-tile:hover { background: var(--well); }
+.path-tile > .ic { flex: none; width: 34px; height: 34px; padding: 8px; border-radius: var(--r-s); fill: var(--zhu); background: var(--zhu-fill); }
+.path-tile span { display: flex; flex-direction: column; min-width: 0; }
+.path-tile b { font-size: var(--t-s); font-weight: 700; }
+.path-tile small { font-size: var(--t-xs); color: var(--ink-2); }
+
+/* phase B: see it (opening story) → know it (events with why they matter) → learn it (lessons) → check it */
+.pl-watch {
+  width: 100%; display: flex; align-items: center; gap: 10px; margin: 0 0 4px; padding: 8px 10px; border: 0; border-radius: var(--r-s);
+  background: var(--ink); color: var(--panel-solid); font: inherit; text-align: left; cursor: pointer; transition: background .15s;
+}
+:root[data-map=ink] .pl-watch { background: #ece6da; color: #15171a; }
+.pl-watch:hover { background: var(--zhu); color: #fff; }
+.pl-watch > i { flex: none; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: var(--zhu); color: #fff; font-style: normal; font-size: 11px; }
+.pl-watch:hover > i { background: #fff; color: var(--zhu); }
+.pl-watch span { display: flex; flex-direction: column; min-width: 0; }
+.pl-watch b { font-size: var(--t-s); font-weight: 700; }
+.pl-watch small { font-size: var(--t-xs); opacity: 0.75; }
+.pl-keys { flex-direction: column; flex-wrap: nowrap; gap: 4px; }
+.pl-key { width: 100%; align-items: flex-start; gap: 10px; padding: 7px 10px; border-radius: var(--r-s); }
+.pl-key > small { flex: none; width: 3.6em; padding-top: 2px; }
+.pl-key > span { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.pl-key > span b { font-size: var(--t-s); font-weight: 600; line-height: 1.4; }
+.pl-key > span em { font-style: normal; font-size: var(--t-xs); line-height: 1.5; color: var(--ink-2); }
+.pl-key .pl-play { padding-top: 3px; }
+.pl-key:hover > span b { color: var(--zhu); }
+.pl-check {
+  width: 100%; display: flex; align-items: center; gap: 10px; margin-top: 10px; padding: 9px 10px; border: 0; border-radius: var(--r-s);
+  background: var(--zhu-fill); font: inherit; color: var(--ink); text-align: left; cursor: pointer;
+}
+.pl-check > i { flex: none; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; font-style: normal; font-size: var(--t-2xs); font-weight: 800; background: var(--zhu); color: #fff; }
+.pl-check.ok { background: rgba(29, 145, 82, 0.1); }
+.pl-check.ok > i { background: var(--ok); }
+.pl-check > span { flex: 1; display: flex; flex-direction: column; }
+.pl-check b { font-size: var(--t-s); font-weight: 700; }
+.pl-check small { font-size: var(--t-2xs); color: var(--ink-3); }
+.pl-check em { font-style: normal; font-size: var(--t-xs); font-weight: 700; color: var(--zhu); }
+.pl-check:hover { box-shadow: inset 0 0 0 1px var(--zhu); }
+.path-review {
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; border: 0; border-radius: var(--r);
+  background: rgba(201, 154, 60, 0.16); font: inherit; color: var(--ink); text-align: left; cursor: pointer;
+}
+.path-review > .ic { flex: none; width: 20px; height: 20px; fill: var(--gold); }
+.path-review > .ic:last-child { width: 18px; height: 18px; fill: var(--ink-3); }
+.path-review span { flex: 1; display: flex; flex-direction: column; }
+.path-review b { font-size: var(--t-s); font-weight: 700; }
+.path-review small { font-size: var(--t-xs); color: var(--ink-2); }
+.path-review:hover { background: rgba(201, 154, 60, 0.26); }
+.qz-verdict { margin: 4px 0 12px; padding: 10px 12px; border-radius: var(--r-s); font-size: var(--t-s); font-weight: 600; line-height: 1.5; }
+.qz-verdict.ok { background: rgba(29, 145, 82, 0.12); color: var(--ok); }
+.qz-verdict.no { background: var(--zhu-fill); color: var(--zhu); }
+.card .why { margin: 10px 0 0; padding: 8px 10px; border-radius: var(--r-s); background: rgba(201, 154, 60, 0.13); font-size: var(--t-s); line-height: 1.55; color: var(--ink); }
+.card .why b { display: block; font-size: var(--t-2xs); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #9a7322; margin-bottom: 2px; }
+:root[data-map=ink] .card .why b { color: var(--gold); }
+
+/* the timeline's two modes: simple shows dynasties and the key events only; detailed adds every chronicle entry,
+   the territorial phase ticks, rival-dynasty lanes and the area curve */
+.tl-ctl > .tl-detail { width: auto; padding: 0 8px; font-size: var(--t-xs); font-weight: 600; color: var(--ink-2); }
+.tl-ctl > .tl-detail.on { color: var(--zhu); background: var(--zhu-fill); }
+.tl:not(.detail) .tl-curve, .tl:not(.detail) .tl-phases, .tl:not(.detail) .tl-band.lane1, .tl:not(.detail) .tl-dot.w2, .tl:not(.detail) .tl-dot.w3 { display: none; }
+.tl.detail .tl-dot.w3 { opacity: 0.35; }
+
+/* phones: icon-only tools except Learn; the readouts stay compact */
+@media (max-width: 720px) {
+  .tools > .ib.lbl:not(.primary-tool) { width: 36px; padding: 0; }
+  .tools > .ib.lbl:not(.primary-tool) .lbl-t { display: none; }
+  .tools > .ib.lbl { padding: 0 10px 0 8px; }
+  .search, .search:focus-within { width: 36px; padding: 0 9px; }
+  .search:focus-within { width: 150px; }
+  .hud-tl .brand { display: none; }
+  .tl-head { padding: 6px 10px; }
+  .tl-year { font-size: 20px; }
+  .tl { padding: 4px 8px 2px; border-radius: var(--r) var(--r) 0 0; }
+  .panel-l { border-radius: var(--r) var(--r) 0 0; }
+  .panel-l:has(> .path.top) { width: auto; height: auto; max-height: 52vh; }
+  .pl-body { padding-left: 12px; }
+  /* the toolbar takes the top row on its own; the headline card sits under it */
+  .bar { left: 8px; right: 8px; top: 8px; }
+  .tools { justify-content: flex-end; }
+  .tools > .tools-sep { margin-left: auto; }
+  .hud-tl { top: 62px; left: 8px; max-width: 70%; }
+  /* the phase line shares its row with the transport buttons: plain text, no pill */
+  .amb { background: none; box-shadow: none; border-radius: 0; }
+  .tl-ctl > .tl-detail { display: none; }
+}
