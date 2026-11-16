@@ -49,7 +49,7 @@ const LANE_ERA_RE: Record<string, RegExp> = {
 };
 
 /** Builds a quiz from curriculum events (optionally restricted to a textbook or dynasty/era), mixing question types. */
-export function makeQuiz(events: HistEvent[], opts: { n?: number; seed?: number; book?: Book; era?: string } = {}): Question[] {
+export function makeQuiz(events: HistEvent[], opts: { n?: number; seed?: number; book?: Book; era?: string; range?: [number, number]; prefer?: string[] } = {}): Question[] {
   const r = rng(opts.seed ?? Date.now());
   const eraObj = opts.era ? ERAS.find(x => x.id === opts.era) : undefined;
   const minYear = eraObj ? eraObj.start : -9_999;
@@ -65,7 +65,14 @@ export function makeQuiz(events: HistEvent[], opts: { n?: number; seed?: number;
   if (!pool.length && opts.book && eraObj) {
     pool = events.filter(e => e.scope === 'china' && e.year >= minYear && inEra(e));
   }
-  const picks = shuffle(pool, r).slice(0, opts.n ?? 8);
+  // a learning-path chapter: its years, its events to know first
+  if (opts.range) {
+    const [a, b] = opts.range;
+    pool = events.filter(e => e.scope === 'china' && e.weight <= 2 && e.year >= a && e.year <= b);
+  }
+  const prefer = new Set(opts.prefer ?? []);
+  const mixed = shuffle(pool, r);
+  const picks = [...mixed.filter(e => prefer.has(e.id)), ...mixed.filter(e => !prefer.has(e.id))].slice(0, opts.n ?? 8);
   return picks.map((e, i): Question => {
     const kind = i % 3;
     if (kind === 1) {

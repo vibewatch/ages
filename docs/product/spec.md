@@ -4,6 +4,7 @@
 Chinese middle-school (grades 7–8, 统编版 textbooks) and high-school students (《中外历史纲要（上）》), plus their teachers. They should be able to **see** history in space and time: where and when an event happened, what the country looked like then, and how events connect. The app helps students review exam points (考点) rather than replacing the textbook.
 
 ## Principles
+0. **Learning comes first.** The app opens on the learning path: Chinese history in ten chapters, in time order, each one shown on the map and then checked. Anyone can start from zero; exam review is one use among others ([learning redesign](../design/learning-redesign.md)).
 1. **The map is the hero.** The first screen is the map with a few lines of text on it (headline, period figures, key, timeline); everything deeper opens on demand in the left side panel or a popover under the toolbar ([layout](../design/map-design.md#8-layout)); the card unfolds its Wikipedia article sideways. A vermilion accent, cut-corner controls; the panel slides away during animations, and the camera re-frames itself around it.
 2. **Animations that show something.** A flagship event has a scripted animation, and battles get an automatic march and clash. Play is offered only for these; events whose automatic story would just orbit the camera have no Play button.
 3. **Bilingual everywhere.** All content and UI strings carry `{ zh, en }`, and switching language never reloads the page.

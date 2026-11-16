@@ -1,3 +1,4 @@
+import { WHY } from '../../shared/data/chapters.ts';
 import { BOOKS, unitOf } from '../../shared/data/curriculum.ts';
 import { formatArea, polityArea, realmArea } from '../../shared/data/areas.ts';
 import { ERAS, RULERS } from '../../shared/data/eras.ts';
@@ -417,6 +418,7 @@ export class Card {
         this.progress.watched.has(e.id) ? h('span', { class: 'badge seen', text: '✓ ' + t('watched') }) : null,
       ]),
       h('p', { class: 'sum', text: tr(e.summary, L) }),
+      WHY[e.id] ? h('p', { class: 'why', 'data-testid': 'card-why' }, h('b', { text: t('whyTitle') }), h('span', { text: tr(WHY[e.id], L) })) : null,
       h('div', { class: 'acts' }, playBtn, e.wiki ? this.wikiBtn(e.wiki, tr(e.title, L)) : null, learnBtn),
       e.points.length ? this.sec(t('keyPoints'), true, h('ul', { class: 'points' }, ...e.points.map(p => h('li', { text: tr(p, L) })))) : null,
       e.people?.length ? this.sec(t('people'), true, h('div', { class: 'people' }, ...e.people.map(p => this.personChip(p)))) : null,

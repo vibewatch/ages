@@ -35,6 +35,8 @@ import { Music } from './ui/music.ts';
 import { TrailBar } from './ui/trail.ts';
 import { initTips } from './ui/tip.ts';
 import { BootIntro } from './ui/intro.ts';
+import { PathView } from './ui/path.ts';
+import type { Chapter } from '../shared/data/chapters.ts';
 
 const params = new URLSearchParams(location.search);
 // ?lowfx forces low cost; otherwise the saved Settings choice, else low only on very weak devices
@@ -60,6 +62,7 @@ class App {
   help = new Help();
   quiz!: Quiz;
   lesson!: LessonView;
+  path!: PathView;
   player!: StoryPlayer;
   ready = false;
   private hudTl!: HTMLElement;
@@ -129,9 +132,21 @@ class App {
       play: e => void this.playStory(e),
       open: e => this.openEvent(e),
       change: id => {
+        if (!id) this.path.refresh();
         this.root.classList.toggle('lesson-on', !!id || this.lesson.open);
         writeLink(id ? { lesson: id, ...this.linkExtras() } : { year: this.timeline.year, ...this.linkExtras() });
       },
+    });
+    this.path = new PathView(this.progress, {
+      lesson: (l, resume) => this.startLesson(l, resume),
+      event: e => this.openEvent(e),
+      year: y => { this.timeline.setPlaying(false); this.timeline.set(y, true); },
+      quiz: () => this.toggle('quiz'),
+      check: c => this.startChapterCheck(c),
+      play: e => { this.openEvent(e); void this.playStory(e); },
+      mistakes: () => this.learn.onReviewMistakes(),
+      course: () => this.learn.toggle(true),
+      close: () => this.showPath(false),
     });
     const surf = load<Surface>('surface', 'paper');
     const surface: Surface = SURFACES.includes(params.get('map') as Surface) ? params.get('map') as Surface : SURFACES.includes(surf) ? surf : 'paper';
@@ -164,6 +179,9 @@ class App {
     if (linkTrail) this.trail.start(linkTrail, link.trailStop ?? 0);
     const linkJourney = link.journey ? JOURNEYS.find(j => j.id === link.journey) : undefined;
     if (linkJourney) setTimeout(() => void this.playJourney(linkJourney), 600);
+    const linked = Boolean(ev || linkEra || linkPlace || linkPerson || link.life || linkLesson || linkTrail || linkJourney || link.year != null || link.compare != null);
+    // the learning path is the starting point: it opens on arrival unless a link names a subject or the learner closed it
+    if (!linked && load<boolean>('pathOpen', true, v => typeof v === 'boolean')) this.showPath(true, false);
     this.ready = true;
     intro.finish(this.atlas, Boolean(ev || linkEra || linkPlace || linkPerson || link.life || linkLesson || linkTrail || linkJourney));
   }
@@ -270,7 +288,7 @@ class App {
       this.syncLink();
     };
     this.trail.onClose = () => this.syncLink();
-    this.quiz.onClose = () => this.root.classList.remove('quiz-on');
+    this.quiz.onClose = () => { this.root.classList.remove('quiz-on'); this.path.refresh(); };
     this.quiz.onYear = y => { this.timeline.set(y, true, false); this.atlas.setYear(y); };
     this.quiz.onOpenEvent = e => this.openEvent(e);
     // the reader unfolds beside the card and follows it to the next subject
@@ -284,7 +302,7 @@ class App {
     };
 
     this.period.mount(this.chronicle.el);
-    this.timeline.onRender = y => { this.chronicle.update(y); this.period.setYear(y); };
+    this.timeline.onRender = y => { this.chronicle.update(y); this.period.setYear(y); this.path.setYear(y); };
 
     // Level 1 — the map overlay: headline (brand · era · year · reign) top left, one grouped toolbar fixed top right
     // (search · 时期详情 | study hall · settings) with the period's figures under it, the line key bottom left, the phase
@@ -292,7 +310,10 @@ class App {
     // Level 2 — the side panel, between the headline and the line key: what is being studied — a lesson, the quiz, the
     // card with its 3D view, which unfolds the Wikipedia reader to its right.
     // Level 3 — popovers under the tools, one at a time (时期详情, study hall, settings), and dialogs (course picker, help).
-    const hubBtn = iconBtn('grid', t('hub'), () => this.pop(this.hub.el.hidden ? 'hub' : null), 'b-hub');
+    const hubBtn = iconBtn('journey', t('hub'), () => this.pop(this.hub.el.hidden ? 'hub' : null), 'b-hub lbl');
+    const pathBtn = iconBtn('book', t('pathTitle'), () => this.showPath(!(this.path.open && this.panel.top === this.path.el)), 'b-path lbl primary-tool');
+    // the main tools carry a word as well as an icon: Learn · This period · Explore
+    for (const b of [pathBtn, this.period.btn, hubBtn]) { b.classList.add('lbl'); b.append(h('span', { class: 'lbl-t' })); }
     const setBtn = iconBtn('sliders', t('settings'), () => this.pop(this.settings.el.hidden ? 'settings' : null), 'b-settings');
     const langBtn = h('button', {
       type: 'button',
@@ -316,7 +337,7 @@ class App {
       },
     };
     this.settings.render();
-    const tools = h('div', { class: 'tools' }, this.search.el, this.period.btn, h('i', { class: 'tools-sep', 'aria-hidden': 'true' }), hubBtn, setBtn, langBtn);
+    const tools = h('div', { class: 'tools' }, pathBtn, this.period.btn, hubBtn, h('i', { class: 'tools-sep', 'aria-hidden': 'true' }), this.search.el, setBtn, langBtn);
     const pops = [this.period.view, this.hub.el, this.settings.el];
     const bar = h('div', { class: 'bar' }, tools, ...pops);
     this.brand = h('div', { class: 'brand' }, h('span', { class: 'logo', 'aria-hidden': 'true' }), h('b', { text: 'Ages' }), h('span', { class: 'brand-k' }));
@@ -328,8 +349,9 @@ class App {
       h('div', { class: 'hud-bot' },
         this.hudBl,
         this.hudBc = h('div', { class: 'hud-bc' }, this.trail.el, this.period.line, this.caption.el, this.timeline.el)));
-    this.panel = new Panel([this.lesson.el, this.quiz.el, this.card.el]);
+    this.panel = new Panel([this.path.el, this.lesson.el, this.quiz.el, this.card.el]);
     this.panel.onChange = () => {
+      this.root.querySelector('.b-path')?.classList.toggle('on', this.panel.top === this.path.el);
       this.root.classList.toggle('dock-on', this.panel.open);
       this.updateInset();
     };
@@ -460,6 +482,31 @@ class App {
   private toggle(which: 'learn' | 'quiz'): void {
     if (which === 'learn') this.learn.toggle();
     else { if (!this.quiz.open) { this.timeline.setPlaying(false); this.stopStory(); this.closeCard(); this.learn.toggle(false); this.lesson.stop(); } this.quiz.toggle(); this.root.classList.toggle('quiz-on', this.quiz.open); }
+  }
+
+  /** Shows the learning path on top of the side panel (leaving a lesson, quiz or card), or closes it. `remember` keeps the
+   * choice for the next visit. */
+  showPath(on: boolean, remember = true): void {
+    if (remember) save('pathOpen', on);
+    if (!on) { this.path.toggle(false); return; }
+    this.pop(null);
+    this.stopStory();
+    this.closeCard();
+    if (this.quiz.open) this.toggle('quiz');
+    this.lesson.stop();
+    this.learn.toggle(false);
+    this.path.toggle(true);
+  }
+
+  /** A learning-path chapter's check, over the path; closing it returns to the path. */
+  startChapterCheck(c: Chapter): void {
+    this.timeline.setPlaying(false);
+    this.stopStory();
+    this.closeCard();
+    this.learn.toggle(false);
+    this.lesson.stop();
+    this.quiz.startChapter(c);
+    this.root.classList.add('quiz-on');
   }
 
   startEraQuiz(eraId: string): void {
@@ -679,6 +726,7 @@ class App {
       else if (this.card.open) this.closeCard();
       else if (this.lesson.open) this.lesson.stop();
       else if (this.trail.active) this.trail.close(true);
+      else if (this.path.open) this.showPath(false);
       return;
     }
     if ((e.key === '[' || e.key === ']') && !e.altKey && !e.metaKey && !e.ctrlKey && this.trail.active) {
@@ -723,6 +771,7 @@ class App {
     this.help.render();
     this.quiz.relabel();
     this.lesson.relabel();
+    this.path.refresh();
     this.chronicle.relabel();
     this.period.relabel();
     this.trail.relabel();
@@ -767,7 +816,9 @@ class App {
     this.brand.querySelector('.brand-k')!.textContent = `${lang === 'zh' ? '长河' : 'Changhe'} · ${t('kicker')}`;
     this.brand.title = `Ages · ${t('brandSub')}`;
     const set = (cls: string, k: Parameters<typeof t>[0]) => { const el = this.root.querySelector<HTMLElement>(cls); if (el) { el.title = t(k); el.setAttribute('aria-label', t(k)); } };
-    set('.b-hub', 'hub'); set('.b-settings', 'settings'); set('.b-full', 'fullscreen'); set('.b-lang', 'langTitle');
+    set('.b-hub', 'hub'); set('.b-path', 'pathTitle'); set('.b-settings', 'settings');
+    const word = (cls: string, k: Parameters<typeof t>[0]) => { const el = this.root.querySelector<HTMLElement>(`${cls} .lbl-t`); if (el) el.textContent = t(k); };
+    word('.b-path', 'learnBtn'); word('.b-details', 'periodBtn'); word('.b-hub', 'exploreBtn'); set('.b-full', 'fullscreen'); set('.b-lang', 'langTitle');
     const lb = this.root.querySelector<HTMLElement>('.b-lang');
     if (lb) lb.textContent = t('lang');
     document.title = lang === 'zh' ? '长河 · 3D 中国历史地图' : 'Ages · 3D Atlas of Chinese History';

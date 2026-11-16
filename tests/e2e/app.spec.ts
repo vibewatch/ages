@@ -750,6 +750,59 @@ test.describe('Ages atlas', () => {
     expect(errs).toEqual([]);
   });
 
+  test('learning path: opens on arrival, previews a chapter and starts its lesson', async ({ page }) => {
+    const errs = watchErrors(page);
+    await openApp(page, 'lang=en');
+    const path = page.locator('[data-testid=path]');
+    // a first visit with no linked subject starts on the learning path
+    await expect(path).toBeVisible();
+    await expect(path.locator('.pl')).toHaveCount(10);
+    await expect(path.locator('[data-act=path-start]')).toContainText('Start with chapter 1');
+    await expect(page.locator('.b-path')).toHaveClass(/\bon\b/);
+    await expect(page.locator('.b-path .lbl-t')).toHaveText('Learn');
+    // opening a chapter moves the map to its time and lists its events and lessons
+    await path.locator('[data-chapter=sui-tang]').click();
+    await expect.poll(() => state(page).then(s => s.year)).toBe(589);
+    const ch = path.locator('.pl.open');
+    await expect(ch.locator('.pl-key')).toHaveCount(6);
+    await expect(ch.locator('.pl-key em').first()).not.toBeEmpty();
+    await expect(ch.locator('.pl-here')).toBeVisible();
+    await expect(ch.locator('[data-act=chapter-watch]')).toContainText('Watch the opening story');
+    // the chapter check: five questions from the chapter's years; closing it returns to the path
+    await ch.locator('[data-act=chapter-check]').click();
+    await expect(page.locator('.quiz header h2')).toContainText('Chapter 5 check');
+    await expect(page.locator('.quiz .qz-n')).toHaveText('1/5');
+    await page.keyboard.press('Escape');
+    await expect(path).toBeVisible();
+    // the timeline starts simple and remembers the detailed mode
+    await expect(page.locator('.tl')).not.toHaveClass(/\bdetail\b/);
+    await page.locator('.tl-detail').click();
+    await expect(page.locator('.tl')).toHaveClass(/\bdetail\b/);
+    await page.locator('.tl-detail').click();
+    // an event opens its card over the path; closing it returns to the path
+    await ch.locator('.pl-key[data-ev=grand_canal]').click();
+    await expect.poll(() => state(page).then(s => s.event)).toBe('grand_canal');
+    await expect(page.locator('[data-testid=card-why]')).toContainText('Why it matters');
+    await page.keyboard.press('Escape');
+    await expect(path).toBeVisible();
+    // a lesson runs over the path and leaves the path underneath
+    await path.locator('.pl.open [data-lesson=g7b-1]').click();
+    await expect(page.locator('[data-testid=lesson]')).toBeVisible();
+    await expect(page).toHaveURL(/#lesson=g7b-1/);
+    await page.keyboard.press('Escape');
+    await expect(path).toBeVisible();
+    await expect(path.locator('[data-act=path-resume]')).toBeVisible();
+    // closing the path is remembered for the next visit
+    await page.keyboard.press('Escape');
+    await expect(path).toBeHidden();
+    await page.reload();
+    await expect.poll(() => page.evaluate(() => !!(window as any).__atlas?.ready), { timeout: 120_000 }).toBe(true);
+    await expect(path).toBeHidden();
+    await page.locator('.b-path').click();
+    await expect(path).toBeVisible();
+    expect(errs).toEqual([]);
+  });
+
   test('course picker lists each unit with its lesson and unit test', async ({ page }) => {
     const errs = watchErrors(page);
     await openApp(page, 'y=1950&lang=zh');
