@@ -386,7 +386,7 @@ export class Atlas {
     const models: LayoutItem[] = [];
     const represented = new Set<string>();
     const quiet = this.learnFocus?.quiet ?? false;
-    const available = (m: Mark) => this.layers.models && !this.pickHandler && (!this.storyMode || m.layer === 'base') &&
+    const available = (m: Mark) => this.layers.models && !this.pickHandler && !this.blind && (!this.storyMode || m.layer === 'base') &&
       (!quiet || m.layer !== 'scenery') &&
       (!m.place || !!mapName(m.place, this.year)) && (this.isSelected(m) || this.fx.dist <= m.maxD);
     const sceneryEvents = new Set<string>();
@@ -528,7 +528,7 @@ export class Atlas {
   }
 
   private setHover(h: Hover | null): void {
-    if (h && this.camMoving()) return;
+    if (h && (this.camMoving() || this.blind)) return;
     const old = this.hover;
     const same = (a: Hover | null, b: Hover | null) => a && b && 'target' in a && 'target' in b ? a.target === b.target : a === b;
     if (old && h && 'at' in old && 'at' in h) old.at.copy(h.at);
@@ -1039,7 +1039,7 @@ export class Atlas {
     this.learnFocus = next;
     this.host.classList.toggle('focusing', !!next);
     this.host.classList.toggle('focus-quiet', !!next?.quiet);
-    this.fx.showLayer('scenery', !this.storyMode && !next?.quiet);
+    this.fx.showLayer('scenery', !this.storyMode && !next?.quiet && !this.blind);
     this.buildPins();
     this.layoutDirty = true;
   }
@@ -1271,7 +1271,7 @@ export class Atlas {
     this.storyMode = on;
     this.layoutDirty = true;
     if (on) this.setHover(null);
-    this.fx.showLayer('scenery', !on && !this.learnFocus?.quiet);
+    this.fx.showLayer('scenery', !on && !this.learnFocus?.quiet && !this.blind);
     this.labels.setGroupVisible('badges', !on && !this.pickHandler);
   }
 
@@ -1350,6 +1350,20 @@ export class Atlas {
     (u.uHaze.value as THREE.Color).copy(k.haze);
     this.view.setSky(k.haze, k.top);
     document.documentElement.dataset.map = s;
+  }
+
+  /** A map-reading question (读图题): the map shows only borders and relief — no polity, place or event names, no models. */
+  private blind = false;
+  setBlind(on: boolean): void {
+    if (on === this.blind) return;
+    this.blind = on;
+    this.labels.mask(on ? ['polity', 'places', 'admin', 'pins', 'badges', 'map-models', 'works', 'rivers', 'scenery', 'base', 'event'] : []);
+    this.fx.showLayer('base', !on);
+    this.fx.showLayer('event', !on);
+    this.fx.showLayer('scenery', !on && !this.storyMode && !this.learnFocus?.quiet);
+    if (on) { this.setHover(null); this.select(null, false); }
+    this.host.classList.toggle('blind', on);
+    this.layoutDirty = true;
   }
 
   /** Routes the next map click to `fn`; `blind` also hides place names so they cannot give the answer away. */

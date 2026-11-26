@@ -30,6 +30,7 @@ not their size or text decoration.
 | Costumes | People are dressed for their era (Shang/Zhou robes, Qin–Han armour and caps, Tang futou, Song/Ming official dress, Qing queue and mandarin hat, Republic suits and uniforms) |
 | Wikipedia reader | unfolds beside the card (the W button or ‹ folds it back; on phones it takes the card's place); zh-CN / en switch; lead, then every section as headings and paragraphs (nothing folded), image, reading time; licence line; offline / missing states |
 | Learn | Books → units → events with progress bars; opening an event stacks its card over the textbook |
+| 读图题 | Read the map: the map without names, year, timeline or models; *which period*, *which highlighted polity* (year given), *which of maps A/B is earlier*; 9 per round generated from territory snapshots (`src/shared/lib/mapread.ts`); answering reveals the names; misses go to mistake review (`map:` keys) |
 | Quiz | History mode: 9 questions per round from the chosen book: when / where (map click, graded by km) / order; best score saved. Ancient-places mode: 10 period place names to find on the map with labels hidden, 0–100 points by distance and a final rank. Every answer is revealed on the map |
 | Search | Events, eras and places, matched in both languages; `/` focuses |
 | Menus | Hub (study: learn, quiz; journeys) and Settings (map style paper / ink / plain, layers, guqin music, full screen, quality 高画质 / 省电流畅 saved per device, language, help); zoom by wheel or pinch |

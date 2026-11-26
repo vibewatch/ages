@@ -368,6 +368,8 @@ export class App {
     this.trail.onClose = () => this.syncLink();
     this.quiz.onClose = () => { this.root.classList.remove('quiz-on'); this.path.refresh(); this.refocus(); };
     this.quiz.onYear = y => { this.timeline.set(y, true, false); this.atlas.setYear(y); };
+    // a map-reading question: the headline, phase line, area and timeline would give the year away
+    this.quiz.onBlind = on => { this.atlas.setBlind(on); this.root.classList.toggle('map-blind', on); if (on) this.shell.pop(null); };
     this.quiz.onOpenEvent = e => this.openEvent(e);
     // the reader unfolds beside the card and follows it to the next subject
     this.card.attach(this.reader.el);

@@ -1600,3 +1600,12 @@ i.seen { color: var(--k-economy); font-style: normal; margin-left: auto; }
 .pv-sub { margin: 0 0 6px; font-size: var(--t-2xs); font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-3); }
 /* phones: the zoom follows the learning focus on its own; no room for the toggle beside the transport */
 @media (max-width: 720px) { .tl-zoom { display: none; } }
+
+/* ---------- 读图题: map-reading questions (v2.2) ---------- */
+/* the map keeps only borders and relief: whatever names the year or the period is hidden until the answer */
+#app.map-blind .tl-head, #app.map-blind .hud-stats, #app.map-blind .hud-bc { visibility: hidden; opacity: 0; pointer-events: none; }
+#app.map-blind .b-details { pointer-events: none; opacity: .4; }
+.qz-maps { display: flex; gap: 8px; margin: 4px 18px 10px; }
+.qz-maps .qz-map { flex: 1; padding: 8px 10px; border: 1px solid var(--rule-2); background: transparent; font: inherit; font-weight: 600; cursor: pointer; color: var(--ink); }
+.qz-maps .qz-map:hover { color: var(--zhu); }
+.qz-maps .qz-map.on { background: var(--ink); color: var(--panel-solid); border-color: transparent; }

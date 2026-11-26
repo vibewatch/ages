@@ -83,6 +83,13 @@ export class Labels {
     for (const l of this.items.filter(x => x.group === group)) this.remove(l);
   }
 
+  private masked = new Set<string>();
+  /** Hides these groups over whatever their own visibility is (a map-reading question hides the names); [] lifts it. */
+  mask(groups: string[]): void {
+    this.masked = new Set(groups);
+    this.dirty = true;
+  }
+
   setGroupVisible(group: string, on: boolean): void {
     const wasHidden = this.hidden.has(group);
     if (on) this.hidden.delete(group); else this.hidden.add(group);
@@ -115,7 +122,7 @@ export class Labels {
     const candidates = new Map<Label, LayoutItem>();
     const epoch = v.camEpoch;
     for (const l of this.items) {
-      let show = !l.off && !this.hidden.has(l.group) && (!!l.model || !!l.pinned || (dist >= (l.minD ?? 0) && dist <= (l.maxD ?? Infinity)));
+      let show = !l.off && !this.hidden.has(l.group) && !this.masked.has(l.group) && (!!l.model || !!l.pinned || (dist >= (l.minD ?? 0) && dist <= (l.maxD ?? Infinity)));
       let x = 0, y = 0;
       if (show && !(l.modelHit && l.model)) {
         if (l.camEpoch !== epoch || l.posX !== l.pos.x || l.posY !== l.pos.y || l.posZ !== l.pos.z) {

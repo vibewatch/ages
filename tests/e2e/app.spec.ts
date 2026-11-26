@@ -482,6 +482,50 @@ test.describe('Ages atlas', () => {
     expect(errs).toEqual([]);
   });
 
+  test('读图题: reads unlabelled maps — period, highlighted polity, which came first', async ({ page }) => {
+    const errs = watchErrors(page);
+    await openApp(page, 'y=700&lang=en');
+    await practice(page, 'path-quiz');
+    await page.locator('.qz-mode[data-mode=maps]').click();
+    await page.locator('[data-act=start]').click();
+    const quiz = page.locator('.quiz');
+    const app = page.locator('#app');
+    const total = await page.evaluate(() => (window as any).__atlas.quiz.qs.length);
+    expect(total).toBe(9);
+    const kinds = new Set<string>();
+    for (let i = 0; i < total; i++) {
+      const q = await page.evaluate(() => { const z = (window as any).__atlas.quiz; return z.qs[z.i]; });
+      expect(q.type).toBe('map');
+      kinds.add(q.kind);
+      // the names, the year and the phase line are gone until the answer
+      await expect(app).toHaveClass(/map-blind/);
+      await expect(page.locator('.tl-head')).toBeHidden();
+      await expect(page.locator('.labels > :visible')).toHaveCount(0);
+      if (q.kind === 'first') {
+        await quiz.locator('.qz-map[data-map="1"]').click();
+        await expect.poll(() => page.evaluate(() => (window as any).__atlas.atlas.year)).toBe(q.years[1]);
+        await quiz.locator('.qz-map[data-map="0"]').click();
+        await expect.poll(() => page.evaluate(() => (window as any).__atlas.atlas.year)).toBe(q.years[0]);
+      }
+      if (i === 0) await shot(page, 'desktop-mapread');
+      // the first answer is wrong on purpose: it goes to mistake review
+      const pick = i === 0 ? (q.answer + 1) % q.options.length : q.answer;
+      await quiz.locator('.qz-opts .opt').nth(pick).click();
+      await expect(quiz.locator('.qz-fb')).toContainText(i === 0 ? /Not quite|Wrong|wrong/ : /Correct/);
+      await expect(quiz.locator('[data-testid=quiz-explain]')).toBeVisible();
+      await expect(app).not.toHaveClass(/map-blind/);
+      await expect(page.locator('.tl-head')).toBeVisible();
+      await quiz.locator('[data-act=next]').click();
+    }
+    await expect(quiz.locator('.qz-done')).toContainText(`${total - 1}/${total}`);
+    expect(kinds).toEqual(new Set(['period', 'polity', 'first']));
+    const missed = await page.evaluate(() => [...(window as any).__atlas.progress.mistakes].filter((k: string) => k.startsWith('map:')));
+    expect(missed).toHaveLength(1);
+    await quiz.locator('[data-act=close], header .ib').first().click();
+    await expect(app).not.toHaveClass(/map-blind/);
+    expect(errs).toEqual([]);
+  });
+
   test('journeys play as 3D stories; places and people open their own cards', async ({ page }) => {
     const errs = watchErrors(page);
     await openApp(page, 'y=1085&lang=zh');

@@ -5,6 +5,7 @@ import { EVENT, EVENTS } from '../../shared/data/events.ts';
 import { tr } from '../../shared/data/i18n.ts';
 import type { Book, HistEvent, I18n } from '../../shared/data/types.ts';
 import { PLACE, PLACES } from '../../shared/data/places.ts';
+import { makeMapQuiz } from '../../shared/lib/mapread.ts';
 import { distKm, gradeWhere, locatePoints, makeLocateQuiz, makeMistakeQuiz, makeQuiz, rankOf, type Question } from '../../shared/lib/quiz.ts';
 import { formatYear } from '../../shared/lib/timeline.ts';
 import { lang, t } from '../lib/i18n.ts';
@@ -12,7 +13,11 @@ import type { Progress } from '../lib/storage.ts';
 import type { Atlas } from '../scene/atlas.ts';
 import { fill, h, iconBtn } from './dom.ts';
 
-/** Quiz panel: "when" (multiple choice), "where" (click the map), "order" (tap in time order), and mistake review. */
+/** Quiz panel: "when" (multiple choice), "where" (click the map), "order" (tap in time order), 读图题 (read an unlabelled
+ * map), ancient places and mistake review. */
+type Mode = 'events' | 'maps' | 'locate' | 'mistakes';
+const MODES: Mode[] = ['events', 'maps', 'locate', 'mistakes'];
+
 export class Quiz {
   readonly el: HTMLElement;
   private body: HTMLElement;
@@ -21,7 +26,7 @@ export class Quiz {
   private score = 0;
   private book: Book | '' = '';
   private era = '';
-  private mode: 'events' | 'locate' | 'mistakes' = 'events';
+  private mode: Mode = 'events';
   /** a learning-path chapter's check (5 questions from its years, its events to know first) */
   chapter: Chapter | null = null;
   /** where the quiz is, so a language switch re-renders it in place */
@@ -31,6 +36,8 @@ export class Quiz {
   onOpenEvent: (e: HistEvent) => void = () => {};
   /** moves the whole app (timeline + map) to a question's year */
   onYear: (y: number) => void = y => this.atlas.setYear(y);
+  /** hides (or shows again) every name on the map and the HUD's year for a map-reading question */
+  onBlind: (on: boolean) => void = on => this.atlas.setBlind(on);
 
   constructor(private atlas: Atlas, private progress: Progress) {
     this.body = h('div', { class: 'qz-body' });
@@ -41,7 +48,7 @@ export class Quiz {
 
   toggle(on = this.el.hidden): void {
     this.el.hidden = !on;
-    if (on) this.setup(); else { this.atlas.setPickMode(null); this.atlas.fx.clear('story'); this.onClose(); }
+    if (on) this.setup(); else { this.atlas.setPickMode(null); this.clearMap(); this.atlas.fx.clear('story'); this.onClose(); }
   }
 
   private head(extra: string): HTMLElement {
@@ -53,6 +60,7 @@ export class Quiz {
     this.phase = 'setup';
     this.chapter = null;
     this.atlas.setPickMode(null);
+    this.clearMap();
     const mistakeCount = this.progress.mistakes.size;
     if (this.mode === 'mistakes' && mistakeCount === 0) this.mode = 'events';
     const sel = h('select', { 'aria-label': t('quizBook') },
@@ -71,9 +79,9 @@ export class Quiz {
       this.era = eraSel.value;
       if (this.era && this.book) { this.book = ''; sel.value = ''; }
     });
-    const modeTitle = (m: 'events' | 'locate' | 'mistakes') => m === 'events' ? t('qmEvents') : m === 'locate' ? t('qmLocate') : t('qmMistakes');
-    const modeDesc = (m: 'events' | 'locate' | 'mistakes') => m === 'events' ? t('qmEventsDesc') : m === 'locate' ? t('qmLocateDesc') : mistakeCount ? t('qmMistakesDesc', { n: mistakeCount }) : t('noMistakes');
-    const modes = h('div', { class: 'qz-modes', role: 'radiogroup' }, ...(['events', 'locate', 'mistakes'] as const).map(m => h('button', {
+    const modeTitle = (m: Mode) => m === 'events' ? t('qmEvents') : m === 'maps' ? t('qmMaps') : m === 'locate' ? t('qmLocate') : t('qmMistakes');
+    const modeDesc = (m: Mode) => m === 'events' ? t('qmEventsDesc') : m === 'maps' ? t('qmMapsDesc') : m === 'locate' ? t('qmLocateDesc') : mistakeCount ? t('qmMistakesDesc', { n: mistakeCount }) : t('noMistakes');
+    const modes = h('div', { class: 'qz-modes', role: 'radiogroup' }, ...MODES.map(m => h('button', {
       type: 'button', role: 'radio', class: 'qz-mode' + (this.mode === m ? ' on' : ''), 'data-mode': m, 'aria-checked': String(this.mode === m),
       disabled: m === 'mistakes' && mistakeCount === 0,
       onclick: () => { this.mode = m; this.setup(); },
@@ -119,6 +127,8 @@ export class Quiz {
   start(seed = Date.now()): void {
     const c = this.chapter;
     this.qs = c ? makeQuiz(EVENTS, { n: 5, seed, range: c.span, prefer: c.keys })
+      : this.mode === 'maps'
+      ? makeMapQuiz({ n: 9, seed })
       : this.mode === 'locate'
       ? makeLocateQuiz(PLACES, { n: 10, seed })
       : this.mode === 'mistakes'
@@ -133,6 +143,7 @@ export class Quiz {
     this.phase = 'ask';
     this.answered = false;
     this.atlas.setPickMode(null);
+    this.clearMap();
     this.atlas.fx.clear('story');
     const q = this.qs[this.i];
     if (!q) { this.finish(); return; }
@@ -194,6 +205,40 @@ export class Quiz {
           if (e) this.reveal(e.id);
         },
       })));
+      nodes.push(opts);
+    } else if (q.type === 'map') {
+      // 读图题: the map without its names; answering brings them back on the same map
+      this.mapOn = true;
+      this.onBlind(true);
+      let shown = 0;
+      const chips = q.years.length > 1 ? q.years.map((_, k) => h('button', {
+        type: 'button', class: 'qz-map' + (k === 0 ? ' on' : ''), 'data-map': String(k), 'aria-pressed': String(k === 0), text: t(k === 0 ? 'mapA' : 'mapB'),
+        onclick: () => { show(k); },
+      })) : [];
+      const show = (k: number) => {
+        shown = k;
+        this.onYear(q.years[k]);
+        chips.forEach((c, j) => { c.classList.toggle('on', j === k); c.setAttribute('aria-pressed', String(j === k)); });
+      };
+      show(0);
+      if (q.polity) { this.atlas.flyToPolity(q.polity); this.atlas.hold(q.polity); } else void this.atlas.home();
+      const hint = h('p', { class: 'qz-hint', 'data-testid': 'map-hint', text: t('mapHint') });
+      const opts = h('div', { class: 'qz-opts col' }, ...q.options.map((o, idx) => h('button', {
+        type: 'button', class: 'opt', text: tr(o, L),
+        onclick: (ev: Event) => {
+          if (!next.hidden) return;
+          const ok = idx === q.answer;
+          if (!ok) this.progress.addMistake(q.key); else this.progress.resolveMistake(q.key);
+          (ev.currentTarget as HTMLElement).classList.add(ok ? 'ok' : 'no');
+          opts.querySelectorAll('button')[q.answer]?.classList.add('ok');
+          this.onBlind(false);
+          hint.hidden = true;
+          show(shown);
+          finish(ok, ok ? t('correct') : t('wrong'), ok ? 1 : 0, undefined, q.why);
+        },
+      })));
+      nodes.push(hint);
+      if (chips.length) nodes.push(h('div', { class: 'qz-maps', role: 'group' }, ...chips));
       nodes.push(opts);
     } else if (q.type === 'where') {
       const e = EVENT.get(q.event);
@@ -275,9 +320,19 @@ export class Quiz {
     if (e.model) this.atlas.fx.spawn({ lon: e.lon, lat: e.lat, model: e.model, label: tr(e.title, lang) });
   }
 
+  /** Lifts a map-reading question: names back, highlight released. */
+  private mapOn = false;
+  private clearMap(): void {
+    if (!this.mapOn) return;
+    this.mapOn = false;
+    this.onBlind(false);
+    this.atlas.hold(null);
+  }
+
   private finish(): void {
     this.phase = 'done';
     this.atlas.setPickMode(null);
+    this.clearMap();
     const locate = this.mode === 'locate';
     const c = this.chapter;
     if (c) this.progress.score(`chapter:${c.id}`, this.score, this.qs.length);

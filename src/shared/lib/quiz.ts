@@ -6,6 +6,7 @@ import { POLITY } from '../data/polities.ts';
 import type { Book, HistEvent, I18n, Place, Snapshot, Year } from '../data/types.ts';
 import { SNAPSHOTS } from '../data/territories.ts';
 import { CHAPTERS, CHRONICLE, phaseAt, type Phase } from './chronicle.ts';
+import { mapQuestionFromKey, type MapQuestion } from './mapread.ts';
 import { eraAt, formatYear } from './timeline.ts';
 
 export type Question =
@@ -13,7 +14,8 @@ export type Question =
   | { type: 'where'; key?: string; event: string; prompt: I18n; lon: number; lat: number }
   | { type: 'order'; key?: string; events: string[]; prompt: I18n; answer: string[] }
   | { type: 'choice'; key?: string; event?: string; prompt: I18n; options: I18n[]; answer: number; why: I18n }
-  | { type: 'locate'; place: string; year: Year; name: I18n; prompt: I18n; hint?: I18n; lon: number; lat: number };
+  | { type: 'locate'; place: string; year: Year; name: I18n; prompt: I18n; hint?: I18n; lon: number; lat: number }
+  | MapQuestion;
 
 /** Small seeded PRNG so a quiz can be reproduced from its seed (and tested deterministically). */
 export function rng(seed: number): () => number {
@@ -128,6 +130,12 @@ export function makeMistakeQuiz(events: HistEvent[], mistakeIds: Iterable<string
           prompt: { zh: `【错题复习】在地图上找到「${p.name.zh}」的位置`, en: `[Review] Find “${p.name.en}” on the map` },
         });
       }
+      continue;
+    }
+
+    if (raw.startsWith('map:')) {
+      const q = mapQuestionFromKey(raw, seed);
+      if (q) out.push({ ...q, prompt: { zh: `【错题复习】${q.prompt.zh}`, en: `[Review] ${q.prompt.en}` } });
       continue;
     }
 
