@@ -1,11 +1,13 @@
 import { formatArea, polityArea, realmArea, snapPolities } from '../../shared/data/areas.ts';
+import { WHY, chapterAt, type Chapter } from '../../shared/data/chapters.ts';
+import { EVENT } from '../../shared/data/events.ts';
 import { tr } from '../../shared/data/i18n.ts';
 import { WORKS } from '../../shared/data/jiangshan.ts';
 import { PLACE, mapName } from '../../shared/data/places.ts';
 import { POLITY } from '../../shared/data/polities.ts';
 import { snapshotSources } from '../../shared/data/sources.ts';
 import { SNAPSHOTS } from '../../shared/data/territories.ts';
-import type { Lang, Polity, Snapshot, Year } from '../../shared/data/types.ts';
+import type { HistEvent, Lang, Polity, Snapshot, Year } from '../../shared/data/types.ts';
 import { worldForRange } from '../../shared/data/world-sync.ts';
 import { phaseAt, previousSnap, type Phase } from '../../shared/lib/chronicle.ts';
 import { periodQuestion } from '../../shared/lib/quiz.ts';
@@ -47,6 +49,15 @@ export class Period {
   readonly view: HTMLElement;
   private body: HTMLElement;
   private overview: HTMLElement;
+  /** the learner's summary on top: the chapter, its big idea and its events to know */
+  private learnBox: HTMLElement;
+  /** map sources, the world at the time and compare, folded at the foot */
+  private more: HTMLDetailsElement;
+  private moreSum: HTMLElement;
+  private moreBody: HTMLElement;
+  /** the chapter being learned (else the chapter of the year), and whether the timeline is in its detailed mode */
+  private chapter: Chapter | null = null;
+  private detail = false;
   private pols: HTMLDetailsElement;
   private polsSum: HTMLElement;
   private polsBody: HTMLElement;
@@ -64,6 +75,9 @@ export class Period {
   onHold: (polity: string | null) => void = () => {};
   onPolity: (polity: string) => void = () => {};
   onEra: (id: string) => void = () => {};
+  /** "learn this chapter" and an event to know */
+  onLearn: (c: Chapter) => void = () => {};
+  onEvent: (e: HistEvent) => void = () => {};
   /** the 时期详情 button and the ambient line: open / close the period popover */
   onDetails: () => void = () => {};
 
@@ -74,6 +88,10 @@ export class Period {
     this.line = h('button', { type: 'button', class: 'amb', onclick: () => this.onDetails() });
     this.key = h('div', { class: 'map-key' });
     this.overview = h('section', { class: 'pv-sec pv-ov' });
+    this.learnBox = h('section', { class: 'pv-sec pv-learn', 'data-testid': 'period-learn' });
+    this.moreSum = h('summary', { class: 'pv-h' });
+    this.moreBody = h('div', { class: 'pv-fb' });
+    this.more = h('details', { class: 'pv-sec pv-fold pv-more' }, this.moreSum, this.moreBody);
     // folded by default; the details elements persist across years, so an opened section stays open
     this.polsSum = h('summary', { class: 'pv-h' });
     this.polsBody = h('div', { class: 'pv-fb' });
@@ -81,7 +99,7 @@ export class Period {
     this.qSum = h('summary', { class: 'pv-h' });
     this.qBody = h('div', { class: 'pv-fb pv-qbody' });
     this.qbox = h('details', { class: 'pv-sec pv-fold pv-q', open: true, 'data-testid': 'period-check' }, this.qSum, this.qBody);
-    this.body = h('div', { class: 'view-body' }, this.overview, this.pols, this.qbox);
+    this.body = h('div', { class: 'view-body' }, this.learnBox, this.overview, this.pols, this.qbox, this.more);
     this.view = h('div', { class: 'pop menu pv', hidden: true, role: 'dialog' }, this.body);
     this.relabel();
   }
@@ -95,6 +113,15 @@ export class Period {
     this.btn.setAttribute('aria-expanded', String(on));
   }
 
+  /** Follows the learning focus (`chapter`, else the year's chapter) and the timeline's simple / detailed mode. */
+  setLearning(chapter: Chapter | null, detail: boolean): void {
+    if (chapter === this.chapter && detail === this.detail) return;
+    this.chapter = chapter;
+    this.detail = detail;
+    this.sig = '';
+    this.setYear(this.year);
+  }
+
   setCompare(y: Year | null): void {
     if (this.compareYear === y) return;
     this.compareYear = y;
@@ -106,14 +133,21 @@ export class Period {
     this.year = y;
     const ph = phaseAt(y);
     const works = [...new Set(WORKS.filter(w => y >= w.span[0] && y <= w.span[1]).map(w => w.kind))];
-    const sig = `${ph?.snap.id}|${ph?.snap.regions.length}|${this.compareYear ?? ''}|${works.join()}|${lang}`;
+    const ch = this.chapter ?? chapterAt(y);
+    const sig = `${ph?.snap.id}|${ph?.snap.regions.length}|${this.compareYear ?? ''}|${works.join()}|${lang}|${ch.id}|${this.detail}|${eraAt(y)?.id}`;
     if (sig === this.sig) return;
     this.sig = sig;
     this.renderStats(ph);
     this.renderKey(works);
-    this.line.hidden = !ph;
-    if (ph) this.line.textContent = tr(ph.snap.title, lang);
-    this.overview.hidden = this.pols.hidden = !ph;
+    // the line under the map: in the simple mode the chapter and dynasty, in the detailed mode the territorial phase
+    const era = eraAt(y);
+    this.line.hidden = this.detail ? !ph : false;
+    this.line.classList.toggle('amb-ch', !this.detail);
+    this.line.textContent = this.detail
+      ? (ph ? tr(ph.snap.title, lang) : '')
+      : `${t('pathChapterN', { n: ch.n })} · ${era ? tr(era.name, lang) : tr(ch.title, lang)}`;
+    this.renderLearn(ch);
+    this.overview.hidden = this.pols.hidden = this.more.hidden = !ph;
     if (!ph) { this.qbox.hidden = true; return; }
     this.renderOverview(ph);
     this.renderPolities(ph.snap);
@@ -222,6 +256,7 @@ export class Period {
         h('p', { class: 'pv-cmp-sum', text: t('cmpSummary', { a: labelA, ca: capName ? tr(capName, L) : '—', b: labelB, cb: capNameB ? tr(capNameB, L) : '—', d: deltaStr }) }));
     }
     fill(this.overview,
+      h('h4', { class: 'pv-sub', text: t('pvPhase') }),
       h('div', { class: 'pv-top' },
         h('span', { class: 'pv-span', text: `${formatYear(ph.from, L, { short: true })} – ${formatYear(ph.to, L, { short: true })}` }),
         n > 1 ? h('small', { class: 'pv-idx', text: `${pad(ph.index + 1)} / ${pad(n)}` }) : null),
@@ -232,7 +267,11 @@ export class Period {
         fact(t('dynasty'), era ? h('button', { type: 'button', class: 'pv-era', style: `--c:${era.color}`, onclick: () => this.onEra(era.id) }, h('i'), h('span', { text: tr(era.short, L) })) : null),
         fact(t('capitalNow'), capName ? tr(capName, L) : null),
         fact(t('pArea'), area ? areaShort(area, L) : null)),
-      s.note ? h('p', { class: 'pv-note', text: tr(s.note, L) }) : null,
+      s.note ? h('p', { class: 'pv-note', text: tr(s.note, L) }) : null);
+    // a comparison in progress keeps the fold open
+    if (cmpSnap) this.more.open = true;
+    fill(this.moreSum, h('h3', { text: t('pvMore') }));
+    fill(this.moreBody,
       h('div', { class: 'pv-src', 'data-testid': 'period-sources', 'data-source-kind': src.kind },
         h('span', { class: 'pv-src-badge', text: tr(src.badge, L) }),
         h('p', { class: 'pv-src-text', text: tr(src.source, L) }),
@@ -248,6 +287,19 @@ export class Period {
           cmpSnap ? h('button', { type: 'button', class: 'btn pv-cmp-btn', 'data-act': 'cmp-swap', text: t('cmpSwap'), onclick: () => this.onSwapCompare() }) : null,
           cmpSnap ? h('button', { type: 'button', class: 'btn ghost pv-cmp-btn', 'data-act': 'cmp-clear', text: t('cmpClear'), onclick: () => this.onCompare(null) }) : null),
         cmpCard));
+  }
+
+  /** The learner's summary: which chapter of the path this is, its big idea and its events to know. */
+  private renderLearn(c: Chapter): void {
+    const L = lang;
+    fill(this.learnBox,
+      h('p', { class: 'pv-ch-k', text: t('pvChapter', { n: c.n }) }),
+      h('h3', { class: 'pv-ch-t', text: tr(c.title, L) }),
+      h('p', { class: 'pv-ch-idea', text: tr(c.idea, L) }),
+      h('div', { class: 'pv-ch-keys' }, ...c.keys.map(id => EVENT.get(id)).filter((e): e is HistEvent => !!e).map(e => h('button', {
+        type: 'button', class: 'chip link pv-key', 'data-ev': e.id, title: WHY[e.id] ? tr(WHY[e.id], L) : '', onclick: () => this.onEvent(e),
+      }, h('small', { text: formatYear(e.year, L, { short: true }) }), ' ', tr(e.title, L)))),
+      h('button', { type: 'button', class: 'btn primary pv-ch-go', 'data-act': 'period-learn', onclick: () => this.onLearn(c) }, t('pvLearn')));
   }
 
   private renderPolities(s: Snapshot): void {

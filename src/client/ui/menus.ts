@@ -6,7 +6,7 @@ import { TRAILS, type Trail } from '../../shared/data/trails.ts';
 import { tr } from '../../shared/data/i18n.ts';
 import { kindName, lang, t, type Key } from '../lib/i18n.ts';
 import { load, save } from '../lib/storage.ts';
-import { ModalFocus, h, icon, iconBtn, type IconName } from './dom.ts';
+import { ModalFocus, h, icon, iconBtn } from './dom.ts';
 
 const sec = (n: number, title: string) => h('h3', {}, h('i', { text: String(n).padStart(2, '0') }), h('span', { text: title }));
 
@@ -50,35 +50,26 @@ export class SettingsMenu {
   toggle(on = this.el.hidden): void { this.el.hidden = !on; }
 }
 
-type HubTab = 'study' | 'journeys' | 'trails';
+type HubTab = 'journeys' | 'trails';
 
 /** Study hall popover, in tabs: 学习 (the course, the quiz), 人物行迹 (the journeys of historical figures), and 专题脉络 (cross-dynasty thematic trails). */
 export class HubMenu {
   readonly el: HTMLElement;
-  private tab: HubTab = load<HubTab>('hubTab', 'study', v => v === 'study' || v === 'journeys' || v === 'trails');
+  // Explore holds the free-roaming material; the course and the quiz live on the learning path (Practice & review)
+  private tab: HubTab = load<HubTab>('hubTab', 'journeys', v => v === 'journeys' || v === 'trails');
   onPlay: (j: Journey) => void = () => {};
   onTrail: (trail: Trail) => void = () => {};
-  onPick: (what: 'learn' | 'quiz') => void = () => {};
-  /** the course's progress, e.g. ✓ 3/31 */
-  stat: () => string = () => '';
   constructor() {
     this.el = h('div', { class: 'pop menu hub', hidden: true, role: 'dialog', 'aria-label': t('hub') });
     this.render();
   }
-  private card(cls: string, ic: IconName, title: string, desc: string, stat: string, onclick: () => void): HTMLElement {
-    return h('button', { type: 'button', class: `hub-card ${cls}`, onclick }, icon(ic), h('span', { class: 'hc-t' }, h('b', { text: title }), h('small', { text: desc })), stat ? h('em', { text: stat }) : null);
-  }
   render(): void {
     this.el.setAttribute('aria-label', t('hub'));
-    const tabs = h('div', { class: 'tabs hub-tabs', role: 'tablist' }, ...(['study', 'journeys', 'trails'] as HubTab[]).map(k => h('button', {
+    const tabs = h('div', { class: 'tabs hub-tabs', role: 'tablist' }, ...(['journeys', 'trails'] as HubTab[]).map(k => h('button', {
       type: 'button', role: 'tab', class: k === this.tab ? 'on' : '', 'aria-selected': String(k === this.tab), 'data-tab': k, text: t(k),
       onclick: () => { this.tab = k; save('hubTab', k); this.render(); },
     })));
-    const body = this.tab === 'study'
-      ? h('div', { class: 'hub-list' },
-        this.card('b-learn', 'book', t('learnTitle'), t('learnDesc'), this.stat(), () => this.onPick('learn')),
-        this.card('b-quiz', 'quiz', t('quizTitle'), t('quizDesc'), '', () => this.onPick('quiz')))
-      : this.tab === 'journeys'
+    const body = this.tab === 'journeys'
         ? h('div', { class: 'hub-list journeys' }, ...JOURNEYS.map((j, i) => h('button', {
           type: 'button', class: 'jn', 'data-journey': j.id, style: `--c:${j.color}`,
           onclick: () => { this.toggle(false); this.onPlay(j); },

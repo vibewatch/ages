@@ -1533,3 +1533,70 @@ i.seen { color: var(--k-economy); font-style: normal; margin-left: auto; }
   .amb { background: none; box-shadow: none; border-radius: 0; }
   .tl-ctl > .tl-detail { display: none; }
 }
+
+/* ======================================================================================== learning focus (v2.1)
+ * What is being learned stands out: the chapter row on the timeline, numbered event pins on the map (others fade), and
+ * the timeline zoomed to the chapter. */
+.tl-chapters { position: absolute; left: 0; right: 0; top: 0; height: 17px; }
+.tl.detail .tl-chapters { display: none; }
+.tl-ch {
+  position: absolute; top: 0; height: 15px; padding: 0 4px; display: flex; align-items: center; gap: 4px; overflow: hidden;
+  border: 0; border-top: 2px solid color-mix(in srgb, var(--ink) 22%, transparent); background: none; color: var(--ink-3);
+  font: inherit; font-size: var(--t-2xs); line-height: 1; white-space: nowrap; cursor: pointer; text-align: left;
+}
+.tl-ch + .tl-ch { box-shadow: inset 1px 0 0 color-mix(in srgb, var(--ink) 14%, transparent); }
+.tl-ch b { font-weight: 700; font-variant-numeric: tabular-nums; }
+.tl-ch:hover, .tl-ch:focus-visible { color: var(--ink); border-top-color: var(--ink-2); }
+.tl-ch.here { color: var(--ink); border-top-color: var(--ink-2); }
+.tl-ch.cur { color: var(--zhu); border-top-color: var(--zhu); font-weight: 600; }
+.tl.zoomed .tl-chapters, .tl.zoomed .tl-bands, .tl.zoomed .tl-dots, .tl.zoomed .tl-phases, .tl.zoomed .tl-axis, .tl.zoomed .tl-curve { overflow: hidden; }
+.tl.zoomed .tl-dots { overflow: visible; clip-path: inset(-4px 0 -4px 0); }
+.tl-zoom { padding: 0 10px; height: 28px; border-radius: var(--r-pill); font-size: var(--t-xs); white-space: nowrap; }
+.tl-zoom { color: var(--ink-2); box-shadow: inset 0 0 0 1px var(--card-line, rgba(0, 0, 0, 0.12)); }
+.tl-zoom:hover { color: var(--zhu); }
+.tl-thumb[hidden] { display: none; }
+
+/* map pins: while learning, the numbered events stand out and the others fade */
+.focusing .pin:not(.fk):not([aria-pressed=true]) { opacity: 0.28; }
+.focusing .pin:not(.fk):not([aria-pressed=true]):hover { opacity: 1; }
+.pin.fk { z-index: 2; }
+.pin.fk::after {
+  content: attr(data-n); position: absolute; top: -7px; right: -7px; min-width: 16px; height: 16px; padding: 0 4px;
+  display: grid; place-items: center; border-radius: var(--r-pill); background: var(--zhu); color: #fff;
+  font-size: 10px; font-weight: 700; line-height: 1; box-shadow: 0 0 0 2px #fff; pointer-events: none;
+}
+.pin.fk-cur .b { box-shadow: 0 0 0 3px color-mix(in srgb, var(--zhu) 45%, transparent), 0 2px 8px rgba(0, 0, 0, 0.3); animation: fkpulse 1.8s ease-in-out infinite; }
+@keyframes fkpulse { 50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--zhu) 0%, transparent), 0 2px 8px rgba(0, 0, 0, 0.3); } }
+@media (prefers-reduced-motion: reduce) { .pin.fk-cur .b { animation: none; } }
+
+/* the simple mode keeps the HUD to what a learner reads: the realm's area, not the ranking of its neighbours */
+#app:not(.tl-detail-on) .st-pols, #app:not(.tl-detail-on) .st-c { display: none; }
+.amb.amb-ch { font-weight: 600; }
+
+/* path: event numbers match the numbered pins on the map */
+.pl-key .pl-kn {
+  flex: none; width: 18px; height: 18px; margin-top: 1px; display: grid; place-items: center; border-radius: 50%;
+  background: var(--zhu); color: #fff; font-style: normal; font-size: 10px; font-weight: 700;
+}
+
+/* lesson: the step's story is its main action; the quick recall reads as a pause, not a test */
+.ls-acts .ls-watch { gap: 6px; background: var(--zhu-fill, color-mix(in srgb, var(--zhu) 12%, transparent)); color: var(--zhu); font-weight: 600; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--zhu) 40%, transparent); }
+.ls-acts .ls-watch i { font-style: normal; font-size: 9px; }
+.ls-acts .ls-watch:hover { background: var(--zhu); color: #fff; }
+.rc-k { color: var(--ok, #2f8f5b); }
+
+/* card: where the event sits in the chapter or lesson being learned */
+.cat-idx.track { color: var(--zhu); font-weight: 600; }
+
+/* This period: the chapter first, in plain words */
+.pv-learn { display: flex; flex-direction: column; gap: 6px; padding-top: 4px; border-bottom: 1px solid var(--card-line, rgba(0, 0, 0, 0.08)); padding-bottom: 14px; }
+.pv-ch-k { margin: 0; font-size: var(--t-2xs); font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--zhu); }
+.pv-ch-t { margin: 0; font-size: var(--t-l); line-height: 1.3; color: var(--ink); }
+.pv-ch-idea { margin: 0; font-size: var(--t-s); line-height: 1.55; color: var(--ink-2); }
+.pv-ch-keys { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.pv-key { font-size: var(--t-xs); }
+.pv-key small { color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.pv-ch-go { align-self: flex-start; margin-top: 6px; }
+.pv-sub { margin: 0 0 6px; font-size: var(--t-2xs); font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-3); }
+/* phones: the zoom follows the learning focus on its own; no room for the toggle beside the transport */
+@media (max-width: 720px) { .tl-zoom { display: none; } }
