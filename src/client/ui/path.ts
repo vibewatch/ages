@@ -14,8 +14,8 @@ const PASS = 0.6;
 export interface PathHooks {
   lesson: (l: Lesson, resume?: boolean) => void;
   event: (e: HistEvent) => void;
-  /** previews a chapter on the map: moves the timeline to `y` */
-  year: (y: Year) => void;
+  /** previews a chapter on the map: its time and its events to know */
+  preview: (c: Chapter) => void;
   quiz: () => void;
   /** a chapter's check */
   check: (c: Chapter) => void;
@@ -24,6 +24,8 @@ export interface PathHooks {
   mistakes: () => void;
   course: () => void;
   close: () => void;
+  /** the open chapter changed (the learning focus follows it) */
+  changed?: () => void;
 }
 
 /**
@@ -46,11 +48,28 @@ export class PathView {
   }
 
   get open(): boolean { return !this.el.hidden; }
+  /** the chapter opened on the path, if any */
+  get openChapterId(): string | null { return this.openId; }
+
+  /** Opens a chapter (from the timeline's chapter row or the period popover) and brings it into view. */
+  openChapter(c: Chapter, preview = true): void {
+    if (this.openId !== c.id) { this.openId = c.id; save('pathChapter', c.id); }
+    if (preview) this.hooks.preview(c);
+    this.render();
+    this.reveal(c.id);
+  }
+
+  private reveal(id: string): void {
+    const li = this.body.querySelector<HTMLElement>(`.pl-head[data-chapter="${id}"]`)?.parentElement;
+    if (!li) return;
+    requestAnimationFrame(() => { this.body.scrollTop = Math.max(0, li.offsetTop - this.body.offsetTop - 8); });
+  }
 
   toggle(on = this.el.hidden): void {
     if (on === this.open) return;
     if (on) this.render();
     this.el.hidden = !on;
+    this.hooks.changed?.();
   }
 
   /** Follows the timeline: marks the chapter the map is in (re-rendered only when it changes). */
@@ -116,7 +135,7 @@ export class PathView {
         icon('back'), h('span', {}, h('b', { text: t('reviewDue', { n: nMis }) }), nLater ? h('small', { text: t('reviewLater', { n: nLater }) }) : null), icon('chevron'))
       : null;
 
-    const intro = started ? null : h('p', { class: 'path-intro', text: t('pathIntro') });
+    const intro = started || this.openId ? null : h('p', { class: 'path-intro', text: t('pathIntro') });
     const meter = h('div', { class: 'path-meter', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': String(CHAPTERS.length), 'aria-valuenow': String(done), 'aria-label': t('pathProgress', { n: done, m: CHAPTERS.length }) },
       h('span', { text: t('pathProgress', { n: done, m: CHAPTERS.length }) }),
       h('i', {}, ...CHAPTERS.map(c => h('b', { class: this.finished(c) ? 'on' : this.doneIn(c) ? 'half' : '' }))));
@@ -127,6 +146,7 @@ export class PathView {
       this.tile('quiz', t('quizTitle'), t('quizDesc'), 'path-quiz', () => this.hooks.quiz()),
       this.tile('book', t('pathCourse'), t('pathCourseDesc'), 'path-course', () => this.hooks.course()));
     this.body.replaceChildren(intro ?? '', cta, review ?? '', meter, list, practice);
+    this.hooks.changed?.();
   }
 
   private tile(ic: Parameters<typeof icon>[0], title: string, desc: string, act: string, onclick: () => void): HTMLElement {
@@ -146,8 +166,9 @@ export class PathView {
       onclick: () => {
         this.openId = isOpen ? null : c.id;
         save('pathChapter', this.openId);
-        if (!isOpen) this.hooks.year(EVENT.get(c.keys[0])?.year ?? c.span[0]);
+        if (!isOpen) this.hooks.preview(c);
         this.render();
+        if (!isOpen) this.reveal(c.id);
       },
     },
       h('i', { class: 'pl-n' + (fin ? ' done' : ''), text: fin ? '✓' : String(c.n) }),
@@ -166,9 +187,9 @@ export class PathView {
       story ? h('button', { type: 'button', class: 'pl-watch', 'data-act': 'chapter-watch', onclick: () => this.hooks.play(story) },
         h('i', { text: '▶' }), h('span', {}, h('b', { text: t('chWatch') }), h('small', { text: tr(story.title, L) }))) : null,
       h('h4', { text: t('pathKeys') }),
-      h('div', { class: 'pl-keys' }, ...keys.map(e => h('button', {
+      h('div', { class: 'pl-keys' }, ...keys.map((e, k) => h('button', {
         type: 'button', class: 'pl-key', 'data-ev': e.id, onclick: () => this.hooks.event(e),
-      }, h('small', { text: formatYear(e.year, L, { short: true }) }),
+      }, h('i', { class: 'pl-kn', 'aria-hidden': 'true', text: String(k + 1) }), h('small', { text: formatYear(e.year, L, { short: true }) }),
         h('span', {}, h('b', { text: tr(e.title, L) }), WHY[e.id] ? h('em', { text: tr(WHY[e.id], L) }) : null),
         e.story ? h('i', { class: 'pl-play', 'aria-label': t('chStory'), text: '▶' }) : null))),
       h('h4', { text: t('pathLessons') }),

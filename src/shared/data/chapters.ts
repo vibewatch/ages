@@ -1,9 +1,11 @@
 /**
  * 学习路线 — the learning path: Chinese history told as ten chapters in time order, for anyone who wants to learn it
  * from the start (not only for exam review). Each chapter names the big idea to take away, the handful of events to
- * know, and the map lessons that teach it (the middle-school course, which already runs in time order from prehistory
- * to today). The textbook view of the same lessons stays available in the course picker.
+ * know, and the map lessons that teach it. The imperial chapters (2–7) have their own short lessons (`ch<n>-<k>`,
+ * lessons/ch<n>.ts), because the textbook gives each of those eras a single unit; the first chapter and the modern ones
+ * use the middle-school lessons, which already run in time order. The textbook course stays in the course picker.
  */
+import { PATH_LESSONS } from './lessons/index.ts';
 import type { I18n, Year } from './types.ts';
 
 export interface Chapter {
@@ -11,6 +13,8 @@ export interface Chapter {
   /** chapter number, 1-based */
   n: number;
   title: I18n;
+  /** a short name for tight places (the timeline's chapter row) */
+  short: I18n;
   /** the years it covers */
   span: [Year, Year];
   /** one or two sentences: what to remember from this chapter */
@@ -19,12 +23,33 @@ export interface Chapter {
   eras: string[];
   /** the events to know, in time order (ids in EVENTS) */
   keys: string[];
-  /** the map lessons that teach it, in order (ids in LESSONS) */
+  /** the map lessons that teach it, in order (ids in LESSON) */
   lessons: string[];
+  /** the middle-school lesson covering the same years (practice by textbook) */
+  textbook: string[];
 }
 
-const C = (n: number, id: string, zh: string, en: string, span: [Year, Year], idea: I18n, eras: string[], keys: string[], lessons: string[]): Chapter =>
-  ({ id, n, title: { zh, en }, span, idea, eras, keys, lessons });
+const SHORT: Record<string, I18n> = {
+  'origins': { zh: '远古', en: 'Prehistory' },
+  'early-states': { zh: '夏商周', en: 'Xia–Zhou' },
+  'qin-han': { zh: '秦汉', en: 'Qin–Han' },
+  'division': { zh: '魏晋南北朝', en: 'Division' },
+  'sui-tang': { zh: '隋唐', en: 'Sui–Tang' },
+  'song-yuan': { zh: '宋元', en: 'Song–Yuan' },
+  'ming-qing': { zh: '明清', en: 'Ming–Qing' },
+  'late-qing': { zh: '晚清', en: 'Late Qing' },
+  'revolution': { zh: '民国', en: 'Republic' },
+  'new-china': { zh: '新中国', en: 'PRC' },
+};
+
+/** A chapter's own path lessons (`ch<n>-1` …), else the textbook lessons. */
+const own = (n: number, textbook: string[]): string[] => {
+  const mine = PATH_LESSONS.filter(l => l.id.startsWith(`ch${n}-`)).map(l => l.id);
+  return mine.length ? mine : textbook;
+};
+
+const C = (n: number, id: string, zh: string, en: string, span: [Year, Year], idea: I18n, eras: string[], keys: string[], textbook: string[]): Chapter =>
+  ({ id, n, title: { zh, en }, short: SHORT[id], span, idea, eras, keys, lessons: own(n, textbook), textbook });
 
 export const CHAPTERS: Chapter[] = [
   C(1, 'origins', '文明的曙光', 'The dawn of civilisation', [-1_700_000, -2070], {

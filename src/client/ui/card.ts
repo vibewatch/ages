@@ -164,11 +164,12 @@ export class Card {
   // ------------------------------------------------------------ building blocks
 
   /** The hero strip: model, type tag with catalogue index, and prev / next / close. */
-  private setHero(model: ModelRecipe | null, tag: string, color: string, idx: [number, number] | null, prev?: () => void, next?: () => void): void {
+  private setHero(model: ModelRecipe | null, tag: string, color: string, idx: [number, number] | string | null, prev?: () => void, next?: () => void): void {
     void this.preview.show(model);
     fill(this.heroTag,
       h('span', { class: 'type-chip', style: `--k:${color}`, text: tag }),
-      idx ? h('span', { class: 'cat-idx' }, String(idx[0]), h('small', { text: ` / ${idx[1]}` })) : null);
+      typeof idx === 'string' ? h('span', { class: 'cat-idx track', 'data-testid': 'card-track', text: idx })
+        : idx ? h('span', { class: 'cat-idx' }, String(idx[0]), h('small', { text: ` / ${idx[1]}` })) : null);
     fill(this.nav,
       prev ? iconBtn('prev', t('prev'), prev) : null,
       next ? iconBtn('next', t('next'), next) : null,
@@ -374,9 +375,34 @@ export class Card {
     );
   }
 
+  /**
+   * The events being learned (a chapter's events to know, a lesson's events): an event card opened from among them steps
+   * through them with ← → and says where it is ("Chapter 5 · event 2 of 6") instead of walking the whole catalogue.
+   */
+  track: { ids: string[]; label: (i: number, m: number) => string } | null = null;
+  setTrack(tr: Card['track']): void {
+    const same = (tr?.ids.join() ?? '') === (this.track?.ids.join() ?? '');
+    this.track = tr;
+    if (!same && this.event) this.render();
+  }
+
+  /** The events ← → walk from `e`: the learning track when `e` is on it, else every China event in time order. */
+  private walk(e: HistEvent): HistEvent[] {
+    if (this.track?.ids.includes(e.id)) return this.track.ids.map(id => EVENT.get(id)).filter((x): x is HistEvent => !!x);
+    return EVENTS.filter(x => x.scope === 'china');
+  }
+  /** The event before / after the open one. */
+  neighbor(dir: number): HistEvent | undefined {
+    if (!this.event) return undefined;
+    const list = this.walk(this.event);
+    const i = list.indexOf(this.event);
+    return i >= 0 ? list[i + dir] : undefined;
+  }
+
   private renderEvent(e: HistEvent): void {
     const L = lang;
-    const list = EVENTS.filter(x => x.scope === 'china');
+    const list = this.walk(e);
+    const onTrack = !!this.track?.ids.includes(e.id);
     const i = list.indexOf(e);
     const place = e.place ? PLACE.get(e.place) : undefined;
     const era = ERAS.find(x => x.scope === e.scope && e.year >= x.start && e.year <= x.end && !x.lane) ?? ERAS.find(x => x.scope === e.scope && e.year >= x.start && e.year <= x.end);
@@ -404,7 +430,7 @@ export class Card {
     const twin = LIFE.find(l => lifeEvent(l) === e);
     const rawModel = (!e.model?.hero && twin?.model) ? twin.model : (e.model ?? KIND_MODEL[e.kind]);
     const evModel: ModelRecipe = rawModel.year !== undefined ? rawModel : { ...rawModel, year: e.year };
-    this.setHero(evModel, kindName(e.kind), `var(--k-${e.kind})`, i >= 0 ? [i + 1, list.length] : null,
+    this.setHero(evModel, kindName(e.kind), `var(--k-${e.kind})`, onTrack ? this.track!.label(i + 1, list.length) : i >= 0 ? [i + 1, list.length] : null,
       i > 0 ? () => this.hooks.open(list[i - 1]) : undefined, i >= 0 && i < list.length - 1 ? () => this.hooks.open(list[i + 1]) : undefined);
     const placeEl = place
       ? (this.hooks.place
@@ -422,7 +448,7 @@ export class Card {
       h('div', { class: 'acts' }, playBtn, e.wiki ? this.wikiBtn(e.wiki, tr(e.title, L)) : null, learnBtn),
       e.points.length ? this.sec(t('keyPoints'), true, h('ul', { class: 'points' }, ...e.points.map(p => h('li', { text: tr(p, L) })))) : null,
       e.people?.length ? this.sec(t('people'), true, h('div', { class: 'people' }, ...e.people.map(p => this.personChip(p)))) : null,
-      units.length ? this.sec(t('textbook'), true, h('ul', { class: 'units' }, ...units)) : null,
+      units.length ? this.sec(t('textbook'), false, h('ul', { class: 'units' }, ...units)) : null,
       evTrails.length ? this.sec(t('trails'), true,
         h('div', { class: 'people card-trails', 'data-testid': 'card-trails' },
           ...evTrails.map(({ trail, stopIndex }) =>
@@ -434,11 +460,11 @@ export class Card {
               style: `--tc:${trail.color}`,
               onclick: () => this.hooks.trail?.(trail, stopIndex),
             }, `${tr(trail.title, L)} (${stopIndex + 1}/${trail.stops.length})`)))) : null,
-      this.sec(t('worldSync'), true,
+      this.sec(t('worldSync'), false,
         h('div', { class: 'card-world', 'data-testid': 'card-world' },
           h('b', { class: 'cw-title', text: tr(wsync.title, L) }),
           h('p', { class: 'cw-note', text: tr(wsync.note, L) }))),
-      this.sec(t('sources'), true,
+      this.sec(t('sources'), false,
         h('div', { class: 'card-sources', 'data-testid': 'card-sources', 'data-source-kind': src.kind },
           h('p', { class: 'src-prov', text: tr(src.provenance, L) }),
           h('ul', { class: 'units src-list' }, ...src.classics.map(c => h('li', { text: tr(c, L) }))),

@@ -9,6 +9,19 @@ async function switchLang(page: Page): Promise<void> {
   await page.locator('.b-lang').click();
 }
 
+/** Practice & review lives at the foot of the learning path: the quiz and the textbook course. */
+async function practice(page: Page, act: 'path-quiz' | 'path-course'): Promise<void> {
+  const path = page.locator('[data-testid=path]');
+  if (!(await path.isVisible())) await page.locator('.b-path').click();
+  await path.locator(`[data-act=${act}]`).click();
+}
+
+/** Unfolds a card or period section (reference material starts folded). */
+async function unfold(page: Page, sel: string): Promise<void> {
+  const d = page.locator(sel).first();
+  if (!(await d.evaluate(el => (el as HTMLDetailsElement).open))) await d.locator(':scope > summary').click();
+}
+
 test.describe('Ages atlas', () => {
   test('localizes the initial loading screen before app scripts load', async ({ browser }) => {
     const cases = [
@@ -38,8 +51,7 @@ test.describe('Ages atlas', () => {
   test('keeps quizzes and card navigation separate from timeline playback', async ({ page }) => {
     await openApp(page, 'y=700&lang=en');
     await page.locator('.tl-play').click();
-    await page.locator('.b-hub').click();
-    await page.locator('.b-quiz').click();
+    await practice(page, 'path-quiz');
     expect.soft(await page.evaluate(() => (window as any).__atlas.timeline.playing)).toBe(false);
     await page.locator('.qz-mode[data-mode=locate]').click();
     await page.locator('.quiz [data-act=start]').click();
@@ -440,8 +452,7 @@ test.describe('Ages atlas', () => {
   test('quiz: answers when / where / order questions and shows the score', async ({ page }) => {
     const errs = watchErrors(page);
     await openApp(page, 'y=700&lang=en');
-    await page.locator('.b-hub').click();
-    await page.locator('.b-quiz').click();
+    await practice(page, 'path-quiz');
     await page.locator('[data-act=start]').click();
     const quiz = page.locator('.quiz');
     const total = await page.evaluate(() => (window as any).__atlas.quiz.qs.length);
@@ -786,9 +797,9 @@ test.describe('Ages atlas', () => {
     await page.keyboard.press('Escape');
     await expect(path).toBeVisible();
     // a lesson runs over the path and leaves the path underneath
-    await path.locator('.pl.open [data-lesson=g7b-1]').click();
+    await path.locator('.pl.open [data-lesson=ch5-1]').click();
     await expect(page.locator('[data-testid=lesson]')).toBeVisible();
-    await expect(page).toHaveURL(/#lesson=g7b-1/);
+    await expect(page).toHaveURL(/#lesson=ch5-1/);
     await page.keyboard.press('Escape');
     await expect(path).toBeVisible();
     await expect(path.locator('[data-act=path-resume]')).toBeVisible();
@@ -803,11 +814,66 @@ test.describe('Ages atlas', () => {
     expect(errs).toEqual([]);
   });
 
+  test('learning focus: a chapter numbers its events, zooms the timeline and steers the card; a lesson quiets the map', async ({ page }) => {
+    const errs = watchErrors(page);
+    await openApp(page, 'lang=en');
+    const path = page.locator('[data-testid=path]');
+    await path.locator('[data-chapter=sui-tang]').click();
+    await expect.poll(() => state(page).then(s => (s as any).focus?.mode)).toBe('chapter');
+    // the events to know are numbered on the map, as in the list
+    await expect(page.locator('.pin.fk')).toHaveCount(6);
+    await expect(page.locator('#stage')).toHaveClass(/\bfocusing\b/);
+    await expect(path.locator('.pl.open .pl-kn').first()).toHaveText('1');
+    // the timeline zooms to the chapter and can widen back to all of history
+    const tl = page.locator('.tl');
+    await expect(tl).toHaveClass(/\bzoomed\b/);
+    await expect(page.locator('.tl-ch[data-tl-chapter=sui-tang]')).toHaveClass(/\bcur\b/);
+    await page.locator('.tl-zoom').click();
+    await expect(tl).not.toHaveClass(/\bzoomed\b/);
+    await page.locator('.tl-zoom').click();
+    await expect(tl).toHaveClass(/\bzoomed\b/);
+    // the line under the map names the chapter and the dynasty
+    await expect(page.locator('.amb')).toHaveText('Chapter 5 · Sui dynasty');
+    // an event card opened from the chapter steps through the chapter's events
+    await path.locator('.pl.open .pl-key[data-ev=grand_canal]').click();
+    await expect(page.locator('[data-testid=card-track]')).toHaveText('Chapter 5 · 2/6');
+    await page.keyboard.press('ArrowRight');
+    await expect.poll(() => state(page).then(s => s.event)).toBe('keju');
+    await page.keyboard.press('Escape');
+    // a lesson: "chapter 5 · lesson 1", the dynasty's figures step aside, a quick recall after three steps
+    await path.locator('.pl.open [data-lesson=ch5-1]').click();
+    const ls = page.locator('[data-testid=lesson]');
+    await expect(ls.locator('.ls-k')).toHaveText('Chapter 5 · lesson 1');
+    await expect.poll(() => state(page).then(s => (s as any).focus?.mode)).toBe('lesson');
+    await expect(page.locator('#stage')).toHaveClass(/\bfocus-quiet\b/);
+    for (let i = 0; i < 3; i++) await ls.locator('[data-act=next]').click();
+    await expect(ls.locator('[data-testid=lesson-recall]')).toBeVisible();
+    await ls.locator('.ls-opt').first().click();
+    await expect(ls.locator('.ls-res')).toBeVisible();
+    await ls.locator('[data-act=next]').click();
+    await expect(ls.locator('.ls-n')).toContainText('4 /');
+    await page.keyboard.press('Escape');
+    await expect(path).toBeVisible();
+    // This period leads with the chapter and can open it on the path
+    await page.locator('.b-details').click();
+    await expect(page.locator('[data-testid=period-learn]')).toContainText('Learning path · chapter 5');
+    await page.locator('[data-act=period-learn]').click();
+    await expect(path.locator('.pl.open [data-chapter=sui-tang]')).toBeVisible();
+    // the timeline's chapter row opens a chapter on the path
+    await page.locator('.tl-zoom').click();
+    await page.locator('.tl-ch[data-tl-chapter=song-yuan]').click();
+    await expect(path.locator('.pl.open [data-chapter=song-yuan]')).toBeVisible();
+    await expect.poll(() => state(page).then(s => s.year)).toBe(960);
+    // Explore keeps the free-roaming material only
+    await page.locator('.b-hub').click();
+    await expect(page.locator('.hub-tabs [data-tab]')).toHaveCount(2);
+    expect(errs).toEqual([]);
+  });
+
   test('course picker lists each unit with its lesson and unit test', async ({ page }) => {
     const errs = watchErrors(page);
     await openApp(page, 'y=1950&lang=zh');
-    await page.locator('.b-hub').click();
-    await page.locator('.b-learn').click();
+    await practice(page, 'path-course');
     const course = page.locator('.course');
     await expect(course).toBeVisible();
     await expect(course.locator('.tabs button')).toHaveCount(5);
@@ -825,8 +891,7 @@ test.describe('Ages atlas', () => {
   test('history course runs a lesson through its check to a score', async ({ page }) => {
     const errs = watchErrors(page);
     await openApp(page, 'lang=zh');
-    await page.locator('.b-hub').click();
-    await page.locator('.b-learn').click();
+    await practice(page, 'path-course');
     await page.locator('.course .tabs [data-book=g7a]').click();
     await page.locator('.course .u-ls[data-lesson="g7a-3"]').click();
     await expect(page.locator('.course')).toBeHidden();
@@ -843,7 +908,8 @@ test.describe('Ages atlas', () => {
     await page.keyboard.press('ArrowRight');
     await expect(ls.locator('.ls-n')).toHaveText('2 / 10');
     await shot(page, 'desktop-lesson');
-    while (await ls.locator('.ls-h').count()) await ls.locator('[data-act=next]').click();
+    // through the steps (a quick recall every three steps is skipped) to the check
+    while (await ls.locator('.ls-h, [data-testid=lesson-recall]').count()) await ls.locator('[data-act=next]').click();
     for (let i = 0; i < 4; i++) {
       await expect(ls.locator('.ls-q')).toBeVisible();
       if (await ls.locator('[data-act=check]').count()) {
@@ -1001,6 +1067,7 @@ test.describe('Ages atlas', () => {
 
     // 1. Sources & historical uncertainty on Event Card
     const cardSources = page.locator('[data-testid=card-sources]');
+    await unfold(page, '.card details.sec:has([data-testid=card-sources])');
     await expect(cardSources).toBeVisible();
     await expect(cardSources).toContainText('秦始皇本纪');
     await expect(cardSources).toContainText('前221年');
@@ -1012,6 +1079,9 @@ test.describe('Ages atlas', () => {
     const pv = page.locator('.menu.pv');
     await expect(pv).toBeVisible();
     await expect(pv.locator('[data-testid=period-sources]')).toContainText('中国历史地图集');
+    // sources and compare sit in the fold under the learner's summary
+    await expect(pv.locator('[data-testid=period-learn]')).toContainText('第3讲');
+    await unfold(page, '.pv-more');
 
     const cmpSelect = pv.locator('[data-testid=compare-select]');
     await expect(cmpSelect).toBeVisible();
@@ -1042,8 +1112,7 @@ test.describe('Ages atlas', () => {
     await page.keyboard.press('Escape');
 
     // 3. Lesson resumption (including check phase answers), mistake review & progress backup + undo reset
-    await page.locator('.b-hub').click();
-    await page.locator('.b-learn').click();
+    await practice(page, 'path-course');
     const course = page.locator('.course');
     await expect(course).toBeVisible();
     await course.locator('.tabs [data-book=g7a]').click();
@@ -1056,8 +1125,7 @@ test.describe('Ages atlas', () => {
     await page.keyboard.press('Escape');
 
     // Re-open course picker: Resume button restores step 3
-    await page.locator('.b-hub').click();
-    await page.locator('.b-learn').click();
+    await practice(page, 'path-course');
     const resumeBtn = course.locator('[data-act=resume-lesson]');
     await expect(resumeBtn).toBeVisible();
     await expect(resumeBtn).toContainText('3');
@@ -1066,8 +1134,7 @@ test.describe('Ages atlas', () => {
     await page.keyboard.press('Escape');
 
     // Progress backup export / reset / undo-reset / import (including typed mistakes)
-    await page.locator('.b-hub').click();
-    await page.locator('.b-learn').click();
+    await practice(page, 'path-course');
     await course.locator('[data-act=toggle-backup]').click();
     const backup = course.locator('[data-testid=progress-backup]');
     await expect(backup).toBeVisible();
@@ -1112,6 +1179,7 @@ test.describe('Ages atlas', () => {
 
     // 1. World Synchronism on Event Card & Period Details
     const cardWorld = page.locator('[data-testid=card-world]');
+    await unfold(page, '.card details.sec:has([data-testid=card-world])');
     await expect(cardWorld).toBeVisible();
     await expect(cardWorld).toContainText('布匿战争');
 
@@ -1123,6 +1191,7 @@ test.describe('Ages atlas', () => {
     // 3. Clickable Textbook Unit on Event Card -> launches Lesson player
     await page.goto('/?lowfx=1#e=qin_unify&lang=zh');
     await expect.poll(() => page.evaluate(() => (window as any).__atlas?.ready)).toBe(true);
+    await unfold(page, '.card details.sec:has([data-act=open-lesson])');
     await page.locator('.card [data-act=open-lesson]').first().click();
     const ls = page.locator('[data-testid=lesson]');
     await expect(ls).toBeVisible();
@@ -1145,6 +1214,7 @@ test.describe('Ages atlas', () => {
     // 5. Period Details World Synchronism
     await page.locator('.b-details').click();
     const pv = page.locator('.menu.pv');
+    await unfold(page, '.pv-more');
     await expect(pv.locator('[data-testid=period-world]')).toBeVisible();
     await page.keyboard.press('Escape');
 
@@ -1404,6 +1474,7 @@ test.describe('Ages atlas', () => {
     })).toBe(true);
 
     // 3. Language switching preserves Period Comparison & answered Phase Quick Check state
+    await unfold(page, '.pv-more');
     const cmpSelect = pv.locator('[data-testid=compare-select]');
     await cmpSelect.selectOption('-221');
     await expect(pv.locator('[data-testid=compare-card]')).toBeVisible();
@@ -1444,8 +1515,7 @@ test.describe('Ages atlas', () => {
     const scrollAfter = await page.evaluate(() => document.querySelector<HTMLElement>('.card-body')!.scrollTop);
     expect(scrollAfter).toBeGreaterThan(0);
 
-    await page.locator('.b-hub').click();
-    await page.locator('.b-quiz').click();
+    await practice(page, 'path-quiz');
     const qz = page.locator('section.quiz');
     await expect(qz).toBeVisible();
     const qzEra = qz.locator('[data-testid=quiz-era]');

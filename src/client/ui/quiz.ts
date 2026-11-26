@@ -23,7 +23,7 @@ export class Quiz {
   private era = '';
   private mode: 'events' | 'locate' | 'mistakes' = 'events';
   /** a learning-path chapter's check (5 questions from its years, its events to know first) */
-  private chapter: Chapter | null = null;
+  chapter: Chapter | null = null;
   /** where the quiz is, so a language switch re-renders it in place */
   private phase: 'setup' | 'ask' | 'done' = 'setup';
   private answered = false;

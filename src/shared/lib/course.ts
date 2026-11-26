@@ -60,7 +60,7 @@ export const lessonQuestions = (lesson: Lesson, seed = Date.now()): Asked[] => {
 };
 
 /** Four year options around `y`, the same side of the BCE/CE line. */
-function years(y: number, r: () => number): number[] {
+export function years(y: number, r: () => number): number[] {
   const span = y < -1000 ? 200 : y < 0 ? 60 : y < 1800 ? 50 : 8;
   const out = new Set([y]);
   for (let guard = 0; out.size < 4 && guard < 200; guard++) {
@@ -69,6 +69,24 @@ function years(y: number, r: () => number): number[] {
     if (c !== 0 && (y < 0) === (c < 0) && Math.abs(c - y) >= Math.max(2, span / 10)) out.add(c);
   }
   return shuffle([...out], r);
+}
+
+/**
+ * A quick recall question in the middle of a lesson (not scored): "when did …?" about one of the events just taught,
+ * picked with `seed`. Null when the event's year cannot make four distinct options (deep prehistory).
+ */
+export function recallQuestion(evId: string, seed: number): Asked | null {
+  const e = EVENT.get(evId);
+  if (!e || e.year < -10_000) return null;
+  const r = rng(seed);
+  const opts = years(e.year, r);
+  if (opts.length < 4) return null;
+  return {
+    kind: 'choice', ev: e.id, answer: opts.indexOf(e.year),
+    prompt: both(l => (l === 'zh' ? `「${e.title.zh}」发生在哪一年？` : `When did “${e.title.en}” happen?`)),
+    options: opts.map(y => both(l => formatYear(y, l))),
+    why: both(l => `${tr(e.title, l)}${l === 'zh' ? '：' : ': '}${formatYear(e.year, l)}`),
+  };
 }
 
 /** The unit test: the unit's lesson checks, up to three "when" questions on core events and up to two on map phases. */

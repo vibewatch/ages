@@ -1,3 +1,4 @@
+import { CHAPTERS, chapterAt, type Chapter } from '../../shared/data/chapters.ts';
 import { EVENTS } from '../../shared/data/events.ts';
 import { ERAS } from '../../shared/data/eras.ts';
 import { tr } from '../../shared/data/i18n.ts';
@@ -17,6 +18,9 @@ import { h, iconBtn, setIcon } from './dom.ts';
  * speed toggle (0.5× → 1× → 2×), then the track — the dynasty's territorial area as a stepped curve, event ticks, coloured era bands
  * (two lanes for overlapping regimes), the year axis and a draggable thumb. The axis is piecewise-linear (see
  * shared/lib/timeline.ts) so the dense recent centuries get room while prehistory stays visible.
+ *
+ * In the simple mode (the default) a row of the learning path's ten chapters runs above the dynasties; while a chapter is
+ * being learned the track zooms to its years (the learner can widen it back to all of history).
  */
 export class Timeline {
   readonly el: HTMLElement;
@@ -37,6 +41,13 @@ export class Timeline {
   private axis: HTMLElement;
   private phases: HTMLElement;
   private flag: HTMLElement;
+  private chapterRow: HTMLElement;
+  private zoomBtn: HTMLButtonElement;
+  /** the chapter being learned, and whether the track is zoomed to it */
+  private chapter: Chapter | null = null;
+  private zoomed = false;
+  /** the visible window of the axis, in axis units (0–1) */
+  private win: [number, number] = [0, 1];
   year: Year = 0;
   playing = false;
   onYear: (y: Year, final: boolean) => void = () => {};
@@ -45,6 +56,10 @@ export class Timeline {
   onPlay: (on: boolean) => void = () => {};
   /** Fires on every readout change (year, era), e.g. for the period stats and chronicle. */
   onRender: (y: Year) => void = () => {};
+  /** a chapter of the chapter row was picked */
+  onChapter: (c: Chapter) => void = () => {};
+  /** the simple / detailed mode changed */
+  onDetail: (on: boolean) => void = () => {};
   private selected: string | null = null;
 
   /** Simple (the default: dynasties and the key events) or detailed (every chronicle entry, territorial phases and the
@@ -59,6 +74,39 @@ export class Timeline {
     this.detailBtn.textContent = t(on ? 'tlDetailOn' : 'tlDetailOff');
     this.detailBtn.title = t('tlDetailTitle');
     if (remember) save('tlDetail', on);
+    this.onDetail(on);
+  }
+
+  /** Where `y` sits on the visible track (0–1; outside when zoomed in). */
+  private pos(y: Year): number { return (yearToT(y) - this.win[0]) / (this.win[1] - this.win[0]); }
+  private pct(y: Year): string { return `${(this.pos(y) * 100).toFixed(3)}%`; }
+  private width(a: Year, b: Year, min = 0): string { return `${Math.max(min, (this.pos(b) - this.pos(a)) * 100).toFixed(3)}%`; }
+
+  /**
+   * Follows the learning focus: the chapter being learned is marked on the chapter row and the track zooms to its years
+   * (unless the learner widened it). Null returns to the whole of history.
+   */
+  setChapter(c: Chapter | null): void {
+    if (c === this.chapter) return;
+    this.chapter = c;
+    this.zoomed = !!c;
+    this.applyZoom();
+  }
+
+  private applyZoom(): void {
+    const c = this.zoomed ? this.chapter : null;
+    if (c) {
+      const a = yearToT(c.span[0]), b = yearToT(Math.min(c.span[1], tToYear(1)));
+      const pad = (b - a) * 0.04;
+      this.win = [Math.max(0, a - pad), Math.min(1, b + pad)];
+    } else this.win = [0, 1];
+    this.el.classList.toggle('zoomed', !!c);
+    this.zoomBtn.hidden = !this.chapter;
+    this.zoomBtn.setAttribute('aria-pressed', String(!!c));
+    this.zoomBtn.textContent = c ? t('tlWhole') : t('tlChapter', { n: this.chapter?.n ?? '' });
+    this.zoomBtn.title = c ? t('tlWholeTitle') : t('tlChapterTitle');
+    this.build();
+    this.select(this.selected);
   }
 
   constructor() {
@@ -83,11 +131,13 @@ export class Timeline {
     this.thumb = h('div', { class: 'tl-thumb' }, h('i'), this.flag);
     this.tip = h('div', { class: 'tl-tip' });
     this.curve = h('div', { class: 'tl-curve', 'aria-hidden': 'true' });
-    this.track = h('div', { class: 'tl-track', role: 'slider', tabindex: 0, 'aria-label': t('era'), 'aria-valuemin': YEAR_MIN, 'aria-valuemax': YEAR_MAX }, this.curve, this.dots, this.bands, this.phases, this.axis, this.thumb, this.tip);
+    this.chapterRow = h('div', { class: 'tl-chapters' });
+    this.zoomBtn = h('button', { type: 'button', class: 'ib tl-zoom', hidden: true, onclick: () => { this.zoomed = !this.zoomed; this.applyZoom(); } });
+    this.track = h('div', { class: 'tl-track', role: 'slider', tabindex: 0, 'aria-label': t('era'), 'aria-valuemin': YEAR_MIN, 'aria-valuemax': YEAR_MAX }, this.curve, this.chapterRow, this.dots, this.bands, this.phases, this.axis, this.thumb, this.tip);
     this.head = h('div', { class: 'tl-head' }, this.eraEl, this.yearEl, this.rulerEl);
     const ctl = h('div', { class: 'tl-ctl' },
       iconBtn('prev', t('prevStop'), () => this.step(-1), 'tl-prev'), this.playBtn, iconBtn('next', t('nextStop'), () => this.step(1), 'tl-next'),
-      h('i', { class: 'tools-sep', 'aria-hidden': 'true' }), this.speedBtn, this.detailBtn);
+      h('i', { class: 'tools-sep', 'aria-hidden': 'true' }), this.speedBtn, this.detailBtn, this.zoomBtn);
     this.el = h('div', { class: 'tl' }, ctl, this.track);
     this.setDetail(load<boolean>('tlDetail', false, v => typeof v === 'boolean'));
     this.build();
@@ -96,22 +146,28 @@ export class Timeline {
   }
 
   private build(): void {
+    this.chapterRow.replaceChildren(...CHAPTERS.map(c => h('button', {
+      type: 'button', tabindex: -1, class: 'tl-ch' + (c === this.chapter ? ' cur' : ''), 'data-tl-chapter': c.id,
+      style: `left:${this.pct(c.span[0])};width:${this.width(c.span[0], Math.min(c.span[1], tToYear(1)))}`,
+      title: `${t('pathChapterN', { n: c.n })} · ${tr(c.title, lang)}`,
+      onclick: (ev: Event) => { ev.stopPropagation(); this.onChapter(c); },
+    }, h('b', { text: String(c.n) }), h('span', { text: tr(c.short, lang) }))));
     this.bands.replaceChildren(...ERAS.filter(e => e.scope === 'china').map(e => {
-      const l = yearToT(e.start), r = yearToT(e.end);
       const b = h('button', {
-        type: 'button', tabindex: -1, class: `tl-band lane${e.lane ?? 0}`, style: `left:${l * 100}%;width:${Math.max(0.15, (r - l) * 100)}%;--c:${e.color}`,
+        type: 'button', tabindex: -1, class: `tl-band lane${e.lane ?? 0}`, style: `left:${this.pct(e.start)};width:${this.width(e.start, e.end, 0.15)};--c:${e.color}`,
         title: `${tr(e.name, lang)} ${formatYear(e.start, lang)}–${formatYear(e.end, lang)}`, 'data-era': e.id,
         onclick: (ev: Event) => { ev.stopPropagation(); this.onEra(e.id); },
       });
-      b.append(h('span', { text: tr(e.short, lang) }));
+      // a short form for narrow bands: "W. Han" → "Han"
+      b.append(h('span', { text: tr(e.short, lang), 'data-compact': lang === 'en' ? tr(e.short, 'en').replace(/^(W|E|N|S|Later|Former)\.?\s+/, '') : tr(e.short, 'zh').slice(0, 1) }));
       return b;
     }));
     this.curve.replaceChildren(this.areaCurve());
-    this.phases.replaceChildren(...SNAPSHOTS.filter(x => x.year >= -2070).map(x => h('i', { style: `left:${yearToT(x.year) * 100}%` })));
+    this.phases.replaceChildren(...SNAPSHOTS.filter(x => x.year >= -2070).map(x => h('i', { style: `left:${this.pct(x.year)}` })));
     // textbook events on top of the (fainter) imported chronicle entries
     this.dots.replaceChildren(...EVENTS.filter(e => e.scope === 'china').sort((a, b) => b.weight - a.weight).map(e => {
       // ~900 dots: pointer targets only, so Tab doesn't walk through them (the slider, search and period list cover the keyboard)
-      const d = h('button', { type: 'button', tabindex: -1, class: `tl-dot w${e.weight} k-${e.kind}`, style: `left:${yearToT(e.year) * 100}%`, 'data-id': e.id, 'aria-label': tr(e.title, lang) });
+      const d = h('button', { type: 'button', tabindex: -1, class: `tl-dot w${e.weight} k-${e.kind}`, style: `left:${this.pct(e.year)}`, 'data-id': e.id, 'aria-label': tr(e.title, lang) });
       d.addEventListener('pointerenter', () => this.showTip(e, d));
       d.addEventListener('pointerleave', () => this.tip.classList.remove('on'));
       d.addEventListener('click', ev => { ev.stopPropagation(); this.onEvent(e); });
@@ -134,7 +190,7 @@ export class Timeline {
     });
     const first = (yearToT(snaps[0].year) * 1000).toFixed(1), last = (yearToT(tToYear(1)) * 1000).toFixed(1);
     const svg = document.createElementNS(NS, 'svg');
-    svg.setAttribute('viewBox', '0 0 1000 1000');
+    svg.setAttribute('viewBox', `${(this.win[0] * 1000).toFixed(1)} 0 ${((this.win[1] - this.win[0]) * 1000).toFixed(1)} 1000`);
     svg.setAttribute('preserveAspectRatio', 'none');
     const fill = document.createElementNS(NS, 'polygon');
     fill.setAttribute('points', `${first},1000 ${pts.join(' ')} ${last},1000`);
@@ -147,7 +203,8 @@ export class Timeline {
 
   private layoutAxis(): void {
     const w = this.track.clientWidth || 600;
-    this.axis.replaceChildren(...ticks(w).map(y => h('span', { style: `left:${yearToT(y) * 100}%`, text: formatYear(y, lang, { short: true }).replace('约', '').replace('c. ', '').replace(' million years ago', 'M ya') })));
+    const ys = this.zoomed && this.chapter ? zoomTicks(tToYear(this.win[0]), tToYear(this.win[1]), w) : ticks(w);
+    this.axis.replaceChildren(...ys.map(y => h('span', { style: `left:${this.pct(y)}`, text: formatYear(y, lang, { short: true }).replace('约', '').replace('c. ', '').replace(' million years ago', 'M ya') })));
     // drop axis labels that would collide with the previous visible one
     let right = -Infinity;
     for (const s of this.axis.children as HTMLCollectionOf<HTMLElement>) {
@@ -155,10 +212,19 @@ export class Timeline {
       s.style.visibility = !r.width || r.left >= right + 6 ? 'visible' : 'hidden';
       if (s.style.visibility === 'visible' && r.width) right = r.right;
     }
-    // hide band labels that do not fit
+    // band labels that do not fit try their short form, then hide; so do the chapter names (the number stays)
     for (const b of this.bands.children as HTMLCollectionOf<HTMLElement>) {
       const s = b.firstElementChild as HTMLElement;
+      const full = s.dataset.full ?? s.textContent ?? '';
+      s.dataset.full = full;
+      s.textContent = full;
+      if (s.scrollWidth > b.clientWidth - 2 && s.dataset.compact) s.textContent = s.dataset.compact;
       s.style.visibility = s.scrollWidth <= b.clientWidth - 2 ? 'visible' : 'hidden';
+    }
+    for (const b of this.chapterRow.children as HTMLCollectionOf<HTMLElement>) {
+      const s = b.querySelector('span')!;
+      s.style.display = '';
+      if (b.scrollWidth > b.clientWidth + 1) s.style.display = 'none';
     }
   }
 
@@ -172,10 +238,11 @@ export class Timeline {
     let drag = false;
     const at = (cx: number) => {
       const r = this.track.getBoundingClientRect();
-      return tToYear(Math.min(1, Math.max(0, (cx - r.left) / r.width)));
+      const u = Math.min(1, Math.max(0, (cx - r.left) / r.width));
+      return tToYear(this.win[0] + u * (this.win[1] - this.win[0]));
     };
     this.track.addEventListener('pointerdown', e => {
-      if ((e.target as HTMLElement).closest('.tl-dot,.tl-band')) return;
+      if ((e.target as HTMLElement).closest('.tl-dot,.tl-band,.tl-ch')) return;
       drag = true;
       this.el.classList.add('dragging');
       this.track.setPointerCapture(e.pointerId);
@@ -201,8 +268,9 @@ export class Timeline {
       // re-synced whenever something else moved the year
       if (normYear(tToYear(playT)) !== this.year) playT = yearToT(this.year);
       // ~100 s for the whole axis; slower inside dense periods because the axis is non-linear
-      playT += (dt * this.speed) / 100;
-      if (playT >= 1) { this.set(tToYear(1), true); this.setPlaying(false); } else {
+      // ~100 s for the whole axis, a chapter in about 20 s when zoomed to it
+      playT += (dt * this.speed * Math.max(0.2, this.win[1] - this.win[0])) / 100;
+      if (playT >= this.win[1]) { this.set(tToYear(this.win[1]), true); this.setPlaying(false); } else {
         this.set(tToYear(playT), false);
         if (this.playing) raf = requestAnimationFrame(tick);
       }
@@ -224,7 +292,8 @@ export class Timeline {
   setPlaying(on: boolean): void {
     if (on === this.playing) return;
     this.playing = on;
-    if (on && yearToT(this.year) >= 0.999) this.set(tToYear(0), false);
+    // from the start of the visible window when at (or past) its end
+    if (on && (yearToT(this.year) >= this.win[1] - 0.001 || yearToT(this.year) < this.win[0])) this.set(tToYear(this.win[0]), false);
     setIcon(this.playBtn, on ? 'pause' : 'play');
     this.playBtn.title = this.playBtn.ariaLabel = t(on ? 'pause' : 'play');
     this.el.classList.toggle('playing', on);
@@ -249,7 +318,10 @@ export class Timeline {
 
   private render(): void {
     const y = this.year;
-    this.thumb.style.left = `${yearToT(y) * 100}%`;
+    this.thumb.style.left = this.pct(y);
+    this.thumb.hidden = this.pos(y) < -0.001 || this.pos(y) > 1.001;
+    const here = chapterAt(y).id;
+    for (const b of this.chapterRow.children as HTMLCollectionOf<HTMLElement>) b.classList.toggle('here', b.dataset.tlChapter === here);
     this.yearEl.textContent = formatYear(y, lang);
     const era = eraAt(y);
     if (era?.id !== this.lastEraId) {
@@ -277,9 +349,19 @@ export class Timeline {
     this.speedBtn.title = t('speed');
     this.speedBtn.setAttribute('aria-label', `${t('speed')} ${this.speed}×`);
     this.setDetail(this.detail);
-    this.build();
-    this.select(this.selected);
+    this.applyZoom();
   }
+}
+
+/** Round years across a zoomed window, about one label per 90 px. */
+function zoomTicks(a: Year, b: Year, w: number): Year[] {
+  const want = Math.max(2, Math.floor(w / 90));
+  const span = b - a;
+  const steps = [1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 5000, 10_000, 50_000, 100_000, 200_000, 500_000];
+  const step = steps.find(s => span / s <= want) ?? 1_000_000;
+  const out: Year[] = [];
+  for (let y = Math.ceil(a / step) * step; y <= b; y += step) out.push(y === 0 ? 1 : y);
+  return out;
 }
 
 

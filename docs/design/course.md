@@ -11,6 +11,8 @@ It is modelled on pocket-planet's geography classroom (lesson → steps that dri
 |---|---|
 | Types (`Lesson`, `LessonStep`, `Check`) | `src/shared/data/types.ts` |
 | Lessons, one file per book | `src/shared/data/lessons/{g7a,g7b,g8a,g8b,hs1}.ts`, gathered in `lessons/index.ts` |
+| Learning-path lessons for chapters 2–7 | `src/shared/data/lessons/ch{2..7}.ts` (`PATH_LESSONS`; not in the textbook course) |
+| Learning-path rules | `tests/unit/path-lessons.test.ts`, shared rules in `tests/unit/lesson-rules.ts` |
 | Questions, unit test, course order | `src/shared/lib/course.ts` |
 | Course picker (历史课堂 dialog) | `src/client/ui/learn.ts` |
 | Lesson player and unit test | `src/client/ui/lesson.ts` |
@@ -31,6 +33,14 @@ It is modelled on pocket-planet's geography classroom (lesson → steps that dri
    (`periodQuestion`), shuffled.
 
 Progress (best score per lesson and unit test) is kept in localStorage. `#lesson=<id>` opens a lesson directly.
+
+## Learning-path lessons
+
+The learning path (`docs/design/learning-redesign.md`) teaches chapters 2–7 with its own short lessons, `ch<n>-1` …: 2–4
+per chapter, 5–9 steps and 3–5 checks each, at most 10 minutes, in time order, never repeating an event within the
+chapter, and together teaching every event the chapter lists to know. They follow the same rules as textbook lessons;
+`book`/`unit` name the closest textbook unit. In the player, every third step is followed by an unscored quick recall
+("when did …?") about a step just read.
 
 ## Writing a lesson
 

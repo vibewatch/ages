@@ -4,7 +4,7 @@
 starting from zero, while keeping the 3D atlas as the stage and keeping exam review as one use among others.
 
 This document records the review of the app as of v0.1 (Nov 2026), the design that answers it, what has been built
-(phase A), and the refactor plan for the rest.
+(phases A–C), and what is still planned.
 
 ## 1. Review: what got in the learner's way
 
@@ -106,12 +106,41 @@ Each open chapter now reads top to bottom as a learning sequence:
 * **Check it.** A 5-question **chapter check** (`makeQuiz` with `range` and `prefer`: the chapter's years, its events to know first), stored as `scores['chapter:<id>']`. A chapter is done when its check is passed (≥ 60 %) or all its lessons are. When every lesson is passed, the main button becomes "take the check".
 * **Spaced review.** A missed question answered right leaves the queue and comes back after 1, 3, then 7 days. After that it counts as learned, and a miss resets it (`Progress.spaced`, `promoteDue`). The path shows "N questions are due for review" under the main button. The schedule is included in progress backups.
 
-### Phase C: simplify the shell
-* **Split `main.ts`** (≈ 860 lines) into `app/router.ts` (deep links and hashchange), `app/shell.ts` (toolbar, HUD, insets) and `app/flows.ts` (open event / era / place / lesson / quiz, mutually exclusive), with one `navigate(subject)` entry point instead of the twelve `openX` / `toggle` calls.
-* **One view stack.** Make `Panel` own the stack explicitly (`push` / `pop` / `replace`) instead of inferring it from `hidden` mutations. Esc and the close buttons then become `pop()`, and the path is the stack's root.
-* **Retire the hub's Study tab** once analytics or user tests show learners use Learn; Explore then holds only journeys and trails.
-* ~~**Timeline modes.**~~ Done: a *Simple / Detailed* toggle on the timeline card. Simple (the default) shows the dynasties and key events. Detailed adds every chronicle entry, the phase ticks, the rival-dynasty lane and the area curve. The choice is remembered.
-* **Migrate component CSS** from the slab rules to the v2 tokens, then delete the overrides (≈ 250 lines of `clip-path` and `--cut` rules).
+### Phase C: focus and depth (done)
+A second review (Nov 2026, desktop, phone and Chinese) found that the remaining problems were less about the look than
+about what the learner is asked to look at. What changed:
+
+* **Deeper imperial chapters.** The textbook gives 2070 BCE – 1840 (≈ 800 events) six lessons and 1840 – today
+  fourteen. Chapters 2–7 now have their own short lessons (`src/shared/data/lessons/ch<n>.ts`, ids `ch<n>-<k>`, 2–4 per
+  chapter, 5–9 steps, ≤ 10 min), in time order, together teaching every event to know. The textbook lessons stay in
+  *Practice › By textbook*. Rules: `tests/unit/path-lessons.test.ts` (shared lesson rules in `tests/unit/lesson-rules.ts`).
+* **Learning focus** (`src/client/app/focus.ts`). Derived, never stored, from the path's open chapter, the running
+  lesson and the chapter check, and handed to everything that shows history:
+  * *map* (`Atlas.setFocus`): the chapter's events to know (or the lesson's events, in teaching order) get numbered pins
+    that match the numbers in the panel; other pins fade; the current step's event pulses. In a lesson or a check the
+    dynasty's figures and buildings step aside; a check numbers nothing, so the map gives no answers away. Opening a
+    chapter frames all its events.
+  * *timeline*: a row of the ten chapters above the dynasties (simple mode); while learning, the track zooms to the
+    chapter (*All history* widens it again) and playback runs through the chapter. Narrow dynasty bands fall back to a
+    short name ("W. Han" → "Han"), so every major dynasty is labelled.
+  * *the line under the map*: "Chapter 5 · Tang dynasty" in the simple mode; the territorial phase title only in the
+    detailed mode. The simple mode also drops the neighbours' area ranking from the HUD.
+  * *card*: opened from a chapter or lesson, ← → step through its events ("Chapter 5 · 2/6") instead of all 928.
+* **Lessons you do, not only read.** Every three steps a quick, unscored recall question about a step just read; the
+  step's story is its main action; the header reads "Chapter 5 · lesson 2"; after a chapter's last lesson the next step
+  is its chapter check.
+* **Plain words first.** *This period* opens with the chapter (title, big idea, events to know, *Learn this chapter*),
+  then the borders right now; map sources, the world at the time and compare sit in a fold at the foot. The event card
+  folds its textbook, world and sources sections.
+* **Explore** holds journeys and thematic trails only; the course and the quiz live on the path.
+* **Shell split.** `main.ts` is the boot (≈ 60 lines). `app/app.ts` holds the flows with one `navigate(subject)` entry for
+  deep links, hash changes and search; `app/router.ts` turns links and hits into subjects; `app/shell.ts` builds the
+  toolbar, HUD and popovers and fits the panel. `Panel` is an explicit stack rooted at the path: views register how they
+  close and Esc calls `pop()`; the stack order still follows the views' `hidden` (views open themselves).
+* Timeline modes (Simple / Detailed) from the earlier plan are done.
+
+Still open: migrating the old slab component CSS to the v2 tokens and deleting the overrides; a content review of the
+new chapter lessons by a history teacher.
 
 ### Phase D: beyond the textbook
 * An optional **world lane** on the timeline (phase 2 roadmap) shown as context inside chapters ("meanwhile in Rome…").

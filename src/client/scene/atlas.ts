@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { formatArea, polityArea } from '../../shared/data/areas.ts';
 import { ERAS } from '../../shared/data/eras.ts';
-import { EVENTS } from '../../shared/data/events.ts';
+import { EVENT, EVENTS } from '../../shared/data/events.ts';
 import { tr, type Lang } from '../../shared/data/i18n.ts';
 import { RIVER_LABELS, WORKS, type Person, type RiverLabel } from '../../shared/data/jiangshan.ts';
 import { PLACE, PLACES, isCapital, mapName, riverName } from '../../shared/data/places.ts';
@@ -119,6 +119,8 @@ export class Atlas {
   private pendingCommit: (() => void) | null = null;
   eraReady = false;
   private storyMode = false;
+  /** learning focus: the events being learned (numbered in order) and whether the dynasty's scenery steps aside */
+  private learnFocus: { order: Map<string, number>; current: string | null; quiet: boolean } | null = null;
   private layoutDirty = true;
   private marks: Mark[] = [];
   private hover: Hover | null = null;
@@ -383,7 +385,9 @@ export class Atlas {
     }
     const models: LayoutItem[] = [];
     const represented = new Set<string>();
+    const quiet = this.learnFocus?.quiet ?? false;
     const available = (m: Mark) => this.layers.models && !this.pickHandler && (!this.storyMode || m.layer === 'base') &&
+      (!quiet || m.layer !== 'scenery') &&
       (!m.place || !!mapName(m.place, this.year)) && (this.isSelected(m) || this.fx.dist <= m.maxD);
     const sceneryEvents = new Set<string>();
     for (const m of this.marks) if (m.layer === 'scenery' && m.event && available(m)) sceneryEvents.add(m.event);
@@ -427,7 +431,8 @@ export class Atlas {
       }
     }
     for (const [id, target] of this.pins) {
-      target.label.off = represented.has(id) || this.storyMode;
+      // a numbered (focused) pin stays up even over its model: the number is what the lesson refers to
+      target.label.off = (represented.has(id) && !this.learnFocus?.order.has(id)) || this.storyMode;
       target.label.pinned = this.isSelected(target);
       setAttr(target.label.el, 'aria-pressed', target.label.pinned ? 'true' : 'false');
     }
@@ -1008,6 +1013,8 @@ export class Atlas {
     const near = (e: HistEvent) => Math.abs(e.year - this.year) <= CHRONICLE_WINDOW || (e.end !== undefined && e.year <= this.year && e.end >= this.year);
     const list = EVENTS.filter(e => e.scope === 'china' && (era ? e.year >= era.start && e.year <= era.end : false) && (e.source !== 'jiangshan' || near(e)));
     if (this.selected && !list.includes(this.selected)) list.push(this.selected);
+    // the events being learned stay on the map whatever the year (a chapter at a glance)
+    for (const id of this.learnFocus?.order.keys() ?? []) { const e = EVENT.get(id); if (e && !list.includes(e)) list.push(e); }
     const want = new Set(list.map(e => e.id));
     for (const [id, target] of this.pins) {
       if (!want.has(id)) {
@@ -1017,6 +1024,40 @@ export class Atlas {
     }
     for (const e of list) if (!this.pins.has(e.id)) this.addPin(e);
     this.labels.setGroupVisible('pins', this.layers.events && !this.pickHandler);
+    this.paintFocus();
+  }
+
+  /**
+   * The learning focus: `events` (in teaching order) get numbered pins that win collisions and the others fade;
+   * `current` (the step being read) is marked; `quiet` lets the dynasty's figures and buildings step aside so only what is
+   * being learned stands on the map. Null returns the living map.
+   */
+  setFocus(f: { events: string[]; current?: string | null; quiet?: boolean } | null): void {
+    const next = f ? { order: new Map(f.events.map((id, i) => [id, i + 1] as [string, number])), current: f.current ?? null, quiet: !!f.quiet } : null;
+    const sig = (x: typeof next) => (x ? `${[...x.order.keys()].join()}|${x.current}|${x.quiet}` : '');
+    if (sig(next) === sig(this.learnFocus)) return;
+    this.learnFocus = next;
+    this.host.classList.toggle('focusing', !!next);
+    this.host.classList.toggle('focus-quiet', !!next?.quiet);
+    this.fx.showLayer('scenery', !this.storyMode && !next?.quiet);
+    this.buildPins();
+    this.layoutDirty = true;
+  }
+
+  private paintFocus(): void {
+    const f = this.learnFocus;
+    for (const [id, target] of this.pins) {
+      const n = f?.order.get(id);
+      const el = target.label.el;
+      el.classList.toggle('fk', n != null);
+      el.classList.toggle('fk-cur', n != null && f!.current === id);
+      if (n != null) el.dataset.n = String(n); else delete el.dataset.n;
+      const e = EVENT.get(id);
+      const base = e ? 50 - e.weight * 8 - (e.source ? 4 : 0) : 30;
+      // numbered pins win collisions and show at every zoom
+      target.label.prio = n != null ? 95 - n * 0.1 : base;
+      target.label.maxD = n != null ? Infinity : e ? (e.weight === 1 ? Infinity : e.weight === 2 ? 75 : 38) : Infinity;
+    }
   }
 
   private addPin(e: HistEvent): void {
@@ -1230,7 +1271,7 @@ export class Atlas {
     this.storyMode = on;
     this.layoutDirty = true;
     if (on) this.setHover(null);
-    this.fx.showLayer('scenery', !on);
+    this.fx.showLayer('scenery', !on && !this.learnFocus?.quiet);
     this.labels.setGroupVisible('badges', !on && !this.pickHandler);
   }
 

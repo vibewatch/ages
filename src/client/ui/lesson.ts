@@ -1,8 +1,10 @@
+import { chapterOfLesson, type Chapter } from '../../shared/data/chapters.ts';
 import { BOOKS, unitOf } from '../../shared/data/curriculum.ts';
 import { EVENT } from '../../shared/data/events.ts';
 import { tr } from '../../shared/data/i18n.ts';
+import { LESSON } from '../../shared/data/lessons/index.ts';
 import type { Book, HistEvent, Lesson, LessonStep, Year } from '../../shared/data/types.ts';
-import { lessonQuestions, nextLesson, unitTest, type Asked } from '../../shared/lib/course.ts';
+import { lessonQuestions, nextLesson, recallQuestion, unitTest, type Asked } from '../../shared/lib/course.ts';
 import { distKm } from '../../shared/lib/quiz.ts';
 import { formatYear } from '../../shared/lib/timeline.ts';
 import { lang, t } from '../lib/i18n.ts';
@@ -19,7 +21,14 @@ export interface LessonHooks {
   open: (e: HistEvent) => void;
   /** the lesson was opened (`id`) or closed (null) */
   change: (id: string | null) => void;
+  /** the step, phase or question changed (the learning focus follows it) */
+  moved?: () => void;
+  /** a chapter's check, offered when its last lesson is done */
+  check?: (c: Chapter) => void;
 }
+
+/** a quick recall question after every RECALL_EVERY steps (not scored) */
+const RECALL_EVERY = 3;
 
 /** The book's short name: 七上, 八下, 高中纲要 / G7·1, HS. */
 export const bookShort = (b: Book): string => lang === 'zh'
@@ -43,6 +52,9 @@ export class LessonView {
   private checkSeed = 0;
   private qs: Asked[] = [];
   private got: (boolean | null)[] = [];
+  /** the quick recall on screen (asked after step `after`), and the steps already followed by one */
+  private recall: { q: Asked; after: number; picked: number | null } | null = null;
+  private recalled = new Set<number>();
 
   constructor(private atlas: Atlas, private progress: Progress, private hooks: LessonHooks) {
     this.head = h('header', { class: 'view-head ls-head' });
@@ -53,10 +65,16 @@ export class LessonView {
 
   get open(): boolean { return !this.el.hidden; }
   get id(): string | null { return this.lesson?.id ?? (this.test ? `test:${this.test.book}-${this.test.unit}` : null); }
+  /** where the running lesson (not a unit test) is: for the learning focus */
+  get where(): { id: string; phase: 'steps' | 'check' | 'done'; step: number } | null {
+    return this.open && this.lesson ? { id: this.lesson.id, phase: this.phase, step: this.recall ? this.recall.after : this.i } : null;
+  }
 
   start(l: Lesson, resume = false): void {
     this.clearMap();
     const prevGot = resume && Array.isArray(this.got) ? [...this.got] : [];
+    this.recall = null;
+    this.recalled.clear();
     this.lesson = l;
     this.test = null;
     const saved = resume && this.progress.lastLesson?.id === l.id ? this.progress.lastLesson : null;
@@ -101,6 +119,11 @@ export class LessonView {
   /** ← / → between steps. */
   step(dir: number): void {
     if (this.phase !== 'steps' || !this.lesson) return;
+    // leaving a recall: forward goes on to the next step, back returns to the step it followed
+    if (this.recall) {
+      this.recall = null;
+      if (dir < 0) { this.render(false); return; }
+    } else if (dir > 0 && this.offerRecall()) { this.render(false); return; }
     const j = this.i + dir;
     if (j < 0) return;
     if (j >= this.lesson.steps.length) { this.check(); this.render(); return; }
@@ -113,6 +136,21 @@ export class LessonView {
   relabel(): void {
     if (!this.open || (this.phase === 'check' && this.got[this.i] != null)) return;
     this.render(false);
+  }
+
+  /** After every third step (not the last), one "when" question on an event of the steps just read before this one. */
+  private offerRecall(): boolean {
+    const l = this.lesson!;
+    if ((this.i + 1) % RECALL_EVERY !== 0 || this.i >= l.steps.length - 1 || this.recalled.has(this.i)) return false;
+    // the step on screen shows its own year, so ask about one read before it
+    const pool = l.steps.slice(Math.max(0, this.i - RECALL_EVERY + 1), this.i).flatMap(s => (s.ev ? [s.ev] : []));
+    if (!pool.length) return false;
+    const seed = Date.now();
+    const q = recallQuestion(pool[seed % pool.length], seed);
+    if (!q) return false;
+    this.recalled.add(this.i);
+    this.recall = { q, after: this.i, picked: null };
+    return true;
   }
 
   private check(seed = Date.now()): void {
@@ -134,7 +172,10 @@ export class LessonView {
   private render(move = true): void {
     const L = lang;
     const book = this.lesson?.book ?? this.test!.book, unit = this.lesson?.unit ?? this.test!.unit;
-    const kicker = `${bookShort(book)} · ${t('lsUnit', { n: unit })}${this.test ? ` · ${t('lsTest')}` : ''}`;
+    // on the learning path a lesson is "Chapter 5 · lesson 2"; the textbook course keeps its book and unit
+    const ch = this.lesson ? chapterOfLesson(this.lesson.id) : undefined;
+    const kicker = ch ? t('lsKicker', { n: ch.n, k: ch.lessons.indexOf(this.lesson!.id) + 1 })
+      : `${bookShort(book)} · ${t('lsUnit', { n: unit })}${this.test ? ` · ${t('lsTest')}` : ''}`;
     const title = this.lesson ? tr(this.lesson.title, L) : tr(unitOf(book, unit)!.title, L);
     const steps = this.lesson?.steps.length ?? 0;
     const total = steps + (this.phase === 'steps' ? this.lesson!.checks.length : this.qs.length);
@@ -150,10 +191,34 @@ export class LessonView {
       else if (this.phase === 'check') this.progress.saveLessonStep(this.lesson.id, 'check', this.i, this.got, this.checkSeed);
       else this.progress.clearLessonStep(this.lesson.id);
     }
-    if (this.phase === 'steps') this.renderStep(this.lesson!.steps[this.i], move);
+    if (this.phase === 'steps' && this.recall) this.renderRecall();
+    else if (this.phase === 'steps') this.renderStep(this.lesson!.steps[this.i], move);
     else if (this.phase === 'check') this.renderQuestion(move);
     else this.renderDone();
     this.body.scrollTop = 0;
+    this.hooks.moved?.();
+  }
+
+  /** The quick recall: one question on what was just read, answered or skipped; the map stays as it was. */
+  private renderRecall(): void {
+    const L = lang;
+    const r = this.recall!, q = r.q;
+    if (q.kind !== 'choice') return;
+    const out = h('div', { class: 'ls-out' }, r.picked != null ? this.why(q, r.picked === q.answer) : null);
+    const opts = q.options.map((o, k) => h('button', {
+      type: 'button', class: 'ls-opt' + (r.picked != null ? (k === q.answer ? ' ok' : k === r.picked ? ' bad' : ' dim') : ''), 'data-i': String(k), disabled: r.picked != null,
+      onclick: () => { r.picked = k; this.render(false); },
+    }, h('i', { text: 'ABCDE'[k] }), h('span', { text: tr(o, L) })));
+    fill(this.body,
+      h('p', { class: 'ls-y rc-k', text: t('rcTitle') }),
+      h('p', { class: 'ls-q', 'data-testid': 'lesson-recall', text: tr(q.prompt, L) }),
+      h('div', { class: 'ls-opts' }, ...opts),
+      out,
+      h('p', { class: 'ls-hint', text: t('rcHint') }));
+    fill(this.nav,
+      h('button', { type: 'button', class: 'btn', 'data-act': 'prev', text: `← ${t('lsPrev')}`, onclick: () => this.step(-1) }),
+      h('button', { type: 'button', class: 'btn primary', 'data-act': 'next', text: r.picked != null ? `${t('rcGo')} →` : t('rcSkip'), onclick: () => this.step(1) }));
+    if (r.picked != null) (this.nav.lastElementChild as HTMLElement).focus({ preventScroll: true });
   }
 
   private renderStep(s: LessonStep, move: boolean): void {
@@ -166,8 +231,9 @@ export class LessonView {
       h('h3', { class: 'ls-h', text: tr(s.title ?? e?.title, L) }),
       h('p', { class: 'ls-p', text: tr(s.body ?? e?.summary, L) }),
       e ? h('div', { class: 'ls-acts' },
-        h('button', { type: 'button', class: 'btn', 'data-act': 'watch', text: `▶ ${t('lsWatch')}`, onclick: () => this.hooks.play(e) }),
-        h('button', { type: 'button', class: 'btn', 'data-act': 'more', text: t('lsMore'), onclick: () => this.hooks.open(e) })) : null);
+        // see it: the step's story is its main action
+        e.story ? h('button', { type: 'button', class: 'btn ls-watch', 'data-act': 'watch', onclick: () => this.hooks.play(e) }, h('i', { text: '▶' }), h('span', { text: t('lsWatch') })) : null,
+        h('button', { type: 'button', class: 'btn ghost', 'data-act': 'more', text: t('lsMore'), onclick: () => this.hooks.open(e) })) : null);
     const last = this.i === this.lesson!.steps.length - 1;
     fill(this.nav,
       h('button', { type: 'button', class: 'btn', 'data-act': 'prev', text: `← ${t('lsPrev')}`, disabled: this.i === 0, onclick: () => this.step(-1) }),
@@ -308,7 +374,11 @@ export class LessonView {
       if (this.got[k]) return [];
       return q.kind === 'order' ? q.answer : q.ev ? [q.ev] : [];
     }))].map(x => EVENT.get(x)!).filter(Boolean);
-    const next = this.lesson ? nextLesson(this.lesson.id) : undefined;
+    // on the learning path the next lesson is the chapter's next one, and after its last the chapter check
+    const ch = this.lesson ? chapterOfLesson(this.lesson.id) : undefined;
+    const pathNext = ch ? ch.lessons[ch.lessons.indexOf(this.lesson!.id) + 1] : undefined;
+    const next = ch ? (pathNext ? LESSON.get(pathNext) : undefined) : this.lesson ? nextLesson(this.lesson.id) : undefined;
+    const toCheck = ch && !pathNext && this.hooks.check ? ch : null;
     fill(this.body,
       h('div', { class: 'ls-score', style: `--p:${n ? right / n : 0}` }, h('b', { text: `${right}/${n}` }), h('span', { text: t('lsScore', { s: right, n }) })),
       this.lesson ? h('section', { class: 'ls-sec' }, h('h3', { text: t('lsKeys') }), h('ul', { class: 'ls-keys' }, ...this.lesson.keys.map(k => h('li', { text: tr(k, L) })))) : null,
@@ -319,6 +389,8 @@ export class LessonView {
       h('button', { type: 'button', class: 'btn', 'data-act': 'again', text: this.lesson ? t('lsAgain') : t('again'), onclick: () => (this.lesson ? this.start(this.lesson) : this.startTest(this.test!.book, this.test!.unit)) }),
       next
         ? h('button', { type: 'button', class: 'btn primary', 'data-act': 'next-lesson', text: `${t('lsNextLesson')} →`, title: tr(next.title, L), onclick: () => this.start(next) })
-        : h('button', { type: 'button', class: 'btn primary', 'data-act': 'back', text: t('lsBack'), onclick: () => this.stop() }));
+        : toCheck
+          ? h('button', { type: 'button', class: 'btn primary', 'data-act': 'chapter-check', text: `${t('chCheck')} →`, title: t('lsChapterDone'), onclick: () => { this.stop(); this.hooks.check!(toCheck); } })
+          : h('button', { type: 'button', class: 'btn primary', 'data-act': 'back', text: ch ? t('chBackPath') : t('lsBack'), onclick: () => this.stop() }));
   }
 }

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CHAPTERS, WHY, chapterAt, chapterOfLesson } from '../../src/shared/data/chapters.ts';
 import { ERAS } from '../../src/shared/data/eras.ts';
 import { EVENT } from '../../src/shared/data/events.ts';
-import { LESSON, LESSONS } from '../../src/shared/data/lessons/index.ts';
+import { LESSON, LESSONS, PATH_LESSONS } from '../../src/shared/data/lessons/index.ts';
 
 const CJK = /[㐀-鿿]/;
 
@@ -12,7 +12,7 @@ describe('learning path chapters', () => {
       expect(c.n, c.id).toBe(i + 1);
       expect(c.span[0], c.id).toBeLessThan(c.span[1]);
       if (i > 0) expect(c.span[0], c.id).toBe(CHAPTERS[i - 1].span[1]);
-      for (const s of [c.title, c.idea]) {
+      for (const s of [c.title, c.short, c.idea]) {
         expect(s.zh, c.id).toMatch(CJK);
         expect(s.en ?? '', c.id).not.toMatch(CJK);
       }
@@ -38,10 +38,19 @@ describe('learning path chapters', () => {
     }
   });
 
-  it('cover every middle-school lesson exactly once, in course order', () => {
+  it('map every middle-school lesson to one chapter, in course order', () => {
     const middle = LESSONS.filter(l => l.book !== 'hs1').map(l => l.id);
-    expect(CHAPTERS.flatMap(c => c.lessons)).toEqual(middle);
-    for (const id of middle) expect(chapterOfLesson(id)?.lessons, id).toContain(id);
+    expect(CHAPTERS.flatMap(c => c.textbook)).toEqual(middle);
+  });
+
+  it('teach the imperial chapters with their own lessons, the others with the textbook’s', () => {
+    for (const c of CHAPTERS) {
+      const own = PATH_LESSONS.filter(l => l.id.startsWith(`ch${c.n}-`)).map(l => l.id);
+      expect(c.lessons, c.id).toEqual(own.length ? own : c.textbook);
+      for (const id of c.lessons) expect(chapterOfLesson(id)?.id, id).toBe(c.id);
+    }
+    // every lesson of the path belongs to a chapter
+    for (const l of PATH_LESSONS) expect(chapterOfLesson(l.id), l.id).toBeTruthy();
   });
 
   it('find the chapter of a year', () => {
