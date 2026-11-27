@@ -350,6 +350,8 @@ const S = {
   copied: { zh: '链接已复制', en: 'Link copied' },
   qHigh: { zh: '高画质', en: 'High quality' },
   qLow: { zh: '省电流畅', en: 'Battery saver' },
+  qLowNote: { zh: '较低分辨率、30 帧；地图静止时每秒只画几帧，更省电、发热更少。', en: 'Lower resolution at 30 fps; when the map is still it draws only a few frames a second, saving battery and heat.' },
+  qHighNote: { zh: '全分辨率与细节；地图静止时也会降低帧率以节省电量。', en: 'Full resolution and detail; the frame rate still drops while the map is still.' },
   kicker: { zh: '中国历代疆域与大事', en: 'Borders & events of Chinese history' },
   details: { zh: '时期详情', en: 'Period details' },
   pOverview: { zh: '时期概况', en: 'Overview' },

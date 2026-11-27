@@ -170,6 +170,8 @@ export class Atlas {
     vignette.className = 'vignette';
     this.host.append(canvas, vignette);
     this.view = new View(canvas, this.geo, this.lowfx);
+    // stories, cross-fades and pending years animate: full frame rate while they run
+    this.view.busy = () => this.storyMode || !!this.fade || this.pendingYear !== null || (this.fx?.count('story') ?? 0) > 0;
     this.labels = new Labels(this.view, this.host);
     this.terrain = buildTerrain(this.geo, this.lowfx);
     this.view.scene.add(this.terrain.mesh);
@@ -751,6 +753,7 @@ export class Atlas {
 
   /** Moves the map to a year: territory snapshot, period names, capital and the events of the period. */
   setYear(y: Year, instant = false): void {
+    this.view.wake();
     this.pendingYear = null;
     this.year = y;
     this.fx.year = y;

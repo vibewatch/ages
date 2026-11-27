@@ -137,19 +137,49 @@ export class Preview {
     g.matrixAutoUpdate = false;
     this.model = g;
     this.turn.add(g);
-    const h = size.y * k, w = Math.hypot(size.x, size.z) * k * 0.78;
-    const el = 0.25, ly = h * 0.48;
-    const aspect = (this.canvas.clientWidth && this.canvas.clientHeight) ? this.canvas.clientWidth / this.canvas.clientHeight : 2.3;
-    const tanHalf = Math.tan(THREE.MathUtils.degToRad(this.cam.fov * 0.5));
-    const projH = h * Math.cos(el) + w * Math.sin(el);
-    const dv = (projH * 0.53) / tanHalf;
-    const dh = (w * 0.54) / (tanHalf * aspect);
-    this.pose = { d: Math.max(1.8, dv, dh), e: el, y: ly };
+    const h = size.y * k, R = (Math.hypot(size.x, size.z) * k) / 2;
+    // the model turns: fit the cylinder it sweeps (radius R, height h), seen from a little above, with the perspective
+    // of the real camera — the near rim looks bigger — in the space under the strip's buttons
+    const el = 0.25;
+    const ch = this.canvas.clientHeight || 1, cw = this.canvas.clientWidth || ch * 2.3;
+    const pad = this.padTop(), avail = Math.max(0.5, (ch - pad) / ch);
+    const fits = (d: number, y: number): number => {
+      const cam = new THREE.PerspectiveCamera(this.cam.fov, cw / ch, 0.01, 100);
+      cam.position.set(0, y + d * Math.sin(el), d * Math.cos(el));
+      cam.lookAt(0, y, 0);
+      cam.updateMatrixWorld();
+      let lo = Infinity, hi = -Infinity, side = 0;
+      const v = new THREE.Vector3();
+      for (let a = 0; a < 16; a++) for (const yy of [0, h]) {
+        const t = (a / 16) * Math.PI * 2;
+        v.set(Math.cos(t) * R, yy, Math.sin(t) * R).project(cam);
+        lo = Math.min(lo, v.y); hi = Math.max(hi, v.y); side = Math.max(side, Math.abs(v.x));
+      }
+      // vertical room: the view is offset under the buttons, so the picture must span at most 2·avail of NDC; a margin
+      mid = (lo + hi) / 2;
+      return Math.max((hi - lo) / (2 * avail * 0.9), side / 0.92);
+    };
+    let mid = 0;
+    // step the distance out until it fits, then aim at the middle of the picture (and fit again)
+    let ly = h * 0.45, d = 1.8;
+    for (let pass = 0; pass < 3; pass++) {
+      for (let it = 0; it < 40 && fits(d, ly) > 1; it++) d *= 1.08;
+      fits(d, ly);
+      ly += mid * d * Math.tan(THREE.MathUtils.degToRad(this.cam.fov * 0.5));
+    }
+    for (let it = 0; it < 40 && fits(d, ly) > 1; it++) d *= 1.08;
+    const dv = d, dh = d;    this.pose = { d: Math.max(1.8, dv, dh), e: el, y: ly };
     this.angle = -0.5;
     this.introAt = this.still || matchMedia('(prefers-reduced-motion: reduce)').matches ? Infinity : -1;
     this.place(1);
     this.dirty = true;
     this.canvas.parentElement?.classList.remove('pv-loading');
+  }
+
+  /** Pixels covered by buttons at the top of the strip (CSS --pv-pad on the hero), 0 where they are hidden. */
+  private padTop(): number {
+    const el = this.canvas.parentElement;
+    return el ? parseFloat(getComputedStyle(el).getPropertyValue('--pv-pad')) || 0 : 0;
   }
 
   /** Camera on its intro path: k = 0 far and a little higher, k = 1 the resting framing. */
@@ -203,7 +233,14 @@ export class Preview {
     const w = this.canvas.clientWidth, h = this.canvas.clientHeight;
     if (!w || !h) return;
     const s = r.getSize(this.sizeVec);
-    if (s.x !== w || s.y !== h) { r.setSize(w, h, false); this.cam.aspect = w / h; this.cam.updateProjectionMatrix(); }
+    if (s.x !== w || s.y !== h) {
+      r.setSize(w, h, false);
+      this.cam.aspect = w / h;
+      // the buttons over the strip's top: the picture sits in the space below them
+      const pad = this.padTop();
+      if (pad) this.cam.setViewOffset(w, h, 0, -pad / 2, w, h); else this.cam.clearViewOffset();
+      this.cam.updateProjectionMatrix();
+    }
     r.render(this.scene, this.cam);
     this.dirty = false;
   }

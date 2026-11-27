@@ -13,6 +13,7 @@ import { phaseAt, previousSnap, type Phase } from '../../shared/lib/chronicle.ts
 import { periodQuestion } from '../../shared/lib/quiz.ts';
 import { eraAt, formatYear } from '../../shared/lib/timeline.ts';
 import { lang, t, type Key } from '../lib/i18n.ts';
+import { load, save } from '../lib/storage.ts';
 import { fill, h, iconBtn } from './dom.ts';
 
 const ROLE_ORDER: Polity['role'][] = ['main', 'rival', 'occupied', 'protectorate', 'neighbor'];
@@ -185,7 +186,14 @@ export class Period {
     const ghostLabel = cmpPh
       ? t('cmpBorder', { t: `${formatYear(cmpPh.snap.year, lang, { short: true })} ${cmpEra ? tr(cmpEra.short, lang) : ''}`.trim() })
       : t('roleGhost');
+    // folded to a small chip by default: the map gets the corner back; the choice is remembered
+    const open = load<boolean>('mapKey', false, v => typeof v === 'boolean');
+    this.key.classList.toggle('open', open);
     fill(this.key,
+      h('button', {
+        type: 'button', class: 'mk-toggle', 'aria-expanded': String(open), text: t('legend'),
+        onclick: () => { const on = !this.key.classList.contains('open'); save('mapKey', on); this.key.classList.toggle('open', on); (this.key.firstElementChild as HTMLElement).setAttribute('aria-expanded', String(on)); },
+      }),
       h('div', { class: 'mk-row' },
         h('span', { class: 'mk mk-border' }, h('i'), h('span', { text: t('keyBorder') })),
         h('span', { class: 'mk mk-ghost' }, h('i'), h('span', { text: ghostLabel })),

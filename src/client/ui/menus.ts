@@ -44,7 +44,7 @@ export class SettingsMenu {
     this.el.replaceChildren(
       sec(1, t('mapStyle')), sw,
       sec(2, t('layers')), layers,
-      ...(this.extra ? [sec(3, t('display')), this.extra, ...(quality ? [quality] : [])] : []),
+      ...(this.extra ? [sec(3, t('display')), this.extra, ...(quality ? [quality, h('p', { class: 'q-note', text: t(q!.low ? 'qLowNote' : 'qHighNote') })] : [])] : []),
       h('footer', { class: 'menu-foot' }, h('button', { type: 'button', class: 'b-help2', onclick: () => this.onHelp() }, icon('help'), h('span', { text: t('helpTitle') }))));
   }
   toggle(on = this.el.hidden): void { this.el.hidden = !on; }

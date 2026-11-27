@@ -80,6 +80,7 @@ export class View {
     const ro = new ResizeObserver(() => this.resize());
     ro.observe(canvas.parentElement ?? canvas);
     this.resize();
+    for (const ev of ['pointerdown', 'pointermove', 'wheel', 'touchstart', 'keydown'] as const) window.addEventListener(ev, () => this.wake(), { passive: true, capture: true });
     this.renderer.setAnimationLoop(() => this.frame());
   }
 
@@ -351,8 +352,31 @@ export class View {
     return out;
   }
 
+  /** something on the map is animating (a story, a cross-fade, a played timeline): render at the full rate */
+  busy: () => boolean = () => false;
+  private lastInput = -Infinity;
+  private camKey = '';
+  /** The map needs frames now (input, a year change): the next frames render at the full rate. */
+  wake(): void { this.lastInput = performance.now() / 1000; }
+
+  /**
+   * Seconds between rendered frames. While someone is using the map, every frame (battery saver: 30 fps); once it has
+   * been still for a moment with nothing animating, a slow idle rate keeps the figures alive (30 fps; battery saver:
+   * 6 fps) — the GPU and the battery rest.
+   */
+  private interval(now: number): number {
+    const p = this.camera.position, key = `${p.x.toFixed(4)},${p.y.toFixed(4)},${p.z.toFixed(4)}`;
+    const moved = key !== this.camKey;
+    this.camKey = key;
+    const idle = !moved && !this.flight && now - this.lastInput > 2.5 && !this.busy();
+    if (navigator.webdriver) return 0;
+    return idle ? (this.lowfx ? 1 / 6 : 1 / 30) : this.lowfx ? 1 / 30 : 0;
+  }
+
   private frame(): void {
     const now = performance.now() / 1000;
+    const gap = this.interval(now);
+    if (gap && this.last >= 0 && now - this.last < gap - 0.004) return;
     const rawDt = this.last < 0 ? 0 : now - this.last;
     const dt = Math.min(0.25, rawDt);
     this.last = now;
@@ -365,7 +389,8 @@ export class View {
     this.sky.position.copy(this.camera.position);
     if (!document.hidden) this.renderer.render(this.scene, this.camera);
     this.frames++;
-    this.adapt(rawDt);
+    // only frames at the full rate tell how fast the device draws
+    if (!gap) this.adapt(rawDt);
   }
 
   /**
