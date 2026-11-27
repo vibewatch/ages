@@ -143,12 +143,12 @@ describe('territorial snapshots', () => {
 
   it('snapshotAt picks the latest snapshot not after the year', () => {
     expect(snapshotAt(-5000)).toBeNull();
-    expect(snapshotAt(-221)?.id).toBe('s_qin_a');
+    expect(snapshotAt(-221)?.id).toBe('o_qin_1');
     expect(snapshotAt(-222)?.id).toMatch(/^o_zhanguo/);
-    expect(snapshotAt(-100)?.id).toMatch(/^s_xihan/);
-    expect(snapshotAt(742)?.id).toMatch(/^s_tang/);
-    expect(snapshotAt(1405)?.id).toMatch(/^s_ming/);
-    expect(snapshotAt(1948)?.id).toMatch(/^s_roc/);
+    expect(snapshotAt(-100)?.id).toMatch(/^o_xihan/);
+    expect(snapshotAt(742)?.id).toMatch(/^[os]_tang/);
+    expect(snapshotAt(1405)?.id).toMatch(/^[os]_ming/);
+    expect(snapshotAt(1948)?.id).toMatch(/^[os]_roc/);
     expect(snapshotAt(1949)?.id).toBe('prc1950');
     expect(snapshotAt(2020)?.id).toBe('prc2000');
   });

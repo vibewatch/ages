@@ -85,6 +85,8 @@ export interface Snapshot {
   own?: boolean;
   /** our maps: the holdings that changed since the previous phase, with sources */
   changes?: { year: Year; seat: I18n; from: string | null; to: string | null; src?: I18n }[];
+  /** our maps: the sources behind the holdings drawn, most cited first */
+  cites?: I18n[];
 }
 
 /** A city or site with names that change over time (长安 → 大兴 → 西安). */

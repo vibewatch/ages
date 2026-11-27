@@ -225,8 +225,8 @@ export function snapshotSources(s: Snapshot): SnapshotSourceInfo {
       kind: 'own',
       badge: { zh: '自制疆域 · 按治所归属推算', en: 'Our own map · from who held each seat' },
       source: {
-        zh: `底图来源：本站整理各治所（都城、郡县、要邑）的归属与年代，按地形推算疆界${cites.length ? `；本阶段变化依据${list('zh')}` : ''}。`,
-        en: `Source: we record who held each seat (capitals, commanderies, walled cities) and when, and derive the borders over the relief${cites.length ? `; this phase’s changes follow ${list('en')}` : ''}.`,
+        zh: `底图来源：本站整理各治所（都城、郡县、要邑）的归属与年代，按地形推算疆界${cites.length ? `；主要依据${list('zh')}等` : ''}。`,
+        en: `Source: we record who held each seat (capitals, commanderies, walled cities) and when, and derive the borders over the relief${cites.length ? `; chiefly after ${list('en')}` : ''}.`,
       },
       uncertainty: {
         zh: '疆界说明：边界由治所位置与山川地形推算，表示控制范围的大致走向，并非当时的实际划界；标“推定”的年份为史料无明确记载时的推断。',

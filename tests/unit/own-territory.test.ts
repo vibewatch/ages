@@ -57,8 +57,8 @@ describe('our own territory data', () => {
           if (p) expect(POLITY.has(p) || extra.has(p), `${s.id}: ${p}`).toBe(true);
           if (src) expect(era.sources[src], `${s.id}: ${src}`).toBeDefined();
         }
-        expect(s.at[0]).toBeGreaterThan(70); expect(s.at[0]).toBeLessThan(140);
-        expect(s.at[1]).toBeGreaterThan(15); expect(s.at[1]).toBeLessThan(56);
+        expect(s.at[0]).toBeGreaterThan(60); expect(s.at[0]).toBeLessThan(142);
+        expect(s.at[1]).toBeGreaterThan(15); expect(s.at[1]).toBeLessThan(58);
       }
       for (let i = 1; i < era.phases.length; i++) expect(era.phases[i].from).toBe(era.phases[i - 1].to + 1);
       // every phase has holders

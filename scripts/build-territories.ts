@@ -131,10 +131,11 @@ if (PREVIEW) mkdirSync('.territory-preview', { recursive: true });
 
 const rings: string[] = [];
 const snaps: Record<string, { p: [string, null, string | null, LonLat | null, number[]][]; g: []; f: [] }> = {};
-const meta: { replaces: string; phases: { id: string; from: number; to: number; title: unknown; note?: unknown; changes: [number, string, string | null, string | null, string?][] }[]; sources: OwnEra['sources']; polities: Polity[] }[] = [];
+const meta: { replaces: string; phases: { id: string; from: number; to: number; title: unknown; note?: unknown; changes: [number, string, string | null, string | null, string?][]; cites: string[] }[]; sources: OwnEra['sources']; polities: Polity[] }[] = [];
 
 for (const era of ERAS) {
-  const extra = new Map((era.polities ?? []).map(p => [p.id, p]));
+  // polities defined by any of our eras (an era may reuse another's neighbours, e.g. 羌 or 百越)
+  const extra = new Map([...ERAS_OWN, ...ERAS].flatMap(e => e.polities ?? []).map(p => [p.id, p]));
   const polity = (id: string) => extra.get(id) ?? POLITY.get(id);
   const seatById = new Map(era.seats.map(s => [s.id, s]));
   for (const id of Object.keys(era.holds)) if (!seatById.has(id)) throw new Error(`hold for unknown seat ${id}`);
@@ -184,7 +185,11 @@ for (const era of ERAS) {
       changes.push([h?.[0] ?? year, s.id, a, b, h?.[2]]);
     }
     prev = now;
-    phases.push({ id: ph.id, from: ph.from, to: ph.to, title: ph.title, note: ph.note, changes });
+    // the sources behind every holding drawn (not only this phase's changes), most cited first
+    const count = new Map<string, number>();
+    for (const s of era.seats) { const h = era.holds[s.id].filter(([y]) => y <= year).at(-1); if (h?.[1] && h[2] && h[2] !== 'est') count.set(h[2], (count.get(h[2]) ?? 0) + 1); }
+    const cites = [...count].sort((a, b) => b[1] - a[1]).map(([k]) => k);
+    phases.push({ id: ph.id, from: ph.from, to: ph.to, title: ph.title, note: ph.note, changes, cites });
     console.log(`${ph.id} (${year}): ${list.map((p, i) => `${polity(p)!.name.zh} ${Math.round(area[i])}`).join(' · ')}`);
     if (PREVIEW) await preview(grid, owner, list, id => polity(id)!.color, era.seats.map(s => [s.at, now.get(s.id) ? '#000000' : '#ff0000'] as [LonLat, string]), `.territory-preview/${ph.id}.png`);
   }

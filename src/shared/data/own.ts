@@ -9,7 +9,7 @@ import type { I18n, LonLat, Polity, Snapshot, Year } from './types.ts';
 interface Raw {
   eras: {
     replaces: string;
-    phases: { id: string; from: Year; to: Year; title: I18n; note?: I18n; changes: [Year, string, string | null, string | null, string?][] }[];
+    phases: { id: string; from: Year; to: Year; title: I18n; note?: I18n; changes: [Year, string, string | null, string | null, string?][]; cites: string[] }[];
     sources: Record<string, I18n>;
     polities: Polity[];
   }[];
@@ -28,13 +28,11 @@ export const OWN_REPLACES: ReadonlySet<string> = new Set(J.eras.map(e => e.repla
 
 export const OWN_SNAPSHOTS: Snapshot[] = J.eras.flatMap(e => e.phases.map(p => ({
   id: p.id, scope: 'china' as const, year: p.from, end: p.to, dyn: e.replaces, title: p.title, note: p.note, regions: [], shapes: p.id, own: true,
+  cites: (p.cites ?? []).map(k => e.sources[k]).filter(Boolean),
   changes: p.changes.map(([year, seat, from, to, src]): Change => ({
     year, seat: seatName(e.replaces, seat), from, to, src: src ? e.sources[src] : undefined,
   })),
 })));
 
-/** The sources cited by one of our phases (its own changes), for the map's source note. */
-export function ownCites(s: Snapshot): I18n[] {
-  const seen = new Set<string>();
-  return (s.changes ?? []).flatMap(c => (c.src && !seen.has(c.src.zh) && seen.add(c.src.zh) ? [c.src] : []));
-}
+/** The sources behind one of our phases (the holdings it draws, most cited first), for the map's source note. */
+export const ownCites = (s: Snapshot, max = 6): I18n[] => (s.cites ?? []).slice(0, max);

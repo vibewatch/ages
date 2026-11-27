@@ -1286,7 +1286,8 @@ test.describe('Ages atlas', () => {
     await page.locator('.b-details').click();
     const pv = page.locator('.menu.pv');
     await expect(pv).toBeVisible();
-    await expect(pv.locator('[data-testid=period-sources]')).toContainText('中国历史地图集');
+    // our own generated maps (自制疆域) or an imported phase (中国历史地图集)
+    await expect(pv.locator('[data-testid=period-sources]')).toContainText(/自制疆域|中国历史地图集/);
     // sources and compare sit in the fold under the learner's summary
     await expect(pv.locator('[data-testid=period-learn]')).toContainText('第3讲');
     await unfold(page, '.pv-more');
