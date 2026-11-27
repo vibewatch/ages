@@ -871,9 +871,13 @@ export const SNAPSHOTS: Snapshot[] = [
   ...OWN_SNAPSHOTS,
   ...IMPORTED_SNAPSHOTS,
   // the imported phases stop at Manchukuo; the textbook map of the occupied areas covers 1937–1945
-  ...CURATED.filter(s => s.id === 'war1940').map(s => ({ ...s, end: 1945 })),
+  // (unless our own Republic maps cover the war years)
+  ...CURATED.filter(s => s.id === 'war1940' && !OWN_SNAPSHOTS.some(o => o.year >= 1937 && o.year <= 1945)).map(s => ({ ...s, end: 1945 })),
   ...CURATED.filter(s => s.year >= 1949),
-].sort((a, b) => a.year - b.year);
+].sort((a, b) => a.year - b.year || Number(!a.own) - Number(!b.own));
+// a dynasty's last phase and the next one's first can share their boundary year (ours and imported): the later
+// takes the next year
+for (let i = 1; i < SNAPSHOTS.length; i++) if (SNAPSHOTS[i].year <= SNAPSHOTS[i - 1].year) SNAPSHOTS[i] = { ...SNAPSHOTS[i], year: SNAPSHOTS[i - 1].year + 1 };
 
 /** The snapshot shown for `year`: the latest whose year ≤ `year` (earliest snapshot before it; none in deep prehistory). */
 export function snapshotAt(year: number, list: Snapshot[] = SNAPSHOTS): Snapshot | null {

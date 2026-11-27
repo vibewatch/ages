@@ -8,8 +8,10 @@ Qixiang's atlas) to maps we generate from our own data. The goals:
   panel lists what changed in each phase and where the record comes from.
 * **Easy to correct.** A fix is one line in a holdings table; the maps are regenerated.
 
-Status: the Warring States (403–221 BCE, 13 phases) are ours. Every other imported era is still shown until its own
-data replaces it (tracked in the GitHub issue *Own territory data*).
+Status: every period from 403 BCE to 1949 is ours: 17 eras, 198 phases and about 4 900 seats (`src/shared/data/own/`).
+The builds no longer ship the imported phases (`pruneShapes` in `scripts/commercial-data.ts`). Still to do (GitHub
+issue #11): administrative divisions (郡 / 州 / 府) from our own seats, a historian's review of the `est` dates, and
+replacing the imported events, places and people.
 
 ## Method
 

@@ -120,12 +120,15 @@ const ALIAS: Record<string, RegExp> = {
   beiwei: /^北魏$/, qianqin: /^前秦/,
 };
 const IMPORTED = /^j\d+$/;
+const OWN_IDS = new Set(OWN_POLITIES.map(p => p.id));
 const bare = (zh: string) => zh.replace(/[（(].*$/, '').replace(/朝$/, '').trim();
 /** Whether a region's polity counts as `wanted` (same id, alias pattern or same bare name). */
 export function polityMatches(regionPolity: string, wanted: string): boolean {
   if (regionPolity === wanted) return true;
   const a = POLITY.get(regionPolity), w = POLITY.get(wanted);
-  if (!a || !w || !IMPORTED.test(a.id) || IMPORTED.test(w.id)) return false;
+  // imported polities and our own era-specific ones (曹操 for 魏) match a curated polity by alias or bare name
+  const loose = (id: string) => IMPORTED.test(id) || OWN_IDS.has(id);
+  if (!a || !w || !loose(a.id) || loose(w.id)) return false;
   const re = ALIAS[wanted];
   return re ? re.test(a.name.zh) : bare(a.name.zh) === bare(w.name.zh);
 }

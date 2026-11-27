@@ -62,12 +62,15 @@ for (const s of SNAPSHOTS) {
     : s.regions.map(r => ({ polity: r.polity, role: r.role, rings: r.rings as Ring[], evenodd: !!r.evenodd }));
   const by = new Map<string, number>();
   let m = 0;
+  // a period without a single dynasty (三国): the rival states together form the realm, as before the Qin
+  const roleOf = (r: (typeof regions)[number]) => r.role ?? POLITY.get(r.polity)?.role;
+  const split = s.year < -221 || !regions.some(r => roleOf(r) === 'main');
   for (const r of regions) {
     const a = fillArea(r.rings, r.evenodd);
     by.set(r.polity, (by.get(r.polity) ?? 0) + a);
     const role = r.role ?? POLITY.get(r.polity)?.role;
     // before the Qin unification the Zhou vassal and warring states together form the realm
-    if (role === 'main' || role === 'protectorate' || (role === 'rival' && s.year < -221)) m += a;
+    if (role === 'main' || role === 'protectorate' || (role === 'rival' && split)) m += a;
   }
   out[s.id] = { m: Math.round(m / 1000), p: [...by].map(([p, a]) => [p, Math.round(a / 1000)] as [string, number]).filter(([, a]) => a >= 5).sort((a, b) => b[1] - a[1]) };
 }

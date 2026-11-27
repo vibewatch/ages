@@ -2,7 +2,8 @@ import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve, sep } from 'node:path';
 import { defineConfig, type Plugin } from 'vite';
-import { stripNonCommercial } from './scripts/commercial-data.ts';
+import { pruneShapes, stripNonCommercial } from './scripts/commercial-data.ts';
+import { SNAPSHOTS } from './src/shared/data/territories.ts';
 
 /** Writes the offline service worker (src/client/sw.js) to <outDir>/sw.js once the build is on disk, with the list of
  * every output file to precache (lazy model packs and worker chunks included) and a version hashed from their contents. */
@@ -40,9 +41,12 @@ function commercialData(): Plugin {
     apply: 'build',
     configResolved(c) { outDir = resolve(c.root, c.build.outDir); },
     closeBundle() {
-      if (process.env.VITE_COMMERCIAL !== '1') return;
       const file = join(outDir, 'data/atlas/shapes.json');
-      writeFileSync(file, JSON.stringify(stripNonCommercial(JSON.parse(readFileSync(file, 'utf8')))));
+      // imported phases replaced by our own maps (and their admin layers) are not shipped
+      const keep = new Set(SNAPSHOTS.filter(s => s.shapes && !s.own).map(s => s.shapes!));
+      let store = pruneShapes(JSON.parse(readFileSync(file, 'utf8')), keep);
+      if (process.env.VITE_COMMERCIAL === '1') store = stripNonCommercial(store);
+      writeFileSync(file, JSON.stringify(store));
     },
   };
 }

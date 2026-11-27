@@ -130,6 +130,7 @@ console.log(`grid ${grid.w}×${grid.h} @ ${STEP}°`);
 if (PREVIEW) mkdirSync('.territory-preview', { recursive: true });
 
 const rings: string[] = [];
+const ringIndex = new Map<string, number>();
 const snaps: Record<string, { p: [string, null, string | null, LonLat | null, number[]][]; g: []; f: [] }> = {};
 const meta: { replaces: string; phases: { id: string; from: number; to: number; title: unknown; note?: unknown; changes: [number, string, string | null, string | null, string?][]; cites: string[] }[]; sources: OwnEra['sources']; polities: Polity[] }[] = [];
 
@@ -169,9 +170,10 @@ for (const era of ERAS) {
     // neighbours first, so the states are painted over them where the outlines touch
     const order = list.map((p, i) => i).sort((a, b) => Number(polity(list[a])!.role !== 'neighbor') - Number(polity(list[b])!.role !== 'neighbor'));
     for (const i of order) {
-      const rs = trace(grid, owner, i).map(r => smooth(simplify(r, STEP * 0.6))).filter(r => ringArea(r) > 1);
+      const rs = trace(grid, owner, i).map(r => smooth(simplify(r, STEP * 1.0))).filter(r => ringArea(r) > 1);
       if (!rs.length) continue;
-      const ids = rs.map(r => { rings.push(encodeRing(r)); return rings.length - 1; });
+      // unchanged outlines repeat from phase to phase: store each once
+      const ids = rs.map(r => { const e = encodeRing(r); let k = ringIndex.get(e); if (k === undefined) { k = rings.length; rings.push(e); ringIndex.set(e, k); } return k; });
       const role = era.roles?.[list[i]] ?? null;
       entry.push([list[i], null, role, at[i], ids]);
     }

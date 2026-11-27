@@ -136,7 +136,8 @@ describe('territorial snapshots', () => {
     expect(inside(region('prc1950', 'prc'), hk)).toBe(false);
     expect(inside(region('prc1950', 'colony_uk'), hk)).toBe(true);
     expect(inside(region('prc2000', 'mongolia'), [106.9, 47.9])).toBe(true);
-    const occ = region('war1940', 'jp_occ');
+    // the war years: our own Republic map (or the curated textbook map)
+    const occ = region(snapshotAt(1940)!.id, 'jp_occ');
     expect(inside(occ, beijing) && inside(occ, wuhan)).toBe(true);
     expect(inside(occ, chongqing)).toBe(false);
   });

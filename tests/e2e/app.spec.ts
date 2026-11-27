@@ -109,7 +109,9 @@ test.describe('Ages atlas', () => {
     await expect(page.locator('.brand b')).toHaveText('Ages');
     await expect(page.locator('.tools .b-lang')).toHaveText('中');
     await expect(page.locator('.settings .langs')).toHaveCount(0);
-    await expect(page.locator('.labels .polity', { hasText: /^Qin$/ }).first()).toBeVisible();
+    // the dynasty's name is on the map (it may give way to the chapter's numbered pins), and polity names show
+    await expect(page.locator('.labels .polity[data-polity=qin]')).toHaveText('Qin Empire');
+    await expect(page.locator('.labels .polity.on').first()).toBeVisible();
     await shot(page, 'desktop-home-en');
 
     await switchLang(page);
@@ -117,7 +119,7 @@ test.describe('Ages atlas', () => {
     await expect(page.locator('.tl-year')).toHaveText('前221年');
     await expect(page.locator('.search .q')).toHaveAttribute('placeholder', /搜索/);
     await expect(page.locator('.tl-band', { hasText: '唐' })).toBeVisible();
-    await expect(page.locator('.labels .polity', { hasText: /^秦$/ }).first()).toBeVisible();
+    await expect(page.locator('.labels .polity[data-polity=qin]')).toHaveText('秦朝');
     expect(page.url()).toContain('lang=zh');
     s = await state(page);
     expect(s.lang).toBe('zh');
@@ -775,7 +777,8 @@ test.describe('Ages atlas', () => {
       const a = (window as unknown as { __atlas: { atlas: { setLayer(k: 'models', on: boolean): void } } }).__atlas.atlas;
       a.setLayer('models', false);
     });
-    await setMapPose(page, { lon: 110, lat: 34, dist: 30, tilt: 0.8 });
+    // close enough that event pins win room among the place and polity names
+    await setMapPose(page, { lon: 112, lat: 34.5, dist: 22, tilt: 0.8 });
     const capital = page.locator('.place.cap.on').first();
     await expect(capital.locator('.b')).toBeVisible();
     const offset = await capital.locator('.b').evaluate(el => {
@@ -1294,8 +1297,10 @@ test.describe('Ages atlas', () => {
 
     const cmpSelect = pv.locator('[data-testid=compare-select]');
     await expect(cmpSelect).toBeVisible();
-    await cmpSelect.selectOption('703');
-    await expect(page).toHaveURL(/cmp=703/);
+    // the Tang map in force in 703 (its phase's first year)
+    const tang = await cmpSelect.evaluate((el: HTMLSelectElement) => String(Math.max(...[...el.options].filter(o => o.value).map(o => Number(o.value)).filter(n => n <= 703))));
+    await cmpSelect.selectOption(tang);
+    await expect(page).toHaveURL(new RegExp(`cmp=${tang}`));
     await expect(pv.locator('[data-testid=compare-card]')).toBeVisible();
     await expect(pv.locator('[data-testid=compare-delta]')).toBeVisible();
     await expect(pv.locator('.pv-cmp-sum')).toContainText('咸阳');
@@ -1304,7 +1309,7 @@ test.describe('Ages atlas', () => {
 
     // Swap A/B periods
     await pv.locator('[data-act=cmp-swap]').click();
-    await expect(page).toHaveURL(/y=703/);
+    await expect(page).toHaveURL(new RegExp(`y=${tang}`));
     await expect(page).toHaveURL(/cmp=-221/);
 
     // Opening an event card while comparison is active preserves cmp in the URL

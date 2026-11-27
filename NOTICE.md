@@ -4,10 +4,10 @@
 
 ## Our own territory data
 
-The Warring States maps (403–221 BCE) are our own work, released under GPL-3.0 with the code: seats, holdings and
+The territory maps from 403 BCE to 1949 are our own work, released under GPL-3.0 with the code: seats, holdings and
 sources in `src/shared/data/own/`, generated over the public-domain relief by `scripts/build-territories.ts`
-(see [docs/data/territories.md](docs/data/territories.md)). They replace the imported Warring States phases, which
-the app no longer shows. Further eras will follow.
+(see [docs/data/territories.md](docs/data/territories.md)). They replace every imported territorial phase; the builds
+no longer ship the imported phases or their administrative layers, including the CHGIS / Hartwell-derived material.
 
 ## Imported content: jiangshan-map
 
