@@ -27,6 +27,13 @@ jiangshan-map's historical GIS references include Tan Qixiang's *Historical Atla
 Historical GIS remain subject to their original terms (**academic, non-commercial use only**) and are not relicensed
 under GPL-3.0.
 
+**Commercial build:** `npm run build:commercial` (VITE_COMMERCIAL=1) leaves this material out: every snapshot's
+administrative regions and prefectures, the 14 imported Warring States snapshots, and every ring of geometry only they
+used are removed from `data/atlas/shapes.json` (`scripts/commercial-data.ts`), the administrative layer is hidden, and
+the Warring States period falls back to our own schematic map (`src/shared/data/territories.ts`, id `zhanguo`). Tests:
+`tests/unit/commercial.test.ts`. Before selling, replace the Warring States phases with commercially licensed or
+self-drawn data and have the remaining imported material reviewed.
+
 ## Other sources
 
 * Elevation: [AWS Terrain Tiles](https://registry.opendata.aws/terrain-tiles/) (Mapzen), derived from SRTM, GMTED2010,

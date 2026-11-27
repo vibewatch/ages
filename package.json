@@ -15,7 +15,8 @@
     "test:all": "npm run typecheck && npm test && npm run build && npm run test:e2e",
     "data:terrain": "node scripts/fetch-terrain.ts",
     "data:jiangshan": "node scripts/import-jiangshan.ts",
-    "data:areas": "node scripts/compute-areas.ts"
+    "data:areas": "node scripts/compute-areas.ts",
+    "build:commercial": "tsc --noEmit -p tsconfig.json && VITE_COMMERCIAL=1 vite build"
   },
   "engines": {
     "node": ">=24"

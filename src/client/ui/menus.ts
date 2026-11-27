@@ -7,6 +7,7 @@ import { tr } from '../../shared/data/i18n.ts';
 import { kindName, lang, t, type Key } from '../lib/i18n.ts';
 import { load, save } from '../lib/storage.ts';
 import { ModalFocus, h, icon, iconBtn } from './dom.ts';
+import { COMMERCIAL } from '../../shared/data/licence.ts';
 
 const sec = (n: number, title: string) => h('h3', {}, h('i', { text: String(n).padStart(2, '0') }), h('span', { text: title }));
 
@@ -30,7 +31,8 @@ export class SettingsMenu {
       type: 'button', role: 'radio', class: `sw sw-${s}` + (s === this.surface ? ' on' : ''), 'aria-checked': String(s === this.surface), 'data-surface': s,
       onclick: () => { this.surface = s; this.onSurface(s); this.render(); },
     }, h('i'), h('span', { text: t(({ ink: 'sInk', paper: 'sPaper', plain: 'sPlain' } as const)[s]) }))));
-    const layers = h('div', { class: 'switches' }, ...(Object.keys(this.layers) as (keyof Layers)[]).map(k => {
+    // a commercial build has no administrative boundaries (licence.ts)
+    const layers = h('div', { class: 'switches' }, ...(Object.keys(this.layers) as (keyof Layers)[]).filter(k => !(COMMERCIAL && k === 'admin')).map(k => {
       const c = h('input', { type: 'checkbox', 'data-layer': k });
       c.checked = this.layers[k];
       c.addEventListener('change', () => this.onChange(k, c.checked));

@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve, sep } from 'node:path';
 import { defineConfig, type Plugin } from 'vite';
+import { stripNonCommercial } from './scripts/commercial-data.ts';
 
 /** Writes the offline service worker (src/client/sw.js) to <outDir>/sw.js once the build is on disk, with the list of
  * every output file to precache (lazy model packs and worker chunks included) and a version hashed from their contents. */
@@ -30,10 +31,26 @@ function serviceWorker(): Plugin {
   };
 }
 
+/** A commercial build (VITE_COMMERCIAL=1) ships the shape store without its non-commercial geometry (NOTICE.md). Runs
+ * before the service worker hashes the output. */
+function commercialData(): Plugin {
+  let outDir = 'dist';
+  return {
+    name: 'ages-commercial-data',
+    apply: 'build',
+    configResolved(c) { outDir = resolve(c.root, c.build.outDir); },
+    closeBundle() {
+      if (process.env.VITE_COMMERCIAL !== '1') return;
+      const file = join(outDir, 'data/atlas/shapes.json');
+      writeFileSync(file, JSON.stringify(stripNonCommercial(JSON.parse(readFileSync(file, 'utf8')))));
+    },
+  };
+}
+
 // BASE_PATH: URL prefix when hosted below the domain root (e.g. "/ages/" on GitHub Pages).
 export default defineConfig({
   base: process.env.BASE_PATH ?? '/',
-  plugins: [serviceWorker()],
+  plugins: [commercialData(), serviceWorker()],
   server: { port: 5174, hmr: process.env.NOHMR ? false : undefined },
   preview: { port: 4173 },
   build: {
