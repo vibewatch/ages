@@ -82,5 +82,5 @@ US$4.99/month or US$29/year.
 | #5 Classroom | shipped: playlists, presentation mode, `#show=` links; classes and results need the backend |
 | #6 Content trust | sources on every path-lesson step; flagged facts reviewed; a teacher's review still advised |
 | #7 Weekly report | shipped: dialog, image, text |
-| #8 Commercial data | `npm run build:commercial` strips CHGIS / Hartwell and Warring States geometry; replacement data open |
+| #8 Commercial data | owner decision (2026-11-27): no charging for now, so the public site keeps the full data (14 Warring States phases, prefectures); `npm run build:commercial` strips the CHGIS / Hartwell material, for whenever a paid build is made; replacement data open |
 | #9 Free / Pro | entitlement check in the client (`src/shared/lib/plan.ts`), off unless `VITE_PRO_GATE=1`; free: one 读图 round a day, chapter checks 1–3; Pro: unlimited 读图, every chapter check, report image. `?pro=1` tries Pro in a gated build. **Owner decisions needed:** backend and region, payment rails, prices, China compliance. |
