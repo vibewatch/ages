@@ -4,7 +4,7 @@ import { formatArea, polityArea, realmArea } from '../../shared/data/areas.ts';
 import { ERAS, RULERS } from '../../shared/data/eras.ts';
 import { EVENT, EVENTS, hasStory } from '../../shared/data/events.ts';
 import { tr } from '../../shared/data/i18n.ts';
-import { JOURNEYS, PEOPLE, dynastyOfEra, eraIdOfDyn, journeysOf, personNamed, type Journey, type Person } from '../../shared/data/jiangshan.ts';
+import { JOURNEYS, PEOPLE, dynastyOfEra, eraIdOfDyn, journeysOf, personNamed, type Journey, type Person } from '../../shared/data/corpus.ts';
 import { LESSON } from '../../shared/data/lessons/index.ts';
 import { PLACE, isCapital, placeName } from '../../shared/data/places.ts';
 import { SNAPSHOTS } from '../../shared/data/territories.ts';

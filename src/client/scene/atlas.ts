@@ -3,7 +3,7 @@ import { formatArea, polityArea } from '../../shared/data/areas.ts';
 import { ERAS } from '../../shared/data/eras.ts';
 import { EVENT, EVENTS } from '../../shared/data/events.ts';
 import { tr, type Lang } from '../../shared/data/i18n.ts';
-import { RIVER_LABELS, WORKS, type Person, type RiverLabel } from '../../shared/data/jiangshan.ts';
+import { RIVER_LABELS, WORKS, type Person, type RiverLabel } from '../../shared/data/corpus.ts';
 import { PLACE, PLACES, isCapital, mapName, riverName } from '../../shared/data/places.ts';
 import { lifeEvent, lifePlace, sceneryOf, type Level } from '../../shared/data/scenery.ts';
 import type { LifeItem } from '../../shared/data/life.ts';

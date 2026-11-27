@@ -1,7 +1,7 @@
 import type { Layers } from '../scene/atlas.ts';
 import { SURFACES, type Surface } from '../scene/terrain.ts';
 import { ERAS } from '../../shared/data/eras.ts';
-import { JOURNEYS, eraIdOfDyn, type Journey } from '../../shared/data/jiangshan.ts';
+import { JOURNEYS, eraIdOfDyn, type Journey } from '../../shared/data/corpus.ts';
 import { TRAILS, type Trail } from '../../shared/data/trails.ts';
 import { tr } from '../../shared/data/i18n.ts';
 import { kindName, lang, t, type Key } from '../lib/i18n.ts';
@@ -30,7 +30,6 @@ export class SettingsMenu {
       type: 'button', role: 'radio', class: `sw sw-${s}` + (s === this.surface ? ' on' : ''), 'aria-checked': String(s === this.surface), 'data-surface': s,
       onclick: () => { this.surface = s; this.onSurface(s); this.render(); },
     }, h('i'), h('span', { text: t(({ ink: 'sInk', paper: 'sPaper', plain: 'sPlain' } as const)[s]) }))));
-    // a commercial build has no administrative boundaries (licence.ts)
     const layers = h('div', { class: 'switches' }, ...(Object.keys(this.layers) as (keyof Layers)[]).map(k => {
       const c = h('input', { type: 'checkbox', 'data-layer': k });
       c.checked = this.layers[k];

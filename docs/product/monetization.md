@@ -35,7 +35,7 @@ The rule that follows: **charge for outcomes and for the map, never for the word
 4. **Content trust.** Every path-lesson step cites a source; flagged facts are reviewed; a visible "checked against
    统编版" mark. Trust is the main reason to pay rather than ask a chat.
 5. **Progress report.** A shareable weekly report (chapters done, mastery, weak areas) — the artefact a parent pays for.
-6. **Commercial-clean data.** Replace or switch off the CHGIS / Hartwell-derived layers (`NOTICE.md`) in any paid build.
+6. **Commercial-clean data.** Done (2026-11-27): all maps and content are our own or public domain (`NOTICE.md`).
 
 ## 4. Pricing strategy
 
@@ -56,10 +56,10 @@ US$4.99/month or US$29/year.
 
 ### Constraints that shape the plan
 
-* **GPL-3.0.** The client code is derived from jiangshan-map and must stay GPL and public. Revenue therefore comes from
+* **GPL-3.0.** The client code is GPL and public. Revenue therefore comes from
   services (account, sync, reports, class results, hosted premium item banks) running on our own server, plus the brand —
   not from hiding client code. Premium item banks should live outside this repository and be served to entitled users.
-* **Non-commercial GIS data** (CHGIS V6, Hartwell) must be removed from a paid build first.
+* **Non-commercial GIS data:** none remains (all maps and content are our own or public domain).
 * **China compliance.** Selling to K-9 students touches 双减 rules and the 教育移动互联网应用程序备案; a web service needs
   ICP 备案. Selling through teachers/schools and the international edition first lowers this risk. Get advice before
   launching domestic consumer payments.
@@ -82,5 +82,5 @@ US$4.99/month or US$29/year.
 | #5 Classroom | shipped: playlists, presentation mode, `#show=` links; classes and results need the backend |
 | #6 Content trust | sources on every path-lesson step; flagged facts reviewed; a teacher's review still advised |
 | #7 Weekly report | shipped: dialog, image, text |
-| #8 Commercial data | owner decision (2026-11-27): no charging for now, so the public site keeps the full data (14 Warring States phases, prefectures); `npm run build:commercial` strips the CHGIS / Hartwell material, for whenever a paid build is made; replacement data open |
+| #8 Commercial data | done: every map and all content are our own (seat holdings → generated maps; own chronicle) or public domain (Natural Earth); the import and the commercial build switch are gone |
 | #9 Free / Pro | entitlement check in the client (`src/shared/lib/plan.ts`), off unless `VITE_PRO_GATE=1`; free: one 读图 round a day, chapter checks 1–3; Pro: unlimited 读图, every chapter check, report image. `?pro=1` tries Pro in a gated build. **Owner decisions needed:** backend and region, payment rails, prices, China compliance. |

@@ -1,5 +1,6 @@
 import type { HistEvent, ModelRecipe, Place } from './types.ts';
 import { FIGURE_LOOK } from './figures.ts';
+import { PLACES } from './places.ts';
 
 /**
  * Detailed "hero" models (pocket-planet packs, src/client/models/heroes) for landmark events, places and people.
@@ -356,8 +357,92 @@ export function placeEraId(p: Place, year: number): string {
   return 'prc';
 }
 
+/**
+ * Where the settlement-made places that have their own hand-built model stand (the ids above were given in import
+ * order; places made from settlements are matched by position instead, so the model follows the town, not the id).
+ */
+const MODEL_AT: [string, number, number, string][] = [
+  ['j0', 113.74, 34.4, '新郑'],
+  ['j1', 107.38, 34.46, '宝鸡·凤翔'],
+  ['j3', 112.55, 37.87, '太原'],
+  ['j23', 120.58, 30, '绍兴'],
+  ['j28', 110.29, 25.27, '桂平·桂林'],
+  ['j33', 102.64, 37.93, '武威'],
+  ['j34', 107.4, 40.75, '巴彦淖尔'],
+  ['j35', 117.18, 34.26, '徐州'],
+  ['j36', 100.45, 38.93, '张掖'],
+  ['j54', 82.96, 41.72, '阿克苏·库车'],
+  ['j55', 79.92, 37.11, '和田'],
+  ['j57', 112.12, 32.01, '襄阳'],
+  ['j63', 126.19, 41.12, '通化·集安'],
+  ['j64', 117.23, 31.82, '合肥'],
+  ['j65', 114.89, 30.39, '鄂州'],
+  ['j68', 109.46, 31.02, '重庆·奉节'],
+  ['j72', 111.52, 36.08, '临汾'],
+  ['j73', 105.72, 34.58, '天水'],
+  ['j74', 113.13, 29.36, '岳阳'],
+  ['j79', 108.87, 37.99, '榆林·靖边'],
+  ['j97', 89.18, 44, '吉木萨尔'],
+  ['j106', 118.43, 29.87, '黄山·歙县'],
+  ['j108', 103.77, 29.55, '乐山'],
+  ['j114', 111.08, 32.54, '十堰·丹江口'],
+  ['j118', 109.18, 18.36, '三亚'],
+  ['j119', 112.96, 39.07, '忻州·代县'],
+  ['j120', 129.15, 44.05, '牡丹江·宁安'],
+  ['j121', 91.77, 29.24, '山南'],
+  ['j127', 114.57, 38.14, '石家庄·正定'],
+  ['j130', 117.18, 29.27, '景德镇'],
+  ['j135', 106.28, 30.03, '重庆·合川'],
+  ['j137', 102.85, 47.2, '哈拉和林（蒙古国）'],
+  ['j142', 88.02, 28.9, '日喀则·萨迦'],
+  ['j148', 115.06, 40.61, '张家口·宣化'],
+  ['j149', 109.73, 38.28, '榆林'],
+  ['j152', 124.85, 41.72, '抚顺·新宾'],
+  ['j154', 107.36, 22.38, '崇左'],
+  ['j155', 80.42, 44.2, '中俄勘界口岸'],
+  ['j156', 120.38, 36.07, '青岛（德国强租）'],
+  ['j157', 117.96, 40.95, '承德'],
+  ['j160', 127.49, 50.25, '黑河'],
+  ['j172', 118.09, 24.48, '厦门'],
+  ['settlement-117.12-36.19', 117.12, 36.19, '泰安'],
+  ['settlement-112.2-30.35', 112.2, 30.35, '荆州'],
+  ['settlement-116.78-32.58', 116.78, 32.58, '寿县'],
+  ['settlement-121.55-29.87', 121.55, 29.87, '宁波'],
+  ['settlement-119.38-43.97', 119.38, 43.97, '赤峰·巴林左旗'],
+  ['settlement-126.97-45.54', 126.97, 45.54, '哈尔滨·阿城'],
+];
+const SETTLED = /^(j\d+|settlement-|city-)/;
+/**
+ * The id a place's hand-built models are filed under: its own, or for a settlement-made place the entry at its site.
+ * Each entry goes to one place: the nearest with the same name within 0.25°, else the nearest within 0.04°.
+ */
+let claimed: Map<string, string> | null = null;
+function modelId(p: Place): string {
+  if (!SETTLED.test(p.id)) return p.id;
+  if (!claimed) {
+    claimed = new Map();
+    const settled = PLACES.filter(x => SETTLED.test(x.id));
+    const namesOf = (x: Place) => [x.name.zh, x.modern?.zh ?? '', ...(x.names ?? []).map(n => n.name.zh)].join(' ');
+    const taken = new Set<string>();
+    for (const [id, lon, lat, name] of MODEL_AT) {
+      let best: Place | undefined, bd = Infinity;
+      for (const x of settled) {
+        if (taken.has(x.id)) continue;
+        const d = Math.hypot(x.lon - lon, x.lat - lat);
+        const ok = d < 0.04 || (d < 0.25 && name.split('·').some(t => t && namesOf(x).includes(t)));
+        if (ok && d < bd) { bd = d; best = x; }
+      }
+      if (best) { taken.add(best.id); claimed.set(best.id, id); }
+    }
+  }
+  return claimed.get(p.id) ?? '';
+}
 function basePlaceModel(p: Place): ModelRecipe {
-  const byId = PLACE_ID_HERO[p.id];
+  if (SETTLED.test(p.id)) {
+    const hit = PLACE_ID_HERO[modelId(p)];
+    if (hit) return hit;
+  }
+  const byId = SETTLED.test(p.id) ? undefined : PLACE_ID_HERO[p.id];
   if (byId) return byId;
   if (p.id) {
     const text = [p.name.zh, p.modern?.zh ?? '', ...(p.names?.map(n => n.name.zh) ?? []), ...(p.notes?.map(n => n.text.zh) ?? []), p.lore?.tag.zh ?? '', p.lore?.desc.zh ?? ''].join(' ');
@@ -368,7 +453,8 @@ function basePlaceModel(p: Place): ModelRecipe {
       : /书院|文庙|学|儒|祠|阁|楼|亭/.test(text) ? 4
       : p.capital?.length ? 5
       : /陵|墓|冢|遗址|故城/.test(text) ? 6 : 7;
-    const key = 'pl_' + p.id.replace(/[^a-z0-9]/gi, '_');
+    // places made from settlements share one builder, varied by the place (its style)
+    const key = SETTLED.test(p.id) ? 'pl_gazetteer' : 'pl_' + p.id.replace(/[^a-z0-9]/gi, '_');
     const anc = (p.names?.map(n => n.name.zh) ?? []).join(',');
     const lore = (p.lore?.tag.zh ?? '') + ' ' + (p.notes?.[0]?.text.zh ?? '');
     return {
@@ -386,7 +472,7 @@ export function placeModel(p: Place, year?: number): ModelRecipe {
   const base = basePlaceModel(p);
   if (year === undefined) return base;
   const eraId = placeEraId(p, year);
-  const eraCap = PLACE_ERA_HERO[p.id]?.[eraId];
+  const eraCap = PLACE_ERA_HERO[modelId(p)]?.[eraId];
   const chosen = eraCap ?? base;
   const prefix = chosen.style ? `${chosen.style}|` : '';
   return {

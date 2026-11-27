@@ -3,7 +3,7 @@ import type { Content } from './types.ts';
 /**
  * Chronicle events from the Yuan to the People's Republic (1279 onwards), in our own words (see docs/data/content.md).
  * Modern history follows the national textbook (统编版) in its positions and terms. The Chinese wording also decides how
- * the app draws an event (jiangshan.ts `kindOf` / `modelOf`), so titles name the act plainly: 攻/破/之战 for battles,
+ * the app draws an event (corpus.ts `kindOf` / `modelOf`), so titles name the act plainly: 攻/破/之战 for battles,
  * 条约 for treaties, 定都/迁都 for capitals. The clause before the first comma is the event's short label.
  */
 

@@ -1,5 +1,5 @@
 import { formatYear } from '../lib/timeline.ts';
-import type { Journey } from './jiangshan.ts';
+import type { Journey } from './corpus.ts';
 import type { Formation, I18n, LonLat, ModelRecipe, StoryStep, Troops, Year } from './types.ts';
 
 /**

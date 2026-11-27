@@ -2,43 +2,27 @@
 
 长河 Ages is released under the **GNU General Public License v3.0** (see [LICENSE](LICENSE)).
 
-## Our own territory data
+## Our own data
 
-The territory maps from 403 BCE to 1949 are our own work, released under GPL-3.0 with the code: seats, holdings and
-sources in `src/shared/data/own/`, generated over the public-domain relief by `scripts/build-territories.ts`
-(see [docs/data/territories.md](docs/data/territories.md)). They replace every imported territorial phase; the builds
-no longer ship the imported phases or their administrative layers, including the CHGIS / Hartwell-derived material;
-the administrative layer (郡 / 州 / 府) is generated from our own seats as well.
+All historical content is our own work, released under GPL-3.0 with the code:
 
-## Imported content: jiangshan-map
+* the territory maps from 403 BCE to 1949 and their administrative layer (郡 / 州 / 府): seats, holdings and sources in
+  `src/shared/data/own/`, generated over the public-domain relief by `scripts/build-territories.ts`
+  ([docs/data/territories.md](docs/data/territories.md));
+* the chronicle: events, settlements with their period names, passes, city lore, the gazetteer, people, journeys, reign
+  eras (年号), great works, river labels and dynasty summaries, in `src/shared/data/content/`
+  ([docs/data/content.md](docs/data/content.md));
+* the curated curriculum events, places, stories, lessons, the early schematic maps and the PRC maps.
 
-The following content is imported from [jiangshan-map 江山图](https://github.com/DeanChensj/jiangshan-map) by DeanChensj
-(GPL-3.0, Copyright © 2026 DeanChensj), pinned to commit `4eb009dec7ceee781f8181a370afaddd11dbcf59`. It is converted by
-`scripts/import-jiangshan.ts` into `public/data/atlas/shapes.json` and `src/shared/data/gen/jiangshan.json`:
+Facts are taken from the standard histories, 《资治通鉴》, the treaties and the national textbooks, cited where they
+matter. Until 2026-11 the atlas imported data from [jiangshan-map 江山图](https://github.com/DeanChensj/jiangshan-map)
+by DeanChensj (GPL-3.0), which inspired the project; none of that data remains, and the import has been removed.
 
-* territorial phases (165 snapshots of polities from 403 BCE to 1949), administrative divisions (郡 / 州 / 府 / 路 / 省),
-  modern provincial outlines and historical lakes;
-* chronicle milestones and landmark events, settlements with their names by period, strategic passes, city lore and a
-  gazetteer of historical place names;
-* people, travellers' journeys, reign eras (年号), dynasty summaries, great works (walls, canals, roads, sea routes), river
-  labels and guqin music metadata.
+## Public-domain map data
 
-Modifications: re-encoded geometry (delta/VLQ rings), merged with our curated events, places and polities, de-duplicated,
-reclassified by event kind and 3D model, era names romanised with pinyin. The nine-dash line is not imported; our own
-curated snapshots are kept for 1937–1945 and from 1949.
-
-jiangshan-map's historical GIS references include Tan Qixiang's *Historical Atlas of China* (谭其骧《中国历史地图集》),
-**CHGIS** (Harvard-Yenching Institute & Fudan University), **Robert M. Hartwell**'s China Historical GIS and
-[aourednik/historical-basemaps](https://github.com/aourednik/historical-basemaps) (GPL-3.0).
-
-**Exception:** prefecture-level boundaries and Warring States territories derived from CHGIS V6 and the Hartwell China
-Historical GIS remain subject to their original terms (**academic, non-commercial use only**) and are not relicensed
-under GPL-3.0.
-
-**Commercial build:** since the app now ships only our own territory and administrative maps, none of the CHGIS /
-Hartwell-derived material reaches users in any build. `npm run build:commercial` (VITE_COMMERCIAL=1) still strips it
-from `data/atlas/shapes.json` as a safeguard (`scripts/commercial-data.ts`, `tests/unit/commercial.test.ts`). The
-remaining imported content (events, places, people, reign eras, works; GPL-3.0) should still be reviewed before selling.
+* Modern province, country and lake outlines: [Natural Earth](https://www.naturalearthdata.com/) (public domain),
+  built by `scripts/build-basemap.ts`; the country outline follows Natural Earth's China point of view. No maritime
+  lines are drawn. 云梦泽 and 巨野泽 are our own sketches.
 
 ## Other sources
 

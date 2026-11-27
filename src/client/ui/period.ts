@@ -2,7 +2,7 @@ import { formatArea, polityArea, realmArea, snapPolities } from '../../shared/da
 import { WHY, chapterAt, type Chapter } from '../../shared/data/chapters.ts';
 import { EVENT } from '../../shared/data/events.ts';
 import { tr } from '../../shared/data/i18n.ts';
-import { WORKS } from '../../shared/data/jiangshan.ts';
+import { WORKS } from '../../shared/data/corpus.ts';
 import { PLACE, mapName } from '../../shared/data/places.ts';
 import { POLITY } from '../../shared/data/polities.ts';
 import { snapshotSources } from '../../shared/data/sources.ts';

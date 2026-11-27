@@ -1,17 +1,14 @@
-import RAW from './gen/jiangshan.json' with { type: 'json' };
 import type { EventKind, HistEvent, I18n, LonLat, ModelRecipe, Place, Polity, Snapshot, Year } from './types.ts';
 import { EXTRA_JOURNEYS, EXTRA_PEOPLE } from './journeys.ts';
 import { FIGURES } from './figures.ts';
-import { COMMERCIAL, NONCOMMERCIAL_DYN } from './licence.ts';
 import { OWN_REPLACES } from './own.ts';
 import { OWN_CONTENT } from './content/index.ts';
 
 /**
- * Content imported from DeanChensj/jiangshan-map (GPL-3.0, see NOTICE.md) by scripts/import-jiangshan.ts:
- * dated territorial phases, chronicle events, settlements with period names, passes, city lore, people, journeys,
- * reign eras (年号), walls / canals / routes and river labels. Geometry lives in public/data/atlas/shapes.json and is
- * loaded by the client (src/client/scene/shapes.ts). This module normalises the records into the app's content model;
- * curated data (events.ts, places.ts, territories.ts) is merged with it and always wins on conflicts.
+ * The chronicle content (src/shared/data/content/, our own; see docs/data/content.md): chronicle events, settlements
+ * with period names, passes, city lore, people, journeys, reign eras (年号), walls / canals / routes and river labels.
+ * This module normalises the records into the app's content model; curated data (events.ts, places.ts,
+ * territories.ts) is merged with it and always wins on conflicts.
  */
 interface Raw {
   source: { repo: string; sha: string; license: string };
@@ -32,8 +29,8 @@ interface Raw {
   rivers: RiverLabel[];
   music: { name: I18n; mp3: string; ogg: string }[];
 }
-// our own content replaces the imported lists one by one (content/index.ts)
-const J = { ...(RAW as unknown as Raw), ...OWN_CONTENT } as Raw;
+// every list is our own now; the imported territorial phases and their polities are gone
+const J: Raw = { source: { repo: 'own', sha: '', license: 'GPL-3.0' }, timeline: [], polities: [], ...OWN_CONTENT };
 
 export interface JourneyStop {
   year: Year; era: I18n; name: I18n; modern: I18n; lon: number; lat: number; via?: LonLat[]; from?: LonLat;
@@ -85,14 +82,13 @@ export const dynastyOfEra = (nameZh: string): Dynasty | undefined => DYNASTIES.f
 
 // ------------------------------------------------------------------ polities and snapshots
 
-/** jiangshan-map draws polities without a tint (neighbours) in a neutral earth tone. */
+/** Polities without a tint (neighbours) are drawn in a neutral earth tone. */
 const NEIGHBOR_TINT = '#a87a4c';
 export const IMPORTED_POLITIES: Polity[] = J.polities.map(p => ({ id: p.id, name: p.name, color: p.color ?? NEIGHBOR_TINT, role: p.role as Polity['role'] }));
 
 /** Dated phases from 403 BCE to 1949; `regions` are filled from the shape store when it has loaded. */
-// a commercial build leaves out the non-commercial imported territories (licence.ts)
 // eras with our own maps (own.ts) drop the imported phases
-export const IMPORTED_SNAPSHOTS: Snapshot[] = J.timeline.filter(t => !OWN_REPLACES.has(t.dyn) && (!COMMERCIAL || !NONCOMMERCIAL_DYN.has(t.dyn))).map(t => ({
+export const IMPORTED_SNAPSHOTS: Snapshot[] = J.timeline.filter(t => !OWN_REPLACES.has(t.dyn)).map(t => ({
   id: t.id, scope: 'china', year: t.start, end: t.end, dyn: t.dyn, title: t.title, note: t.note, regions: [], shapes: t.id,
 }));
 // a dynasty's last phase and the next dynasty's first can share their boundary year: the new dynasty takes the next year

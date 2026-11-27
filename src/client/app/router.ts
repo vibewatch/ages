@@ -1,6 +1,6 @@
 import { ERAS } from '../../shared/data/eras.ts';
 import { EVENT } from '../../shared/data/events.ts';
-import { JOURNEYS, PERSON, type Journey, type Person } from '../../shared/data/jiangshan.ts';
+import { JOURNEYS, PERSON, type Journey, type Person } from '../../shared/data/corpus.ts';
 import { LESSON } from '../../shared/data/lessons/index.ts';
 import { LIFE, type LifeItem } from '../../shared/data/life.ts';
 import { PLACE } from '../../shared/data/places.ts';

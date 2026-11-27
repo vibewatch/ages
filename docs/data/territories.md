@@ -1,7 +1,6 @@
 # Our own territory maps
 
-The atlas is moving from imported boundary polygons (jiangshan-map, which derives from CHGIS, Hartwell and Tan
-Qixiang's atlas) to maps we generate from our own data. The goals:
+The atlas's territory maps are generated from our own data (they replaced imported boundary polygons). The goals:
 
 * **Ours to use.** The data and the maps are our own work, free of non-commercial terms.
 * **Checkable.** A border is the consequence of a recorded holding with a source, not a line someone drew. The period
@@ -10,8 +9,7 @@ Qixiang's atlas) to maps we generate from our own data. The goals:
 
 Status: every period from 403 BCE to 1949 is ours: 17 eras, 198 phases and about 4 900 seats (`src/shared/data/own/`).
 The builds no longer ship the imported phases (`pruneShapes` in `scripts/commercial-data.ts`). Still to do (GitHub
-issue #11): a historian's review of the `est` dates, and
-replacing the imported events, places and people.
+issue #11): a historian's review of the `est` dates.
 
 ## Method
 
@@ -39,7 +37,7 @@ the unit it is the seat of (狄道（陇西郡） → 陇西郡; 扬州 → 扬�
 name. Units are approximate catchments of their seats, not surveyed boundaries.
 
 An era with our own maps replaces the imported dynasty named by `replaces` (`src/shared/data/own.ts`,
-`jiangshan.ts`).
+`corpus.ts`).
 
 ## Rules for adding data
 

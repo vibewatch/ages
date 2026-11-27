@@ -248,43 +248,12 @@ export function snapshotSources(s: Snapshot): SnapshotSourceInfo {
       },
     };
   }
-  const isImported = Boolean(s.dyn || (s.shapes && !s.shapes.startsWith('x_')));
-  if (s.year >= -221 && s.year <= -207) {
-    return {
-      kind: isImported ? 'imported' : 'curated',
-      badge: { zh: '秦代疆域考证 · 谭图 / CHGIS', en: 'Qin realm · Tan Atlas / CHGIS' },
-      source: {
-        zh: '底图来源：谭其骧《中国历史地图集》（第二册·秦）、里耶秦简郡县考证与江山图底图',
-        en: 'Source: Tan Qixiang’s Historical Atlas of China (Vol. 2: Qin), Liye Qin bamboo-slip county studies & jiangshan-map',
-      },
-      uncertainty: {
-        zh: '疆界说明：反映秦代郡县直辖区与北境长城防线；西南夷与岭南百越边缘当时多为通道与据点控制，折算面积为近似估算。',
-        en: 'Boundary note: Depicts Qin commanderies and the northern wall line; southern and southwestern marches were held mainly along garrisoned corridors, so area figures are approximate.',
-      },
-    };
-  }
-  if (s.year >= 618 && s.year <= 907) {
-    return {
-      kind: isImported ? 'imported' : 'curated',
-      badge: { zh: '唐代疆域考证 · 谭图 / CHGIS', en: 'Tang realm · Tan Atlas / CHGIS' },
-      source: {
-        zh: '底图来源：谭其骧《中国历史地图集》（第五册·唐）、《旧唐书·地理志》与江山图底图',
-        en: 'Source: Tan Qixiang’s Historical Atlas of China (Vol. 5: Tang), Old Book of Tang Geography Treatise & jiangshan-map',
-      },
-      uncertainty: {
-        zh: '疆界说明：涵盖正州（道州县）与安西、北庭、安北、单于等羁縻都护府；羁縻边疆随西域与草原局势动态伸缩，面积为近似估算。',
-        en: 'Boundary note: Includes both regular prefectures and jimi protectorates (Anxi, Beiting, Anbei); protectorate frontiers shifted fluidly with steppe politics, so area figures are approximate.',
-      },
-    };
-  }
   return {
-    kind: isImported ? 'imported' : 'curated',
-    badge: isImported
-      ? { zh: '历史GIS底图 · 谭图 / 江山图', en: 'Historical GIS · Tan Atlas / jiangshan' }
-      : { zh: '统编教材参考底图', en: 'Curriculum reference map' },
+    kind: 'curated',
+    badge: { zh: '统编教材参考底图', en: 'Curriculum reference map' },
     source: {
-      zh: '底图来源：谭其骧《中国历史地图集》、CHGIS（哈佛中国历史GIS）与江山图阶段数据',
-      en: 'Source: Tan Qixiang’s Historical Atlas of China, Harvard CHGIS and jiangshan-map phase polygons',
+      zh: '底图来源：依据统编历史教材形势图示意绘制',
+      en: 'Source: schematic, after the national history textbooks’ situation maps',
     },
     uncertainty: {
       zh: '疆界说明：古代边疆、羁縻府州与游牧政权交界多为动态过渡带，折算面积为近似值，仅供教学参考。',

@@ -1,4 +1,4 @@
-import { IMPORTED_POLITIES } from './jiangshan.ts';
+import { IMPORTED_POLITIES } from './corpus.ts';
 import { OWN_POLITIES } from './own.ts';
 import type { Polity } from './types.ts';
 

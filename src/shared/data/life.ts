@@ -1,5 +1,5 @@
 import { personModel } from './heroes.ts';
-import { personNamed, type Person } from './jiangshan.ts';
+import { personNamed, type Person } from './corpus.ts';
 import type { I18n, ModelRecipe, Wiki } from './types.ts';
 
 /**

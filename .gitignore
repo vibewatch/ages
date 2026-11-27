@@ -6,3 +6,4 @@ playwright-report/
 .tmp/
 .cache/
 .territory-preview/
+.basemap-cache/

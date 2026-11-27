@@ -1,7 +1,7 @@
 import { ERAS } from '../../shared/data/eras.ts';
 import { EVENTS } from '../../shared/data/events.ts';
 import { tr } from '../../shared/data/i18n.ts';
-import { JOURNEYS, PEOPLE } from '../../shared/data/jiangshan.ts';
+import { JOURNEYS, PEOPLE } from '../../shared/data/corpus.ts';
 import { LESSONS } from '../../shared/data/lessons/index.ts';
 import { LIFE } from '../../shared/data/life.ts';
 import { PLACES } from '../../shared/data/places.ts';

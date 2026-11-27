@@ -7,7 +7,7 @@
  *   node scripts/build-territories.ts --preview  also writes .territory-preview/<phase>.png for checking
  *   node scripts/build-territories.ts --try src/shared/data/own/tang.ts
  *       one era file on its own (not yet in own/index.ts): previews and .territory-preview/try-<era>.json only, nothing else
- *       written; check it against another map with scripts/territory/compare.ts
+ *       written
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import sharp from 'sharp';

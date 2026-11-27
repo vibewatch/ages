@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { decodeRing, encodeRing } from '../../src/shared/lib/rings.ts';
 import { ERAS } from '../../src/shared/data/eras.ts';
 import { EVENTS } from '../../src/shared/data/events.ts';
-import { JOURNEYS, PEOPLE } from '../../src/shared/data/jiangshan.ts';
+import { JOURNEYS, PEOPLE } from '../../src/shared/data/corpus.ts';
 import { PLACES } from '../../src/shared/data/places.ts';
 import { distKm, gradeWhere, locatePoints, makeLocateQuiz, makeMistakeQuiz, makeQuiz, periodQuestion, rankOf } from '../../src/shared/lib/quiz.ts';
 import { CHRONICLE, chapterAt, currentEntry, phaseAt, previousSnap, stepStop } from '../../src/shared/lib/chronicle.ts';

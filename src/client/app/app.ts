@@ -2,7 +2,7 @@ import type { Chapter } from '../../shared/data/chapters.ts';
 import { ERAS } from '../../shared/data/eras.ts';
 import { EVENT } from '../../shared/data/events.ts';
 import type { Lang } from '../../shared/data/i18n.ts';
-import type { Journey, Person } from '../../shared/data/jiangshan.ts';
+import type { Journey, Person } from '../../shared/data/corpus.ts';
 import { LIFE, type LifeItem } from '../../shared/data/life.ts';
 import { PLACE } from '../../shared/data/places.ts';
 import { journeyStory } from '../../shared/data/stories.ts';

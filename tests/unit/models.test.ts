@@ -7,7 +7,7 @@ import { loadPack, PACK_IDS, parseHero } from '../../src/client/models/heroes/in
 import { LIFE } from '../../src/shared/data/life.ts';
 import { ERAS } from '../../src/shared/data/eras.ts';
 import { PLACES } from '../../src/shared/data/places.ts';
-import { JOURNEYS, PEOPLE } from '../../src/shared/data/jiangshan.ts';
+import { JOURNEYS, PEOPLE } from '../../src/shared/data/corpus.ts';
 import * as HEROES from '../../src/shared/data/heroes.ts';
 import { personLook } from '../../src/client/models/costume.ts';
 import { EVENTS } from '../../src/shared/data/events.ts';

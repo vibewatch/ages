@@ -1,4 +1,4 @@
-import type { Person } from './jiangshan.ts';
+import type { Person } from './corpus.ts';
 import type { Year } from './types.ts';
 
 /**

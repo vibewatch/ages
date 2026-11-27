@@ -330,7 +330,7 @@ const S = {
   helpKeys: { zh: '快捷键：空格 播放/暂停 · ← → 上一个/下一个大事（Shift ±10 年）· [ ] 专题脉络上/下一站 · / 搜索 · R 回到全图 · Esc 关闭', en: 'Keys: Space play/pause · ← → previous/next event (Shift ±10 years) · [ ] prev/next trail stop · / search · R reset view · Esc close' },
   disclaimer: { zh: '历史疆域为示意图，依据中学历史课本地图简化绘制，不作为划界依据。', en: 'Historical borders are schematic, simplified from school-textbook maps, and are not authoritative boundaries.' },
   credits: { zh: '地形：AWS Terrain Tiles（SRTM、GMTED、ETOPO1）。背景阅读：维基百科（CC BY-SA）。', en: 'Terrain: AWS Terrain Tiles (SRTM, GMTED, ETOPO1). Background reading: Wikipedia (CC BY-SA).' },
-  creditsJsm: { zh: '疆域、政区、事件、地名与人物数据导入自 江山图 jiangshan-map（DeanChensj，GPL-3.0），其底图源自 CHGIS、Hartwell 等学术数据集（仅限非商业用途）。', en: 'Territories, divisions, events, places and people imported from jiangshan-map by DeanChensj (GPL-3.0), whose base data derive from CHGIS, Hartwell and other academic datasets (non-commercial use).' },
+  creditsJsm: { zh: '疆域、政区与编年内容（事件、地名、人物、年号）为本站整理，史料出处见各时期与卡片；现代省界、湖泊与国界轮廓来自 Natural Earth（公有领域）。', en: 'Territories, administrative divisions and the chronicle (events, places, people, reign eras) are our own work, with sources noted on each period and card; modern province, lake and country outlines are from Natural Earth (public domain).' },
   phase2: { zh: '即将推出：世界历史。', en: 'Coming next: world history.' },
   webgl: { zh: '你的浏览器不支持 WebGL，无法显示 3D 地图。', en: 'Your browser does not support WebGL, so the 3D map cannot be shown.' },
   loadFail: { zh: '地图数据加载失败，请检查网络连接后重试。', en: 'The map data could not be loaded. Please check your connection and try again.' },

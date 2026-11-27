@@ -1,9 +1,9 @@
-import type { Journey, Person, RiverLabel, Work } from '../jiangshan.ts';
+import type { Journey, Person, RiverLabel, Work } from '../corpus.ts';
 import type { I18n, Year } from '../types.ts';
 
 /**
- * Our own chronicle content (replacing the jiangshan-map import piece by piece; see docs/data/content.md). Each module in
- * this folder exports one or more of these lists, in the shapes the app's normaliser (src/shared/data/jiangshan.ts)
+ * Our own chronicle content (see docs/data/content.md). Each module in
+ * this folder exports one or more of these lists, in the shapes the app's normaliser (src/shared/data/corpus.ts)
  * reads; content/index.ts assembles them, and every list present replaces the imported one.
  */
 export interface Content {

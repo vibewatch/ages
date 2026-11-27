@@ -4,7 +4,7 @@ import { ERAS, RULERS } from '../../src/shared/data/eras.ts';
 import { MODEL_KINDS } from '../../src/shared/data/event-kit.ts';
 import { EVENTS, hasStory, storyOf } from '../../src/shared/data/events.ts';
 import { PLACE, PLACES, isCapital, mapName, placeExists, placeName, riverName } from '../../src/shared/data/places.ts';
-import { JOURNEYS, PEOPLE, PERSON, RIVER_LABELS, WORKS, DYNASTIES, eraIdOfDyn, personNamed, reignAt } from '../../src/shared/data/jiangshan.ts';
+import { JOURNEYS, PEOPLE, PERSON, RIVER_LABELS, WORKS, DYNASTIES, eraIdOfDyn, personNamed, reignAt } from '../../src/shared/data/corpus.ts';
 import { FIGURES } from '../../src/shared/data/figures.ts';
 import { EXTRA_PEOPLE } from '../../src/shared/data/journeys.ts';
 import { POLITY, POLITIES, polityMatches } from '../../src/shared/data/polities.ts';
@@ -286,7 +286,7 @@ describe('dynasty scenery', () => {
     expect(lifePlace({ ...bridge, lon: bridge.lon + 1 })).toBeUndefined();
     expect(mapName(PLACE.get('taishan')!, 700)?.zh).toBe('泰山');
     expect(placeName(PLACE.get('taishan')!, 700).en).toBe('Mount Tai');
-    expect(PLACES.some(p => p.kind === 'city' && mapName(p, 700)?.zh === '乾封（泰山）')).toBe(true);
+    expect(PLACES.some(p => p.kind === 'city' && mapName(p, 700)?.zh.startsWith('乾封'))).toBe(true);
   });
   it('stands life items, landmarks and period-dressed people on the map, spaced apart and clear of the capital', () => {
     let total = 0;
@@ -382,7 +382,7 @@ describe('dynasty scenery', () => {
   });
 });
 
-describe('imported jiangshan-map content', () => {
+describe('chronicle content', () => {
   it('adds chronicle events, settlements and period-aware places', () => {
     expect(EVENTS.filter(e => e.source === 'chronicle').length).toBeGreaterThan(500);
     expect(PLACES.length).toBeGreaterThan(250);

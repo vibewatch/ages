@@ -1243,8 +1243,15 @@ SETTLEMENT_KEYS.forEach((k, idx) => {
   GAZETTEER_BUILDERS[k] = (root, r) => buildGazetteer(root, r, salt);
 });
 
+/** Any settlement-made place: the same builder, varied by a hash of the place's style (its id, site and names). */
+const pl_gazetteer: Builder = (root, r) => {
+  const st = String((r as { style?: string } | undefined)?.style ?? '');
+  let h = 7; for (let i = 0; i < st.length; i++) h = (h * 31 + st.charCodeAt(i)) >>> 0;
+  buildGazetteer(root, r, h % 997);
+};
+
 export const PLACES_ATLAS: Record<string, Builder> = {
-  ...GAZETTEER_BUILDERS,
+  ...GAZETTEER_BUILDERS, pl_gazetteer,
   pl_taiyuan, pl_chengde, pl_yueyang, pl_xiangyang, pl_xuzhou, pl_fengjie, pl_hechuan, pl_jian,
   pl_ningan, pl_sakya, pl_shannan, pl_karakorum, pl_zhengding, pl_wuwei, pl_tianshui, pl_kuqa,
   pl_hotan, pl_xinzheng, pl_shouxian, pl_baoji, pl_jingzhou, pl_qingdao, pl_xiamen, pl_ningbo,

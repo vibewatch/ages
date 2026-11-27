@@ -1,5 +1,5 @@
 import { tr } from '../../shared/data/i18n.ts';
-import { MUSIC } from '../../shared/data/jiangshan.ts';
+import { MUSIC } from '../../shared/data/corpus.ts';
 import { lang, t } from '../lib/i18n.ts';
 import { load, save } from '../lib/storage.ts';
 import { h, icon } from './dom.ts';

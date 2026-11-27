@@ -1,6 +1,6 @@
 import type { Chapter } from '../data/chapters.ts';
 import { EVENT } from '../data/events.ts';
-import { JOURNEYS } from '../data/jiangshan.ts';
+import { JOURNEYS } from '../data/corpus.ts';
 
 /**
  * 课堂演示 — a teacher's playlist: an ordered list of events (each shown on the map, with its 3D story when it has one)

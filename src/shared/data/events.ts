@@ -2,7 +2,7 @@ import { withHero } from './heroes.ts';
 import { EVENTS_EARLY } from './events-early.ts';
 import { EVENTS_MIDDLE } from './events-middle.ts';
 import { EVENTS_MODERN } from './events-modern.ts';
-import { importedEvents } from './jiangshan.ts';
+import { importedEvents } from './corpus.ts';
 import { STORIES, autoStory } from './stories.ts';
 import type { HistEvent, StoryStep } from './types.ts';
 

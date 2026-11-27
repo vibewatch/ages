@@ -1,6 +1,6 @@
 /**
  * Shareable deep links in the hash: #e=<event>, #p=<place>, #person=<id>, #life=<id>, #j=<journey>, #lesson=<id> or #y=<year>, plus
- * &lang=zh|en. The jiangshan-map style query (?year=&place=&person=&lang=) is read too.
+ * &lang=zh|en. An older style of query (?year=&place=&person=&lang=) is read too.
  */
 import type { Lang } from '../../shared/data/types.ts';
 

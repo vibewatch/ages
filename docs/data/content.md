@@ -1,11 +1,10 @@
 # Our own chronicle content
 
-The last piece imported from jiangshan-map is the chronicle content: dynasty summaries, chronicle events, settlements
-and their period names, passes, city lore, the gazetteer of old names, people, journeys, reign eras (年号), great works
-and river labels. We replace it list by list with our own, in `src/shared/data/content/` (shapes in `types.ts`);
-`content/index.ts` assembles the lists, and every list present replaces the imported one (`src/shared/data/jiangshan.ts`
-normalises both the same way). When every list is ours, the import (`scripts/import-jiangshan.ts`,
-`src/shared/data/gen/jiangshan.json`) and its credit go.
+The chronicle content is our own: dynasty summaries, chronicle events, settlements and their period names, passes,
+city lore, the gazetteer of old names, people, journeys, reign eras (年号), great works and river labels, in
+`src/shared/data/content/` (shapes in `types.ts`). `content/index.ts` assembles the lists and
+`src/shared/data/corpus.ts` normalises them into the app's model. (It replaced, list by list, content once imported
+from jiangshan-map; none of that remains.)
 
 Rules:
 

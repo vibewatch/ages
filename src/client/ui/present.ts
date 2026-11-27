@@ -1,7 +1,7 @@
 import type { Chapter } from '../../shared/data/chapters.ts';
 import { EVENT } from '../../shared/data/events.ts';
 import { tr } from '../../shared/data/i18n.ts';
-import { JOURNEYS, type Journey } from '../../shared/data/jiangshan.ts';
+import { JOURNEYS, type Journey } from '../../shared/data/corpus.ts';
 import type { HistEvent } from '../../shared/data/types.ts';
 import { chapterPlaylist, cleanItems, cleanTitle, encodePlaylist, isPlaylist, MAX_ITEMS, move, type PlayItem, type Playlist } from '../../shared/lib/playlist.ts';
 import { formatYear } from '../../shared/lib/timeline.ts';

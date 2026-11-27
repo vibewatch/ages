@@ -1,6 +1,6 @@
 import { EVENTS } from './events.ts';
 import { capitalModel, personModel } from './heroes.ts';
-import { personNamed, type Person } from './jiangshan.ts';
+import { personNamed, type Person } from './corpus.ts';
 import { LIFE, lifeOf, type LifeItem, type LifeKind } from './life.ts';
 import { ERAS } from './eras.ts';
 import { PLACE, PLACES } from './places.ts';

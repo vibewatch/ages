@@ -7,7 +7,7 @@ import type { Content } from './types.ts';
  *
  * Rows: [year, title zh, title en, site zh, site en, lon, lat, map change?, id override?]. Milestone ids are
  * `m-<dyn>-<year>`, landmark ids `l-<dyn>-<n>` in row order (append new rows at the end of a dynasty's list to keep ids).
- * The zh title's wording decides the event kind and model (jiangshan.ts kindOf / modelOf); its first clause (before
+ * The zh title's wording decides the event kind and model (corpus.ts kindOf / modelOf); its first clause (before
  * the first ，) is the short title, as is the en title's part before the first ;.
  */
 type Row = [year: number, zh: string, en: string, siteZh: string, siteEn: string, lon: number, lat: number, map?: boolean, id?: string];

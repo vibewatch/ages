@@ -1,4 +1,4 @@
-import type { Journey, JourneyStop, Person } from './jiangshan.ts';
+import type { Journey, JourneyStop, Person } from './corpus.ts';
 import type { I18n, LonLat, Year } from './types.ts';
 
 /**

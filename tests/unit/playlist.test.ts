@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CHAPTERS } from '../../src/shared/data/chapters.ts';
-import { JOURNEYS } from '../../src/shared/data/jiangshan.ts';
+import { JOURNEYS } from '../../src/shared/data/corpus.ts';
 import { chapterPlaylist, cleanTitle, decodePlaylist, encodePlaylist, isPlaylist, MAX_ITEMS, move } from '../../src/shared/lib/playlist.ts';
 
 describe('classroom playlist', () => {

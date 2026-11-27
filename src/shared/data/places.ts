@@ -1,4 +1,4 @@
-import { importedPlaces, type RiverLabel } from './jiangshan.ts';
+import { importedPlaces, type RiverLabel } from './corpus.ts';
 import type { I18n, Place, Year } from './types.ts';
 
 type Names = [from: Year, to: Year, zh: string, en: string][];

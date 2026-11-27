@@ -3,7 +3,7 @@ import type { Content } from './types.ts';
 /**
  * Our own chronicle events, Warring States to the Northern and Southern dynasties (403 BCE – 581 CE); see
  * docs/data/content.md. Milestones are turning points of the regime or the map (`map` when the map changes); landmarks
- * are other notable events. The Chinese title's wording decides the event kind and model (jiangshan.ts `kindOf`).
+ * are other notable events. The Chinese title's wording decides the event kind and model (corpus.ts `kindOf`).
  */
 
 type Site = readonly [zh: string, en: string, lon: number, lat: number];

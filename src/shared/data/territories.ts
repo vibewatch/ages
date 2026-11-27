@@ -1,4 +1,4 @@
-import { IMPORTED_SNAPSHOTS } from './jiangshan.ts';
+import { IMPORTED_SNAPSHOTS } from './corpus.ts';
 import { OWN_SNAPSHOTS } from './own.ts';
 import type { LonLat, Region, Snapshot } from './types.ts';
 
@@ -10,7 +10,7 @@ import type { LonLat, Region, Snapshot } from './types.ts';
  * The pre-imperial maps (夏, 晚商, 西周, 春秋 c. 600 BCE, 战国初期 c. 450 BCE) are detailed partitions: their borders follow
  * mountain crests and rivers traced on the terrain model (the Yellow River on its course of the period), every border chain
  * is shared by the two regions it separates, and non-Zhou peoples (戎狄, 东夷 …) are drawn as neighbours. From −403 the
- * imported jiangshan-map phases take over (see jiangshan.ts).
+ * our own generated phases take over (see own.ts).
  */
 type C = LonLat[];
 const rev = (c: C): C => [...c].reverse();
@@ -863,7 +863,7 @@ const CURATED: Snapshot[] = [
 
 /**
  * The territorial timeline: our schematic maps for the early states (before 403 BCE) and for the PRC (from 1949),
- * and in between our own generated phases (own.ts, the Warring States so far) and the dated phases imported from jiangshan-map (geometry loaded at runtime).
+ * and in between our own generated phases (own.ts, geometry loaded at runtime).
  */
 const FIRST_IMPORTED = Math.min(IMPORTED_SNAPSHOTS[0]?.year ?? Infinity, ...OWN_SNAPSHOTS.map(s => s.year));
 export const SNAPSHOTS: Snapshot[] = [

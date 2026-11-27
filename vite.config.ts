@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve, sep } from 'node:path';
 import { defineConfig, type Plugin } from 'vite';
-import { pruneShapes, stripNonCommercial } from './scripts/commercial-data.ts';
+import { pruneShapes } from './scripts/prune-shapes.ts';
 import { SNAPSHOTS } from './src/shared/data/territories.ts';
 
 /** Writes the offline service worker (src/client/sw.js) to <outDir>/sw.js once the build is on disk, with the list of
@@ -32,20 +32,17 @@ function serviceWorker(): Plugin {
   };
 }
 
-/** A commercial build (VITE_COMMERCIAL=1) ships the shape store without its non-commercial geometry (NOTICE.md). Runs
- * before the service worker hashes the output. */
-function commercialData(): Plugin {
+/** Ships only the shapes the app shows (scripts/prune-shapes.ts). Runs before the service worker hashes the output. */
+function pruneData(): Plugin {
   let outDir = 'dist';
   return {
-    name: 'ages-commercial-data',
+    name: 'ages-prune-data',
     apply: 'build',
     configResolved(c) { outDir = resolve(c.root, c.build.outDir); },
     closeBundle() {
       const file = join(outDir, 'data/atlas/shapes.json');
-      // imported phases replaced by our own maps (and their admin layers) are not shipped
       const keep = new Set(SNAPSHOTS.filter(s => s.shapes && !s.own).map(s => s.shapes!));
-      let store = pruneShapes(JSON.parse(readFileSync(file, 'utf8')), keep);
-      if (process.env.VITE_COMMERCIAL === '1') store = stripNonCommercial(store);
+      const store = pruneShapes(JSON.parse(readFileSync(file, 'utf8')), keep);
       writeFileSync(file, JSON.stringify(store));
     },
   };
@@ -54,7 +51,7 @@ function commercialData(): Plugin {
 // BASE_PATH: URL prefix when hosted below the domain root (e.g. "/ages/" on GitHub Pages).
 export default defineConfig({
   base: process.env.BASE_PATH ?? '/',
-  plugins: [commercialData(), serviceWorker()],
+  plugins: [pruneData(), serviceWorker()],
   server: { port: 5174, hmr: process.env.NOHMR ? false : undefined },
   preview: { port: 4173 },
   build: {

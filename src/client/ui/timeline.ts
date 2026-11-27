@@ -3,7 +3,7 @@ import { EVENTS } from '../../shared/data/events.ts';
 import { ERAS } from '../../shared/data/eras.ts';
 import { tr } from '../../shared/data/i18n.ts';
 import type { HistEvent, Year } from '../../shared/data/types.ts';
-import { reignAt, regionalReignsAt } from '../../shared/data/jiangshan.ts';
+import { reignAt, regionalReignsAt } from '../../shared/data/corpus.ts';
 import { STOPS, stepStop } from '../../shared/lib/chronicle.ts';
 import { realmArea } from '../../shared/data/areas.ts';
 import { SNAPSHOTS } from '../../shared/data/territories.ts';

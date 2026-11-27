@@ -5,7 +5,7 @@ import { ERAS_OWN } from '../../src/shared/data/own/index.ts';
 import { holderAt } from '../../src/shared/data/own/types.ts';
 import { OWN_SNAPSHOTS } from '../../src/shared/data/own.ts';
 import { POLITY } from '../../src/shared/data/polities.ts';
-import { IMPORTED_SNAPSHOTS } from '../../src/shared/data/jiangshan.ts';
+import { IMPORTED_SNAPSHOTS } from '../../src/shared/data/corpus.ts';
 
 const flat = (w: number, h: number): Grid => ({ w, h, west: 0, north: h, step: 1, elev: new Float32Array(w * h), land: new Uint8Array(w * h).fill(1), river: new Uint8Array(w * h) });
 

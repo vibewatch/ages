@@ -713,7 +713,7 @@ test.describe('Ages atlas', () => {
     const card = page.locator('.card');
     await expect(card.locator('h2')).toHaveText('东京（汴梁）');
     await expect(card).toContainText('历代名称');
-    await expect(card).toContainText('今 开封');
+    await expect(card).toContainText(/今 (河南)?开封/);
 
     await page.locator('.search .q').fill('苏东坡');
     await page.locator('.hits li', { hasText: '苏轼' }).first().click();
@@ -966,7 +966,10 @@ test.describe('Ages atlas', () => {
       expect(overlaps, `distance ${dist}`).toEqual([]);
       await page.screenshot({ path: test.info().outputPath(`unified-map-${dist}.png`) });
     }
+    // close in, where event pins have room among the names
+    await setMapPose(page, { lon: 112, lat: 34.5, dist: 22, tilt: 0.8 });
     const compact = page.locator('.pin.on:not(.model-hit)').first();
+    await expect(compact).toBeVisible();
     const key = (await compact.getAttribute('data-key'))!;
     const title = (await compact.getAttribute('aria-label'))!;
     await compact.focus();

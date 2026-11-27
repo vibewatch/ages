@@ -24,7 +24,7 @@ function merge(a: RawShapes, b: RawShapes): RawShapes {
 export interface Lake { name: string; rank: number; from: Year; to: Year; rings: LonLat[][] }
 
 /**
- * Imported boundary geometry (public/data/atlas/shapes.json, see scripts/import-jiangshan.ts), decoded lazily:
+ * The shape store (public/data/atlas/shapes.json: modern outlines and lakes, scripts/build-basemap.ts; own.json: our maps), decoded lazily:
  * fills a snapshot's polity regions and administrative units the first time it is shown.
  */
 export class ShapeStore {
