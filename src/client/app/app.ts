@@ -29,6 +29,8 @@ import { Music } from '../ui/music.ts';
 import { ALL_KEYS, PathView } from '../ui/path.ts';
 import { ReportView } from '../ui/report.ts';
 import { ClassroomView, Presenter } from '../ui/present.ts';
+import { ProSheet } from '../ui/pro.ts';
+import { Plan } from '../lib/plan.ts';
 import { decodePlaylist, type Playlist } from '../../shared/lib/playlist.ts';
 import { level } from '../../shared/lib/mastery.ts';
 import { Period } from '../ui/period.ts';
@@ -64,6 +66,8 @@ export class App {
   help = new Help();
   report = new ReportView(this.progress);
   classroom = new ClassroomView();
+  plan = new Plan();
+  pro = new ProSheet(this.plan);
   presenter!: Presenter;
   quiz!: Quiz;
   lesson!: LessonView;
@@ -178,7 +182,7 @@ export class App {
     this.classroom.onPresent = p => this.present(p);
     this.shell = new Shell(this.root, {
       atlas: this.atlas, timeline: this.timeline, period: this.period, hub: this.hub, settings: this.settings, search: this.search,
-      trail: this.trail, caption: this.caption, music: this.music, lowfx: this.lowfx, dialogs: [this.learn.el, this.help.el, this.report.el, this.classroom.el, this.presenter.el],
+      trail: this.trail, caption: this.caption, music: this.music, lowfx: this.lowfx, dialogs: [this.learn.el, this.help.el, this.report.el, this.classroom.el, this.presenter.el, this.pro.el],
       // the stack's root is the learning path
       views: [
         { el: this.path.el, close: () => this.showPath(false) },
@@ -413,6 +417,9 @@ export class App {
     };
     this.atlas.masteryOf = id => level(this.progress.mastery[id]);
     this.report.onEvent = e => this.openEvent(e);
+    // free / Pro (a gated build only: VITE_PRO_GATE=1)
+    this.quiz.beforeMaps = () => { if (!this.plan.can('mapread')) { this.pro.show('mapread'); return false; } this.plan.useMapRound(); return true; };
+    this.report.beforeImage = () => { if (this.plan.can('reportImage')) return true; this.report.toggle(false); this.pro.show('reportImage'); return false; };
     this.progress.onMastery = () => this.atlas.repaintMastery();
     this.learn.onTest = (b, u) => { this.leaveForLesson(); this.lesson.startTest(b, u); };
     this.settings.onChange = (k, on) => this.atlas.setLayer(k, on);
@@ -562,6 +569,7 @@ export class App {
   }
 
   startChapterCheck(c: Chapter): void {
+    if (!this.plan.can('chapterCheck', c.n)) { this.pro.show('chapterCheck'); return; }
     this.timeline.setPlaying(false);
     this.stopStory();
     this.closeCard();
@@ -784,6 +792,7 @@ export class App {
     this.help.focus.trap(e);
     this.report.focus.trap(e);
     this.classroom.focus.trap(e);
+    this.pro.focus.trap(e);
     this.learn.focus.trap(e);
     const tag = (e.target as HTMLElement).tagName;
     if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
@@ -806,6 +815,7 @@ export class App {
       else if (!this.help.el.hidden) this.help.toggle(false);
       else if (this.report.open) this.report.toggle(false);
       else if (this.classroom.open) this.classroom.toggle(false);
+      else if (this.pro.open) this.pro.toggle(false);
       else if (this.learn.open) this.learn.toggle(false);
       else if (this.reader.open && this.shell.panel.top === this.card.el) this.reader.close();
       else if (this.player.state !== 'idle') this.stopStory(true);
@@ -854,6 +864,7 @@ export class App {
     this.help.render();
     this.report.render();
     this.classroom.render();
+    this.pro.render();
     this.presenter.render();
     this.quiz.relabel();
     this.lesson.relabel();

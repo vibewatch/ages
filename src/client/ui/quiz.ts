@@ -138,8 +138,12 @@ export class Quiz {
     this.start(seed);
   }
 
+  /** asked before a round of 读图题 (a gated build counts and may refuse it) */
+  beforeMaps: () => boolean = () => true;
+
   start(seed = Date.now()): void {
     const c = this.chapter;
+    if (!c && this.mode === 'maps' && !this.beforeMaps()) return;
     this.qs = c ? makeQuiz(EVENTS, { n: 5, seed, range: c.span, prefer: c.keys })
       : this.mode === 'maps'
       ? makeMapQuiz({ n: 9, seed })

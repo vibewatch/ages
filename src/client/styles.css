@@ -1725,3 +1725,8 @@ i.seen { color: var(--k-economy); font-style: normal; margin-left: auto; }
   .present { left: 8px; right: 8px; width: auto; padding: 14px 16px 12px; }
   .pr-sum { font-size: var(--t-m); max-height: 7.5em; overflow: auto; }
 }
+
+/* ---------- Pro sheet (gated builds only) ---------- */
+.modal-box.pro { width: min(480px, calc(100vw - 24px)); padding: 22px 24px 18px; display: flex; flex-direction: column; gap: 10px; }
+.modal-box.pro h3 { margin: 4px 0 0; font-size: var(--t-m); }
+.pro-list { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 4px; font-size: var(--t-s); color: var(--ink-2); }

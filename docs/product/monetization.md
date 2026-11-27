@@ -72,3 +72,15 @@ US$4.99/month or US$29/year.
    retention.
 2. Draw the free/Pro line in the client behind an entitlement check (no payment yet), so the paid experience can be tried.
 3. Backend: accounts, sync, payment (international first), then teacher classes.
+
+## 6. Status (2026-11-27)
+
+| Issue | State |
+|---|---|
+| #3 读图题 | first slice shipped (period / polity / which came first); chapter sprints and "what changed" open |
+| #4 Mastery | shipped: levels, Today's review, My map |
+| #5 Classroom | shipped: playlists, presentation mode, `#show=` links; classes and results need the backend |
+| #6 Content trust | sources on every path-lesson step; flagged facts reviewed; a teacher's review still advised |
+| #7 Weekly report | shipped: dialog, image, text |
+| #8 Commercial data | `npm run build:commercial` strips CHGIS / Hartwell and Warring States geometry; replacement data open |
+| #9 Free / Pro | entitlement check in the client (`src/shared/lib/plan.ts`), off unless `VITE_PRO_GATE=1`; free: one 读图 round a day, chapter checks 1–3; Pro: unlimited 读图, every chapter check, report image. `?pro=1` tries Pro in a gated build. **Owner decisions needed:** backend and region, payment rails, prices, China compliance. |

@@ -148,7 +148,11 @@ export class ReportView {
     return c;
   }
 
+  /** asked before saving the image (Pro in a gated build) */
+  beforeImage: () => boolean = () => true;
+
   private async saveImage(r: Report, msg: HTMLElement): Promise<void> {
+    if (!this.beforeImage()) return;
     const c = this.draw(r);
     const blob = await new Promise<Blob | null>(res => c.toBlob(res, 'image/png'));
     if (!blob) return;
