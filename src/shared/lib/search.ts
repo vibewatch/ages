@@ -91,11 +91,11 @@ export function search(
   }
   for (const e of src.events) {
     // curated textbook events rank above imported chronicle entries
-    let s = best(q, e.title.zh, e.title.en) * (e.source === 'jiangshan' ? 2 : 3);
+    let s = best(q, e.title.zh, e.title.en) * (e.source === 'chronicle' ? 2 : 3);
     s = Math.max(s, best(q, ...(e.people ?? []).flatMap(p => [p.zh, p.en])) * 2);
     if (!s) s = best(q, e.summary.zh, e.summary.en) > 0 ? 1 : 0;
     if (yr !== null) {
-      if (e.year === yr) s = Math.max(s, e.source === 'jiangshan' ? 8 : 12);
+      if (e.year === yr) s = Math.max(s, e.source === 'chronicle' ? 8 : 12);
       else if (e.end && yr >= e.year && yr <= e.end) s = Math.max(s, 7);
     }
     if (s) hits.push({ type: 'event', id: e.id, label: e.title, year: e.year, score: s + (4 - e.weight) * 0.3 });

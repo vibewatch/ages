@@ -115,6 +115,10 @@ export const PLACE_ID_HERO: Record<string, ModelRecipe> = {
   'pass-wushengguan': { kind: 'gate', hero: 'places-sites/pl_pass_wusheng' },
   'pass-xianxiaguan': { kind: 'gate', hero: 'places-sites/pl_pass_xianxia' },
   'pass-meiguan': { kind: 'gate', hero: 'places-sites/pl_pass_meiguan' },
+  'pass-xifengkou': { kind: 'gate', hero: 'places-sites/pl_pass_xifengkou' },
+  'pass-loushanguan': { kind: 'gate', hero: 'places-sites/pl_pass_loushan' },
+  'pass-kunlunguan': { kind: 'gate', hero: 'places-sites/pl_pass_kunlun' },
+  'pass-zhennanguan': { kind: 'gate', hero: 'places-sites/pl_pass_zhennan' },
   // Famous Battlefields
   muye: { kind: 'chariot', hero: 'places-sites/pl_muye' },
   changping: { kind: 'battle', hero: 'places-sites/pl_changping' },

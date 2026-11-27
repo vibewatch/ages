@@ -1013,7 +1013,7 @@ export class Atlas {
   private buildPins(): void {
     const era = eraAt(this.year);
     const near = (e: HistEvent) => Math.abs(e.year - this.year) <= CHRONICLE_WINDOW || (e.end !== undefined && e.year <= this.year && e.end >= this.year);
-    const list = EVENTS.filter(e => e.scope === 'china' && (era ? e.year >= era.start && e.year <= era.end : false) && (e.source !== 'jiangshan' || near(e)));
+    const list = EVENTS.filter(e => e.scope === 'china' && (era ? e.year >= era.start && e.year <= era.end : false) && (e.source !== 'chronicle' || near(e)));
     if (this.selected && !list.includes(this.selected)) list.push(this.selected);
     // the events being learned stay on the map whatever the year (a chapter at a glance)
     for (const id of this.learnFocus?.order.keys() ?? []) { const e = EVENT.get(id); if (e && !list.includes(e)) list.push(e); }

@@ -208,7 +208,7 @@ export function importedEvents(curated: HistEvent[]): HistEvent[] {
       title,
       summary: site ? { zh: `${m.title.zh}（${site.zh}）`, en: `${m.title.en} (${site.en})` } : m.title,
       points: site ? [site] : [], curriculum: [], model: modelOf(m.title.zh, kind, m.year), people,
-      wiki, source: 'jiangshan', site, headline: m.title, mapChange: ('map' in m && m.map === true) || undefined,
+      wiki, source: 'chronicle', site, headline: m.title, mapChange: ('map' in m && m.map === true) || undefined,
     } satisfies HistEvent;
   });
 }

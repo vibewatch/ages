@@ -196,8 +196,8 @@ export interface HistEvent {
   /** a scripted animation; events without one get an automatic story (fly → model → caption) */
   story?: StoryStep[];
   wiki?: Wiki;
-  /** imported chronicle entries are tagged with their source */
-  source?: 'jiangshan';
+  /** chronicle entries (src/shared/data/content/events-*.ts), as opposed to curated curriculum events */
+  source?: 'chronicle';
   /** the historical site name, e.g. 桂陵（长垣） */
   site?: I18n;
   /** the full chronicle headline of an imported entry (its title is shortened) */

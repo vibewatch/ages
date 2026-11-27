@@ -85,11 +85,11 @@ describe('content is bilingual and well-formed', () => {
       for (const p of e.people ?? []) bilingual(p, e.id);
       expect(inStage(e.lon, e.lat), e.id).toBe(true);
       // textbook events map to curriculum units; imported chronicle entries need not
-      if (e.source !== 'jiangshan') expect(e.curriculum.length, e.id).toBeGreaterThan(0);
+      if (e.source !== 'chronicle') expect(e.curriculum.length, e.id).toBeGreaterThan(0);
       for (const c of e.curriculum) expect(UNITS.some(u => u.book === c.book && u.unit === c.unit), `${e.id} ${c.book}.${c.unit}`).toBe(true);
       if (e.model) expect(MODEL_KINDS, e.id).toContain(e.model.kind);
       if (e.end !== undefined) expect(e.end, e.id).toBeGreaterThanOrEqual(e.year);
-      if (e.source !== 'jiangshan') expect(e.wiki?.zh || e.wiki?.en, `${e.id} wiki`).toBeTruthy();
+      if (e.source !== 'chronicle') expect(e.wiki?.zh || e.wiki?.en, `${e.id} wiki`).toBeTruthy();
     }
   });
 });
@@ -384,7 +384,7 @@ describe('dynasty scenery', () => {
 
 describe('imported jiangshan-map content', () => {
   it('adds chronicle events, settlements and period-aware places', () => {
-    expect(EVENTS.filter(e => e.source === 'jiangshan').length).toBeGreaterThan(500);
+    expect(EVENTS.filter(e => e.source === 'chronicle').length).toBeGreaterThan(500);
     expect(PLACES.length).toBeGreaterThan(250);
     const j = PLACES.find(p => p.periodOnly && p.names?.length)!;
     expect(placeExists(j, j.names![0].from)).toBe(true);

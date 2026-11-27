@@ -502,7 +502,7 @@ export class Card {
     };
     const evs = EVENTS.filter(e =>
       e.scope === era.scope &&
-      e.source !== 'jiangshan' &&
+      e.source !== 'chronicle' &&
       e.year >= era.start &&
       e.year <= era.end &&
       (!era.lane || (LANE_RE[era.id]?.test(e.title.zh + e.summary.zh) ?? true))

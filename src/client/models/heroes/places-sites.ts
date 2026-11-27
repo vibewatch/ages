@@ -524,6 +524,14 @@ const pl_pass_yangguan = makePass('#cfa868', '#b88852', '#524638', '#c49654', { 
 const pl_pass_wusheng = makePass('#64784c', '#76787e', '#4a5056', '#4c6640', { tunnel: true });
 const pl_pass_xianxia = makePass('#587446', '#848078', '#484e54', '#3f6238', { bamboo: true });
 const pl_pass_meiguan = makePass('#6a7c4e', '#8c4438', '#484e54', '#4e6a42', { plum: true });
+/** 喜峰口: the Luan River gap in the Ming wall, a watchtower over the water. */
+const pl_pass_xifengkou = makePass('#7a7462', '#80766a', '#4c4a48', '#6e6a5a', { water: 'front', watchtower: true, curveWall: true });
+/** 娄山关: a gate on the Dalou Shan ridge road, in karst greenery. */
+const pl_pass_loushan = makePass('#4e6e44', '#7c6e60', '#45494e', '#3e5e3a', { plankRoad: true, bamboo: true });
+/** 昆仑关: a hill gate between Nanning and Binyang, twin towers on the road. */
+const pl_pass_kunlun = makePass('#5c7648', '#8a7a64', '#4a4e52', '#4a6a40', { twin: true, beacon: true });
+/** 镇南关（友谊关）: the triple-arched frontier gate towards Annam. */
+const pl_pass_zhennan = makePass('#567a4a', '#a09a8c', '#4a4c50', '#467040', { triArch: true });
 
 // ============================================================================
 // 4. REVOLUTIONARY & MODERN HISTORY SITES
@@ -1181,7 +1189,7 @@ export const PLACES_SITES: Record<string, Builder> = {
   pl_yumenguan, pl_hanguguan, pl_tongguan, pl_jianmenguan, pl_pingxingguan,
   pl_pass_wuguan, pl_pass_dasanguan, pl_pass_xiaoguan, pl_pass_hulao, pl_pass_yangping,
   pl_pass_yanmen, pl_pass_zijing, pl_pass_niangzi, pl_pass_gubeikou, pl_pass_yangguan,
-  pl_pass_wusheng, pl_pass_xianxia, pl_pass_meiguan,
+  pl_pass_wusheng, pl_pass_xianxia, pl_pass_meiguan, pl_pass_xifengkou, pl_pass_loushan, pl_pass_kunlun, pl_pass_zhennan,
   pl_jiaxing, pl_jinggangshan, pl_ruijin, pl_zunyi, pl_yanan, pl_xibaipo, pl_lugouqiao,
   pl_taierzhuang, pl_humen, pl_weihai, pl_xiaogang, pl_jiuquan_lc, pl_dandong,
   pl_everest, pl_diaoyu, pl_nanhai, pl_xisha, pl_nansha,

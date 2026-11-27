@@ -162,10 +162,10 @@ function defaultClassics(year: number): I18n[] {
 
 /** Returns structured provenance, classical/primary sources, and date/location uncertainty notes for any event. */
 export function eventSources(e: HistEvent): EventSourceInfo {
-  const imported = e.source === 'jiangshan';
+  const imported = e.source === 'chronicle';
   const hasPilotSource = Object.hasOwn(PILOT_EVENT_CLASSICS, e.id);
   const provenance: I18n = imported
-    ? { zh: '江山图编年史料 · 附断代参考史籍', en: 'jiangshan-map chronicle · paired with period reference histories' }
+    ? { zh: '长河编年 · 附断代参考史籍', en: 'Ages chronicle · paired with period reference histories' }
     : hasPilotSource
       ? { zh: '统编历史教材核心条目 · 专项正史与出土文献核校', en: 'Core curriculum entry · verified with event-specific primary & archaeological sources' }
       : e.curriculum.length
