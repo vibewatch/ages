@@ -1,3 +1,5 @@
+import { answered, isMasteryMap, seen, type MasteryRec } from '../../shared/lib/mastery.ts';
+
 /** Small localStorage wrapper (silently in-memory when storage is unavailable, e.g. private mode). */
 const mem = new Map<string, string>();
 const unsaved = new Set<string>();
@@ -45,6 +47,10 @@ export interface ProgressBackup {
   lastLesson: LastLesson | null;
   /** spaced review schedule (optional: older backups have none) */
   spaced?: Record<string, Spaced>;
+  /** mastery per event (optional: older backups have none) */
+  mastery?: Record<string, MasteryRec>;
+  /** activity per day (optional) */
+  days?: Record<string, number>;
 }
 
 /** A missed question in spaced review: `box` = reviews passed so far; `due` = when it comes back (ms), null while it is
@@ -85,6 +91,33 @@ export class Progress {
   best = load<number>('quizBest', 0);
   lastLesson = load<LastLesson | null>('lastLesson', null, isValidLastLesson);
   spaced = load<Record<string, Spaced>>('spaced', {}, isValidSpaced);
+  mastery = load<Record<string, MasteryRec>>('mastery', {}, isMasteryMap);
+  /** days with any learning activity (YYYY-MM-DD), for the streak and the weekly report */
+  days = load<Record<string, number>>('days', {}, v => !!v && typeof v === 'object' && !Array.isArray(v) && Object.values(v).every(n => typeof n === 'number' && Number.isFinite(n)));
+
+  private active(now: number): void {
+    const d = new Date(now);
+    const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    this.days[k] = (this.days[k] ?? 0) + 1;
+    save('days', this.days);
+  }
+  /** called after the mastery of any event changed (the map repaints its marks) */
+  onMastery: () => void = () => {};
+  /** An event was met: its card, a lesson step, its story. */
+  see(id: string, now = Date.now()): void {
+    if (!id || this.mastery[id]?.s != null) return;
+    this.mastery[id] = seen(this.mastery[id], now);
+    save('mastery', this.mastery);
+    this.onMastery();
+  }
+  /** A question was answered: the mistake queue (by `key`) and the mastery of the events it was about. */
+  answer(key: string, ok: boolean, events: (string | undefined)[] = [], now = Date.now()): void {
+    if (key) { if (ok) this.resolveMistake(key, now); else this.addMistake(key); }
+    const ids = [...new Set(events.filter((x): x is string => !!x))];
+    for (const id of ids) this.mastery[id] = answered(this.mastery[id], ok, now);
+    if (ids.length) { save('mastery', this.mastery); this.onMastery(); }
+    this.active(now);
+  }
 
   watch(id: string): void { this.watched.add(id); save('watched', [...this.watched]); }
   toggleLearned(id: string): boolean {
@@ -162,6 +195,8 @@ export class Progress {
       lessons: { ...this.scores },
       mistakes: [...this.mistakes],
       spaced: { ...this.spaced },
+      mastery: { ...this.mastery },
+      days: { ...this.days },
       lastLesson: this.lastLesson
         ? {
           ...this.lastLesson,
@@ -186,6 +221,7 @@ export class Progress {
       if (b.mistakes !== undefined && (!Array.isArray(b.mistakes) || !b.mistakes.every(x => typeof x === 'string'))) return false;
       if (b.lastLesson !== undefined && !isValidLastLesson(b.lastLesson)) return false;
       if (b.spaced !== undefined && !isValidSpaced(b.spaced)) return false;
+      if (b.mastery !== undefined && !isMasteryMap(b.mastery)) return false;
 
       this.watched = new Set(b.watched);
       this.learned = new Set(b.learned);
@@ -194,7 +230,11 @@ export class Progress {
       this.scores = { ...b.lessons };
       this.lastLesson = b.lastLesson ?? null;
       this.spaced = { ...(b.spaced ?? {}) };
+      this.mastery = { ...(b.mastery ?? {}) };
+      if (b.days && typeof b.days === 'object' && !Array.isArray(b.days)) this.days = Object.fromEntries(Object.entries(b.days).filter(([, n]) => typeof n === 'number' && Number.isFinite(n)));
+      save('days', this.days);
       save('spaced', this.spaced);
+      save('mastery', this.mastery);
       save('watched', [...this.watched]);
       save('learned', [...this.learned]);
       save('mistakes', [...this.mistakes]);
@@ -216,7 +256,11 @@ export class Progress {
     this.scores = {};
     this.lastLesson = null;
     this.spaced = {};
+    this.mastery = {};
+    this.days = {};
     save('spaced', {});
+    save('mastery', {});
+    save('days', {});
     save('watched', []);
     save('learned', []);
     save('mistakes', []);

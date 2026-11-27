@@ -526,6 +526,59 @@ test.describe('Ages atlas', () => {
     expect(errs).toEqual([]);
   });
 
+  test('mastery: answers raise mastery, the path shows it, my map lights it up and today’s review asks what is due', async ({ page }) => {
+    const errs = watchErrors(page);
+    // one event practised long ago (due), one missed after being right (weak)
+    await page.addInitScript(() => {
+      if (sessionStorage.getItem('seeded')) return;
+      sessionStorage.setItem('seeded', '1');
+      const now = Date.now(), D = 86_400_000;
+      localStorage.setItem('ages:mastery', JSON.stringify({
+        shangyang: { s: now - 9 * D, r: 1, d: 'x', l: now - 6 * D },
+        xuanzang: { s: now - 9 * D, r: 1, d: 'x', l: now - 8 * D, m: now - D },
+      }));
+    });
+    await openApp(page, 'y=-221&lang=en');
+    const path = page.locator('[data-testid=path]');
+    if (!(await path.isVisible())) await page.locator('.b-path').click();
+    await expect(path.locator('[data-testid=path-mastery]')).toContainText('2 to review');
+    await expect(path.locator('[data-act=path-review]')).toContainText('2 questions');
+
+    // my map: every event to know, marked by mastery, without numbers
+    await path.locator('[data-act=my-map]').click();
+    await expect(page.locator('#app')).toHaveClass(/my-map/);
+    await expect.poll(() => page.locator('.labels .pin.fk').count()).toBeGreaterThan(40);
+    await expect(page.locator('.labels .pin.fk[data-id=shangyang]')).toHaveAttribute('data-m', 'due');
+    await expect(page.locator('.labels .pin.fk[data-id=xuanzang]')).toHaveAttribute('data-n', '!');
+    await shot(page, 'desktop-my-map');
+    await path.locator('[data-act=my-map]').click();
+    await expect(page.locator('#app')).not.toHaveClass(/my-map/);
+
+    // today's review asks the due events and answering right lifts them
+    await path.locator('[data-act=path-review]').click();
+    const quiz = page.locator('.quiz');
+    const qs = await page.evaluate(() => (window as any).__atlas.quiz.qs);
+    expect(qs.map((q: any) => q.key).sort()).toEqual(['when:xuanzang', 'where:shangyang']);
+    for (let i = 0; i < qs.length; i++) {
+      const q = await page.evaluate(() => { const z = (window as any).__atlas.quiz; return z.qs[z.i]; });
+      if (q.type === 'when') await quiz.locator('.qz-opts .opt').nth(q.options.indexOf(q.answer)).click();
+      else {
+        await expect.poll(() => page.evaluate(() => (window as any).__atlas.atlas.view.flying), { timeout: 30_000 }).toBe(false);
+        await setMapPose(page, { lon: q.lon, lat: q.lat, dist: 30, tilt: 0.8 });
+        const pt = await page.evaluate(([lon, lat]) => (window as any).__atlas.screenOf(lon, lat), [q.lon, q.lat]);
+        await page.mouse.click(pt.x, pt.y);
+      }
+      await expect(quiz.locator('.qz-fb')).toContainText(/Correct/);
+      await quiz.locator('[data-act=next]').click();
+    }
+    const lv = await page.evaluate(() => { const m = (window as any).__atlas.progress.mastery; return [m.shangyang.r, m.xuanzang.r]; });
+    expect(lv).toEqual([2, 2]);
+    await quiz.locator('header .ib').first().click();
+    await expect(path.locator('[data-act=path-review]')).toHaveCount(0);
+    await expect(path.locator('[data-testid=path-mastery]')).toContainText('2 mastered');
+    expect(errs).toEqual([]);
+  });
+
   test('journeys play as 3D stories; places and people open their own cards', async ({ page }) => {
     const errs = watchErrors(page);
     await openApp(page, 'y=1085&lang=zh');

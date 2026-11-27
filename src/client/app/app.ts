@@ -26,7 +26,8 @@ import { Learn } from '../ui/learn.ts';
 import { LessonView } from '../ui/lesson.ts';
 import { Help, HubMenu, SettingsMenu } from '../ui/menus.ts';
 import { Music } from '../ui/music.ts';
-import { PathView } from '../ui/path.ts';
+import { ALL_KEYS, PathView } from '../ui/path.ts';
+import { level } from '../../shared/lib/mastery.ts';
 import { Period } from '../ui/period.ts';
 import { Quiz } from '../ui/quiz.ts';
 import { Reader } from '../ui/reader.ts';
@@ -66,6 +67,8 @@ export class App {
   ready = false;
   /** the learning focus the map, timeline, period line and card follow */
   focus: LearnFocus | null = null;
+  /** the learner's own map is on */
+  private mine = false;
   private inHashChange = false;
 
   constructor(private root: HTMLElement, stage: HTMLElement, private lowfx: boolean) {
@@ -142,6 +145,8 @@ export class App {
       check: c => this.startChapterCheck(c),
       play: e => { this.openEvent(e); void this.playStory(e); },
       mistakes: () => this.learn.onReviewMistakes(),
+      review: due => this.startReview(due),
+      myMap: on => { this.refocus(); if (on) { this.closeCard(); void this.atlas.home(); } },
       course: () => this.learn.toggle(true),
       close: () => this.showPath(false),
       changed: () => this.refocus(),
@@ -266,10 +271,15 @@ export class App {
       lesson: this.lesson.where,
       check: this.quiz.open && this.quiz.chapter ? this.quiz.chapter.id : null,
     });
-    if (sameFocus(f, this.focus)) return;
+    // the learner's own map: every event to know, marked by mastery, while the path is on top
+    const mine = !f && this.path.myMap && this.shell.panel.top === this.path.el;
+    if (sameFocus(f, this.focus) && mine === this.mine) return;
     this.focus = f;
+    this.mine = mine;
+    this.root.classList.toggle('my-map', mine);
     // a chapter keeps the living map; a lesson or a check clears the stage for what is being learned
-    this.atlas.setFocus(f ? { events: f.events, current: f.current, quiet: f.mode !== 'chapter' } : null);
+    this.atlas.setFocus(f ? { events: f.events, current: f.current, quiet: f.mode !== 'chapter' }
+      : mine ? { events: ALL_KEYS, quiet: true, plain: true } : null);
     this.timeline.setChapter(f?.chapter ?? null);
     this.period.setLearning(f?.chapter ?? null, this.timeline.detail);
     this.card.setTrack(f && f.events.length ? {
@@ -348,6 +358,8 @@ export class App {
       this.quiz.startMistakes();
       this.root.classList.add('quiz-on');
     };
+    this.atlas.masteryOf = id => level(this.progress.mastery[id]);
+    this.progress.onMastery = () => this.atlas.repaintMastery();
     this.learn.onTest = (b, u) => { this.leaveForLesson(); this.lesson.startTest(b, u); };
     this.settings.onChange = (k, on) => this.atlas.setLayer(k, on);
     this.settings.onSurface = s => { this.atlas.setSurface(s); save('surface', s); };
@@ -485,6 +497,16 @@ export class App {
   }
 
   /** A learning-path chapter's check, over the path; closing it returns to the path. */
+  /** Today's review from the learning path: the mistakes, then the events falling due. */
+  startReview(due: string[]): void {
+    this.timeline.setPlaying(false);
+    this.stopStory();
+    this.closeCard();
+    this.lesson.stop();
+    this.quiz.startReview(due);
+    this.root.classList.add('quiz-on');
+  }
+
   startChapterCheck(c: Chapter): void {
     this.timeline.setPlaying(false);
     this.stopStory();
@@ -535,6 +557,7 @@ export class App {
     this.timeline.select(e.id);
     this.chronicle.select(e.id);
     this.card.showEvent(e);
+    this.progress.see(e.id);
     this.root.classList.add('card-on');
     writeLink({ event: e.id, ...this.linkExtras() });
   }
@@ -627,6 +650,7 @@ export class App {
     const done = await this.player.play(e);
     if (done) {
       this.progress.watch(e.id);
+      this.progress.see(e.id);
       if (this.card.event?.id === e.id) this.card.render();
       this.chronicle.relabel();
       setTimeout(() => {

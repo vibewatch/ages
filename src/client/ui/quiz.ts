@@ -59,6 +59,7 @@ export class Quiz {
   private setup(): void {
     this.phase = 'setup';
     this.chapter = null;
+    this.extra = [];
     this.atlas.setPickMode(null);
     this.clearMap();
     const mistakeCount = this.progress.mistakes.size;
@@ -98,9 +99,22 @@ export class Quiz {
         h('button', { type: 'button', class: 'btn primary', 'data-act': 'start', disabled: this.mode === 'mistakes' && mistakeCount === 0, text: t('start'), onclick: () => this.start() })));
   }
 
+  /** events falling due, asked after the mistakes in today's review */
+  private extra: string[] = [];
+
+  /** Today's review: the mistakes queue, then `due` events (alternating when / where), at most 12 questions. */
+  startReview(due: string[], seed = Date.now()): void {
+    this.chapter = null;
+    this.mode = 'mistakes';
+    this.extra = due;
+    this.el.hidden = false;
+    this.start(seed);
+  }
+
   /** Opens the quiz directly in mistake-review mode. */
   startMistakes(seed = Date.now()): void {
     this.chapter = null;
+    this.extra = [];
     this.mode = 'mistakes';
     this.el.hidden = false;
     this.start(seed);
@@ -132,7 +146,7 @@ export class Quiz {
       : this.mode === 'locate'
       ? makeLocateQuiz(PLACES, { n: 10, seed })
       : this.mode === 'mistakes'
-        ? makeMistakeQuiz(EVENTS, this.progress.mistakes, seed)
+        ? makeMistakeQuiz(EVENTS, [...this.progress.mistakes, ...this.extra.map((id, k) => `${k % 2 ? 'where' : 'when'}:${id}`)], seed).slice(0, 12)
         : makeQuiz(EVENTS, { n: 9, seed, book: this.book || undefined, era: this.era || undefined });
     this.i = 0;
     this.score = 0;
@@ -177,8 +191,7 @@ export class Quiz {
         onclick: (ev: Event) => {
           if (!next.hidden) return;
           const ok = y === q.answer;
-          if (!ok) this.progress.addMistake(mKey);
-          else this.progress.resolveMistake(mKey);
+          this.progress.answer(mKey, ok, [e.id]);
           (ev.currentTarget as HTMLElement).classList.add(ok ? 'ok' : 'no');
           opts.querySelectorAll('button').forEach(b => { if (b.textContent === formatYear(q.answer, L)) b.classList.add('ok'); });
           finish(ok, ok ? t('correct') : t('answerWas', { a: formatYear(q.answer, L) }), ok ? 1 : 0, e);
@@ -194,10 +207,7 @@ export class Quiz {
         onclick: (ev: Event) => {
           if (!next.hidden) return;
           const ok = idx === q.answer;
-          if (mKey) {
-            if (!ok) this.progress.addMistake(mKey);
-            else this.progress.resolveMistake(mKey);
-          }
+          this.progress.answer(mKey, ok, [q.event]);
           (ev.currentTarget as HTMLElement).classList.add(ok ? 'ok' : 'no');
           const all = opts.querySelectorAll('button');
           all[q.answer]?.classList.add('ok');
@@ -228,7 +238,7 @@ export class Quiz {
         onclick: (ev: Event) => {
           if (!next.hidden) return;
           const ok = idx === q.answer;
-          if (!ok) this.progress.addMistake(q.key); else this.progress.resolveMistake(q.key);
+          this.progress.answer(q.key, ok);
           (ev.currentTarget as HTMLElement).classList.add(ok ? 'ok' : 'no');
           opts.querySelectorAll('button')[q.answer]?.classList.add('ok');
           this.onBlind(false);
@@ -249,8 +259,7 @@ export class Quiz {
         this.atlas.setPickMode(null);
         const km = Math.round(distKm([lon, lat], [q.lon, q.lat]));
         const g = gradeWhere(km);
-        if (g !== 'correct') this.progress.addMistake(mKey);
-        else this.progress.resolveMistake(mKey);
+        this.progress.answer(mKey, g === 'correct', [q.event]);
         this.atlas.fx.spawn({ lon, lat, model: { kind: 'flag', color: '#2e86de' }, scale: 0.8 });
         this.atlas.fx.ring(this.atlas.geo.pos(q.lon, q.lat, 0.02), g === 'wrong' ? '#ff6b4a' : '#5bd36b', 4);
         finish(g === 'correct', `${t(g === 'correct' ? 'correct' : g === 'close' ? 'close_' : 'wrong')} ${t('kmAway', { n: km })}`, g === 'correct' ? 1 : 0, e);
@@ -299,8 +308,7 @@ export class Quiz {
       check.addEventListener('click', () => {
         const ok = picked.every((id, k) => id === q.answer[k]);
         const mKey = q.key ?? `order:${q.answer.join(',')}`;
-        if (!ok) this.progress.addMistake(mKey);
-        else this.progress.resolveMistake(mKey);
+        this.progress.answer(mKey, ok, q.answer);
         list.replaceChildren(...q.answer.map((id, k) => h('li', { class: picked[k] === id ? 'ok' : 'no', text: `${formatYear(EVENT.get(id)!.year, L, { short: true })} · ${tr(EVENT.get(id)!.title, L)}` })));
         check.disabled = true;
         finish(ok, ok ? t('correct') : t('wrong'), ok ? 1 : 0, EVENT.get(q.answer[0]));

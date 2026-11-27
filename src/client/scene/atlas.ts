@@ -120,7 +120,9 @@ export class Atlas {
   eraReady = false;
   private storyMode = false;
   /** learning focus: the events being learned (numbered in order) and whether the dynasty's scenery steps aside */
-  private learnFocus: { order: Map<string, number>; current: string | null; quiet: boolean } | null = null;
+  private learnFocus: { order: Map<string, number>; current: string | null; quiet: boolean; plain: boolean } | null = null;
+  /** the learner's mastery of an event (painted on the focused pins), if known */
+  masteryOf: ((id: string) => string) | null = null;
   private layoutDirty = true;
   private marks: Mark[] = [];
   private hover: Hover | null = null;
@@ -1032,9 +1034,9 @@ export class Atlas {
    * `current` (the step being read) is marked; `quiet` lets the dynasty's figures and buildings step aside so only what is
    * being learned stands on the map. Null returns the living map.
    */
-  setFocus(f: { events: string[]; current?: string | null; quiet?: boolean } | null): void {
-    const next = f ? { order: new Map(f.events.map((id, i) => [id, i + 1] as [string, number])), current: f.current ?? null, quiet: !!f.quiet } : null;
-    const sig = (x: typeof next) => (x ? `${[...x.order.keys()].join()}|${x.current}|${x.quiet}` : '');
+  setFocus(f: { events: string[]; current?: string | null; quiet?: boolean; plain?: boolean } | null): void {
+    const next = f ? { order: new Map(f.events.map((id, i) => [id, i + 1] as [string, number])), current: f.current ?? null, quiet: !!f.quiet, plain: !!f.plain } : null;
+    const sig = (x: typeof next) => (x ? `${[...x.order.keys()].join()}|${x.current}|${x.quiet}|${x.plain}` : '');
     if (sig(next) === sig(this.learnFocus)) return;
     this.learnFocus = next;
     this.host.classList.toggle('focusing', !!next);
@@ -1044,6 +1046,9 @@ export class Atlas {
     this.layoutDirty = true;
   }
 
+  /** Repaints the focused pins' mastery (after an answer). */
+  repaintMastery(): void { this.paintFocus(); }
+
   private paintFocus(): void {
     const f = this.learnFocus;
     for (const [id, target] of this.pins) {
@@ -1051,7 +1056,10 @@ export class Atlas {
       const el = target.label.el;
       el.classList.toggle('fk', n != null);
       el.classList.toggle('fk-cur', n != null && f!.current === id);
-      if (n != null) el.dataset.n = String(n); else delete el.dataset.n;
+      // the badge: the teaching order, or (on the learner's own map, `plain`) a mark of mastery
+      const m = n != null ? this.masteryOf?.(id) : undefined;
+      if (m) el.dataset.m = m; else delete el.dataset.m;
+      if (n != null) el.dataset.n = f!.plain ? (m === 'mastered' ? '✓' : m === 'due' || m === 'weak' ? '!' : '') : String(n); else delete el.dataset.n;
       const e = EVENT.get(id);
       const base = e ? 50 - e.weight * 8 - (e.source ? 4 : 0) : 30;
       // numbered pins win collisions and show at every zoom

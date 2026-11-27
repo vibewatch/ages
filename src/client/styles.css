@@ -1609,3 +1609,43 @@ i.seen { color: var(--k-economy); font-style: normal; margin-left: auto; }
 .qz-maps .qz-map { flex: 1; padding: 8px 10px; border: 1px solid var(--rule-2); background: transparent; font: inherit; font-weight: 600; cursor: pointer; color: var(--ink); }
 .qz-maps .qz-map:hover { color: var(--zhu); }
 .qz-maps .qz-map.on { background: var(--ink); color: var(--panel-solid); border-color: transparent; }
+
+/* ---------- mastery (v2.3): what the learner knows, on the path and on the map ---------- */
+:root { --m-mastered: var(--gold); --m-practised: var(--ok); --m-due: var(--zhu); --m-seen: var(--ink-3); --m-new: var(--well-2); }
+.path-mast { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; background: var(--well); }
+.pm-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.pm-head b { font-size: var(--t-s); }
+.pm-map { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border: 0; background: transparent; box-shadow: inset 0 0 0 1px var(--rule-2); color: var(--ink-2); font: inherit; font-size: var(--t-xs); font-weight: 600; cursor: pointer; }
+.pm-map .ic { width: 14px; height: 14px; fill: currentColor; }
+.pm-map:hover { color: var(--zhu); }
+.pm-map.on { background: var(--ink); color: var(--panel-solid); box-shadow: none; }
+.pm-bar { display: flex; height: 6px; gap: 2px; }
+.pm-bar b { min-width: 0; border-radius: 3px; }
+.pm-bar b[style="flex:0"] { display: none; }
+.pm-bar .m-mastered { background: var(--m-mastered); } .pm-bar .m-practised { background: var(--m-practised); }
+.pm-bar .m-due { background: var(--m-due); } .pm-bar .m-seen { background: var(--m-seen); } .pm-bar .m-new { background: var(--m-new); }
+.path-mast small { font-size: var(--t-xs); color: var(--ink-2); }
+.pm-hint { margin: 0; font-size: var(--t-xs); color: var(--ink-3); line-height: 1.5; }
+/* a chapter's mastery: a hairline under its years */
+.pl-t .pl-mast { display: block; width: 64px; height: 3px; margin-top: 3px; border-radius: 2px; background: linear-gradient(90deg, var(--m-mastered) var(--m), var(--well-2) var(--m)); }
+.pl-t .pl-mast[style="--m:0%"] { display: none; }
+/* event numbers take the colour of their mastery, on the path and on the map */
+.pl-key[data-m=new] .pl-kn, .pl-key[data-m=seen] .pl-kn { background: var(--ink-3); }
+.pl-key[data-m=practised] .pl-kn { background: var(--m-practised); }
+.pl-key[data-m=mastered] .pl-kn { background: var(--m-mastered); }
+.pl-key[data-m=due] .pl-kn, .pl-key[data-m=weak] .pl-kn { background: var(--panel-solid); color: var(--m-due); box-shadow: inset 0 0 0 2px var(--m-due); }
+.pin.fk[data-m=new]::after, .pin.fk[data-m=seen]::after { background: var(--ink-3); }
+.pin.fk[data-m=practised]::after { background: var(--m-practised); }
+.pin.fk[data-m=mastered]::after { background: var(--m-mastered); }
+.pin.fk[data-m=due]::after, .pin.fk[data-m=weak]::after { background: #fff; color: var(--m-due); box-shadow: 0 0 0 2px var(--m-due); }
+/* my map: a dot of mastery, no numbers */
+.pin.fk[data-n=""]::after { min-width: 10px; width: 10px; height: 10px; padding: 0; top: -4px; right: -4px; }
+/* my map: what is mastered glows gold, what is not yet learned recedes */
+#app.my-map .pin.fk[data-m=new] { opacity: 0.45; }
+#app.my-map .pin.fk[data-m=mastered] .b { box-shadow: 0 0 0 3px color-mix(in srgb, var(--m-mastered) 70%, transparent), 0 0 14px color-mix(in srgb, var(--m-mastered) 80%, transparent); }
+#app.my-map .pin.fk[data-m=practised] .b { box-shadow: 0 0 0 2px color-mix(in srgb, var(--m-practised) 65%, transparent); }
+#app.my-map .pin.fk[data-m=due] .b, #app.my-map .pin.fk[data-m=weak] .b { box-shadow: 0 0 0 2px var(--m-due); }
+/* lesson: every learning-path step names its source */
+.ls-src { display: flex; gap: 6px; margin: -2px 0 10px; font-size: var(--t-xs); color: var(--ink-3); line-height: 1.5; }
+.ls-src span { flex: none; font-weight: 600; }
+.ls-src cite { font-style: normal; }

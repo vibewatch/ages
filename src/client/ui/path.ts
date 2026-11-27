@@ -4,12 +4,19 @@ import { EVENT } from '../../shared/data/events.ts';
 import { tr } from '../../shared/data/i18n.ts';
 import { LESSON } from '../../shared/data/lessons/index.ts';
 import type { HistEvent, Lesson, Year } from '../../shared/data/types.ts';
+import { dueToday, level, score, summarize, type Level } from '../../shared/lib/mastery.ts';
 import { formatYear } from '../../shared/lib/timeline.ts';
 import { lang, t } from '../lib/i18n.ts';
 import { load, save, type Progress } from '../lib/storage.ts';
 import { h, icon, iconBtn } from './dom.ts';
 
 const PASS = 0.6;
+/** every chapter's events to know, in order */
+export const ALL_KEYS: string[] = [...new Set(CHAPTERS.flatMap(c => c.keys))];
+const LEVEL_KEY: Record<Level, 'mNew' | 'mSeen' | 'mPractised' | 'mMastered' | 'mDue' | 'mWeak'> = {
+  new: 'mNew', seen: 'mSeen', practised: 'mPractised', mastered: 'mMastered', due: 'mDue', weak: 'mWeak',
+};
+export const levelName = (lv: Level): string => t(LEVEL_KEY[lv]);
 
 export interface PathHooks {
   lesson: (l: Lesson, resume?: boolean) => void;
@@ -22,6 +29,10 @@ export interface PathHooks {
   /** plays an event's 3D story */
   play: (e: HistEvent) => void;
   mistakes: () => void;
+  /** today's review: the mistakes queue plus these events falling due */
+  review: (due: string[]) => void;
+  /** the learner's own map: every event to know, marked by mastery */
+  myMap: (on: boolean) => void;
   course: () => void;
   close: () => void;
   /** the open chapter changed (the learning focus follows it) */
@@ -40,6 +51,8 @@ export class PathView {
   private headEl: HTMLElement;
   private openId: string | null = load<string | null>('pathChapter', null, v => v === null || (typeof v === 'string' && CHAPTERS.some(c => c.id === v)));
   private here: Chapter = CHAPTERS[0];
+  /** showing the learner's own map (every event to know, by mastery) */
+  myMap = false;
 
   constructor(private progress: Progress, private hooks: PathHooks) {
     this.headEl = h('header', { class: 'view-head path-head' });
@@ -53,6 +66,7 @@ export class PathView {
 
   /** Opens a chapter (from the timeline's chapter row or the period popover) and brings it into view. */
   openChapter(c: Chapter, preview = true): void {
+    this.setMyMap(false);
     if (this.openId !== c.id) { this.openId = c.id; save('pathChapter', c.id); }
     if (preview) this.hooks.preview(c);
     this.render();
@@ -79,6 +93,17 @@ export class PathView {
     this.here = c;
     if (this.open) this.render();
   }
+
+  setMyMap(on: boolean): void {
+    if (on === this.myMap) return;
+    this.myMap = on;
+    if (on && this.openId) { this.openId = null; save('pathChapter', null); }
+    this.hooks.myMap(on);
+    if (this.open) this.render();
+  }
+
+  /** Events with a record, falling due today (the mistakes queue is counted apart). */
+  private due(): string[] { return dueToday(Object.keys(this.progress.mastery), this.progress.mastery); }
 
   /** Re-reads progress and language. */
   refresh(): void { if (this.open) this.render(); }
@@ -129,11 +154,30 @@ export class PathView {
             h('small', { text: t('chCheck') }),
             icon('chevron'))
           : h('p', { class: 'path-cta done', text: t('pathAllDone') });
-    const nMis = this.progress.mistakes.size, nLater = this.progress.scheduled;
-    const review = nMis
-      ? h('button', { type: 'button', class: 'path-review', 'data-act': 'path-review', onclick: () => this.hooks.mistakes() },
-        icon('back'), h('span', {}, h('b', { text: t('reviewDue', { n: nMis }) }), nLater ? h('small', { text: t('reviewLater', { n: nLater }) }) : null), icon('chevron'))
+    // today's review: the missed questions, and events answered before that are about to be forgotten
+    const due = this.due();
+    const mis = this.progress.mistakes;
+    const fresh = due.filter(id => !mis.has(id) && !mis.has(`when:${id}`) && !mis.has(`where:${id}`));
+    const nRev = mis.size + fresh.length, nLater = this.progress.scheduled;
+    const review = nRev
+      ? h('button', { type: 'button', class: 'path-review', 'data-act': 'path-review', 'data-n': String(nRev), onclick: () => this.hooks.review(fresh) },
+        icon('back'), h('span', {}, h('b', { text: t('reviewToday', { n: Math.min(nRev, 12) }) }), h('small', { text: nLater && !fresh.length ? t('reviewLater', { n: nLater }) : t('reviewTodaySub') })), icon('chevron'))
       : null;
+    // what I know: mastery over every event to know, and the map of it
+    const ms = summarize(ALL_KEYS, this.progress.mastery);
+    const mastery = ms.seen ? h('div', { class: 'path-mast', 'data-testid': 'path-mastery' },
+      h('div', { class: 'pm-head' },
+        h('b', { text: t('mastTitle') }),
+        h('button', {
+          type: 'button', class: 'pm-map' + (this.myMap ? ' on' : ''), 'data-act': 'my-map', 'aria-pressed': String(this.myMap), title: t('myMapTitle'),
+          onclick: () => this.setMyMap(!this.myMap),
+        }, icon('journey'), h('span', { text: t('myMap') }))),
+      h('i', { class: 'pm-bar', 'aria-hidden': 'true' },
+        h('b', { class: 'm-mastered', style: `flex:${ms.mastered}` }), h('b', { class: 'm-practised', style: `flex:${ms.practised}` }),
+        h('b', { class: 'm-due', style: `flex:${ms.due + ms.weak}` }), h('b', { class: 'm-seen', style: `flex:${ms.seen - ms.mastered - ms.practised - ms.due - ms.weak}` }),
+        h('b', { class: 'm-new', style: `flex:${ms.total - ms.seen}` })),
+      h('small', { text: t('mastLine', { m: ms.mastered, p: ms.practised, d: ms.due + ms.weak, n: ms.total }) }),
+      this.myMap ? h('p', { class: 'pm-hint', text: t('mastHint') }) : null) : null;
 
     const intro = started || this.openId ? null : h('p', { class: 'path-intro', text: t('pathIntro') });
     const meter = h('div', { class: 'path-meter', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': String(CHAPTERS.length), 'aria-valuenow': String(done), 'aria-label': t('pathProgress', { n: done, m: CHAPTERS.length }) },
@@ -145,7 +189,7 @@ export class PathView {
       h('h3', { text: t('pathPractice') }),
       this.tile('quiz', t('quizTitle'), t('quizDesc'), 'path-quiz', () => this.hooks.quiz()),
       this.tile('book', t('pathCourse'), t('pathCourseDesc'), 'path-course', () => this.hooks.course()));
-    this.body.replaceChildren(intro ?? '', cta, review ?? '', meter, list, practice);
+    this.body.replaceChildren(intro ?? '', cta, review ?? '', meter, mastery ?? '', list, practice);
     this.hooks.changed?.();
   }
 
@@ -164,6 +208,7 @@ export class PathView {
     const head = h('button', {
       type: 'button', class: 'pl-head', 'aria-expanded': String(isOpen), 'data-chapter': c.id,
       onclick: () => {
+        if (!isOpen) this.setMyMap(false);
         this.openId = isOpen ? null : c.id;
         save('pathChapter', this.openId);
         if (!isOpen) this.hooks.preview(c);
@@ -172,7 +217,9 @@ export class PathView {
       },
     },
       h('i', { class: 'pl-n' + (fin ? ' done' : ''), text: fin ? '✓' : String(c.n) }),
-      h('span', { class: 'pl-t' }, h('b', { text: tr(c.title, L) }), h('small', { text: years })),
+      h('span', { class: 'pl-t' }, h('b', { text: tr(c.title, L) }), h('small', { text: years }),
+        // how much of the chapter's events to know the learner has
+        h('i', { class: 'pl-mast', 'aria-hidden': 'true', style: `--m:${Math.round(score(c.keys, this.progress.mastery) * 100)}%` })),
       here ? h('em', { class: 'pl-here', text: t('pathHere') }) : null,
       !fin && (m > 1 || n > 0) ? h('span', { class: 'pl-frac', text: `${n}/${m}` }) : null,
       icon(isOpen ? 'up' : 'down'));
@@ -187,11 +234,11 @@ export class PathView {
       story ? h('button', { type: 'button', class: 'pl-watch', 'data-act': 'chapter-watch', onclick: () => this.hooks.play(story) },
         h('i', { text: '▶' }), h('span', {}, h('b', { text: t('chWatch') }), h('small', { text: tr(story.title, L) }))) : null,
       h('h4', { text: t('pathKeys') }),
-      h('div', { class: 'pl-keys' }, ...keys.map((e, k) => h('button', {
-        type: 'button', class: 'pl-key', 'data-ev': e.id, onclick: () => this.hooks.event(e),
+      h('div', { class: 'pl-keys' }, ...keys.map((e, k) => { const lv = level(this.progress.mastery[e.id]); return h('button', {
+        type: 'button', class: 'pl-key', 'data-ev': e.id, 'data-m': lv, title: levelName(lv), onclick: () => this.hooks.event(e),
       }, h('i', { class: 'pl-kn', 'aria-hidden': 'true', text: String(k + 1) }), h('small', { text: formatYear(e.year, L, { short: true }) }),
         h('span', {}, h('b', { text: tr(e.title, L) }), WHY[e.id] ? h('em', { text: tr(WHY[e.id], L) }) : null),
-        e.story ? h('i', { class: 'pl-play', 'aria-label': t('chStory'), text: '▶' }) : null))),
+        e.story ? h('i', { class: 'pl-play', 'aria-label': t('chStory'), text: '▶' }) : null); })),
       h('h4', { text: t('pathLessons') }),
       h('div', { class: 'pl-lessons' }, ...c.lessons.map((id, i) => {
         const l = LESSON.get(id);

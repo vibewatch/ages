@@ -207,7 +207,7 @@ export class LessonView {
     const out = h('div', { class: 'ls-out' }, r.picked != null ? this.why(q, r.picked === q.answer) : null);
     const opts = q.options.map((o, k) => h('button', {
       type: 'button', class: 'ls-opt' + (r.picked != null ? (k === q.answer ? ' ok' : k === r.picked ? ' bad' : ' dim') : ''), 'data-i': String(k), disabled: r.picked != null,
-      onclick: () => { r.picked = k; this.render(false); },
+      onclick: () => { r.picked = k; this.progress.answer('', k === q.answer, [q.ev]); this.render(false); },
     }, h('i', { text: 'ABCDE'[k] }), h('span', { text: tr(o, L) })));
     fill(this.body,
       h('p', { class: 'ls-y rc-k', text: t('rcTitle') }),
@@ -230,6 +230,8 @@ export class LessonView {
       year != null ? h('p', { class: 'ls-y', text: formatYear(year, L) }) : null,
       h('h3', { class: 'ls-h', text: tr(s.title ?? e?.title, L) }),
       h('p', { class: 'ls-p', text: tr(s.body ?? e?.summary, L) }),
+      // where it comes from: the textbook unit or the classical source
+      s.src ? h('p', { class: 'ls-src', 'data-testid': 'lesson-src' }, h('span', { text: t('lsSource') }), h('cite', { text: tr(s.src, L) })) : null,
       e ? h('div', { class: 'ls-acts' },
         // see it: the step's story is its main action
         e.story ? h('button', { type: 'button', class: 'btn ls-watch', 'data-act': 'watch', onclick: () => this.hooks.play(e) }, h('i', { text: '▶' }), h('span', { text: t('lsWatch') })) : null,
@@ -244,6 +246,7 @@ export class LessonView {
   private frame(s: LessonStep, e: HistEvent | undefined, year: Year | undefined): void {
     this.clearMap();
     if (year != null) this.hooks.year(year);
+    if (e) this.progress.see(e.id);
     if (e) this.atlas.select(e, !s.at && !(s.polity && !s.ev));
     else this.atlas.select(null);
     if (s.at) this.atlas.flyTo({ lon: s.at[0], lat: s.at[1] - (s.at[2] ?? 40) * 0.05, dist: s.at[2] ?? 40, tilt: 0.85 }, 1.6);
@@ -288,10 +291,7 @@ export class LessonView {
           opts.forEach((b, j) => { b.disabled = true; b.classList.add(j === q.answer ? 'ok' : j === k ? 'bad' : 'dim'); });
           out.replaceChildren(this.why(q, ok));
           const mKey = q.key ?? (q.ev ? `choice:${q.ev}` : '');
-          if (mKey) {
-            if (!ok) this.progress.addMistake(mKey);
-            else this.progress.resolveMistake(mKey);
-          }
+          this.progress.answer(mKey, ok, [q.ev]);
           if (q.ev) this.reveal(q.ev);
           this.answered(ok);
         },
@@ -325,8 +325,7 @@ export class LessonView {
         ok.disabled = undo.disabled = true;
         const right = picked.every((id, k) => id === q.answer[k]);
         const mKey = q.key ?? `order:${q.answer.join(',')}`;
-        if (!right) this.progress.addMistake(mKey);
-        else this.progress.resolveMistake(mKey);
+        this.progress.answer(mKey, right, q.answer);
         list.replaceChildren(...q.answer.map((id, k) => h('li', { class: picked[k] === id ? 'ok' : 'bad', text: `${formatYear(EVENT.get(id)!.year, L, { short: true })} · ${tr(EVENT.get(id)!.title, L)}` })));
         out.replaceChildren(this.why(q, right));
         this.answered(right);
@@ -340,10 +339,7 @@ export class LessonView {
         const km = Math.round(distKm([lon, lat], [q.lon, q.lat]));
         const right = km <= q.tol;
         const mKey = q.key ?? (q.ev ? `where:${q.ev}` : '');
-        if (mKey) {
-          if (!right) this.progress.addMistake(mKey);
-          else this.progress.resolveMistake(mKey);
-        }
+        this.progress.answer(mKey, right, [q.ev]);
         this.atlas.fx.spawn({ lon, lat, model: { kind: 'flag', color: '#2e86de' }, scale: 0.8 });
         this.atlas.fx.ring(this.atlas.geo.pos(q.lon, q.lat, 0.02), right ? '#5bd36b' : '#ff6b4a', 4);
         this.atlas.fx.spawn({ lon: q.lon, lat: q.lat, model: { kind: 'flag', color: '#c8372d' }, scale: 0.8, label: tr(q.name, L) });
