@@ -140,7 +140,7 @@ const S = {
   qmEvents: { zh: '史事问答', en: 'Events' },
   qmEventsDesc: { zh: '年份 · 地点 · 先后', en: 'When, where and in what order' },
   qmMaps: { zh: '读图题', en: 'Read the map' },
-  qmMapsDesc: { zh: '不看名字，从疆域认出时期和政权', en: 'Tell the period and polity from the borders alone' },
+  qmMapsDesc: { zh: '不看名字，从疆域认出时期、政权和变化', en: 'Tell the period, the polity and what changed from the borders alone' },
   lsSource: { zh: '出处', en: 'Source' },
   rpTitle: { zh: '学习周报', en: 'Weekly report' },
   rpOpen: { zh: '本周报告', en: 'This week' },

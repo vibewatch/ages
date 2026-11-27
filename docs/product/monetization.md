@@ -26,7 +26,7 @@ The rule that follows: **charge for outcomes and for the map, never for the word
 
 ## 3. What to strengthen, in order
 
-1. **读图题 — map-reading drills** (first slice done: period, highlighted polity, which came first). Identify the period of an unlabelled map, name a highlighted polity, tell which of
+1. **读图题 — map-reading drills** (done: period, highlighted polity, which came first, what changed between two maps, a round per chapter). Identify the period of an unlabelled map, name a highlighted polity, tell which of
    two maps came first, say what changed between two phases. Exam-relevant, impossible in chat, built from data we have.
 2. **Mastery map.** Every key event and phase has a mastery level (seen → practised → mastered → due); the map itself
    lights up as the learner masters it, and "today's review" is one tap. This is what makes a learner come back daily.
@@ -77,7 +77,7 @@ US$4.99/month or US$29/year.
 
 | Issue | State |
 |---|---|
-| #3 读图题 | first slice shipped (period / polity / which came first); chapter sprints and "what changed" open |
+| #3 读图题 | shipped: period / polity / which came first / what changed, a round per chapter; drawing the border open |
 | #4 Mastery | shipped: levels, Today's review, My map |
 | #5 Classroom | shipped: playlists, presentation mode, `#show=` links; classes and results need the backend |
 | #6 Content trust | sources on every path-lesson step; flagged facts reviewed; a teacher's review still advised |

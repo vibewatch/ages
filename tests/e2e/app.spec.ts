@@ -482,7 +482,7 @@ test.describe('Ages atlas', () => {
     expect(errs).toEqual([]);
   });
 
-  test('读图题: reads unlabelled maps — period, highlighted polity, which came first', async ({ page }) => {
+  test('读图题: reads unlabelled maps — period, highlighted polity, which came first, what changed', async ({ page }) => {
     const errs = watchErrors(page);
     await openApp(page, 'y=700&lang=en');
     await practice(page, 'path-quiz');
@@ -518,7 +518,7 @@ test.describe('Ages atlas', () => {
       await quiz.locator('[data-act=next]').click();
     }
     await expect(quiz.locator('.qz-done')).toContainText(`${total - 1}/${total}`);
-    expect(kinds).toEqual(new Set(['period', 'polity', 'first']));
+    expect(kinds).toEqual(new Set(['period', 'polity', 'first', 'change']));
     const missed = await page.evaluate(() => [...(window as any).__atlas.progress.mistakes].filter((k: string) => k.startsWith('map:')));
     expect(missed).toHaveLength(1);
     await quiz.locator('[data-act=close], header .ib').first().click();
