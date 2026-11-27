@@ -576,6 +576,18 @@ test.describe('Ages atlas', () => {
     await quiz.locator('header .ib').first().click();
     await expect(path.locator('[data-act=path-review]')).toHaveCount(0);
     await expect(path.locator('[data-testid=path-mastery]')).toContainText('2 mastered');
+
+    // the weekly report: today's answers, mastery, and a picture to send
+    await path.locator('[data-act=report]').click();
+    const report = page.locator('[data-testid=report]');
+    await expect(report).toBeVisible();
+    await expect(report.locator('[data-testid=report-mastery]')).toContainText('2 mastered');
+    await expect(report.locator('.rp-answers b')).toHaveText('2');
+    await shot(page, 'desktop-report');
+    const [dl] = await Promise.all([page.waitForEvent('download'), report.locator('[data-act=report-image]').click()]);
+    expect(dl.suggestedFilename()).toMatch(/^ages-report-\d{4}-\d{2}-\d{2}\.png$/);
+    await page.keyboard.press('Escape');
+    await expect(report).toBeHidden();
     expect(errs).toEqual([]);
   });
 

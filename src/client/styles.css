@@ -1649,3 +1649,35 @@ i.seen { color: var(--k-economy); font-style: normal; margin-left: auto; }
 .ls-src { display: flex; gap: 6px; margin: -2px 0 10px; font-size: var(--t-xs); color: var(--ink-3); line-height: 1.5; }
 .ls-src span { flex: none; font-weight: 600; }
 .ls-src cite { font-style: normal; }
+
+/* ---------- 学习周报: the weekly report (v2.3) ---------- */
+.pm-foot { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.pm-report { flex: none; border: 0; background: none; padding: 0; color: var(--zhu); font: inherit; font-size: var(--t-xs); font-weight: 600; cursor: pointer; }
+.pm-report:hover { text-decoration: underline; }
+.modal-box.report { width: min(520px, calc(100vw - 24px)); max-height: calc(100dvh - 40px); overflow: auto; padding: 22px 24px 18px; display: flex; flex-direction: column; gap: 12px; }
+.rp-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.rp-head h2 { margin: 0; font-size: var(--t-xl); }
+.rp-head small { color: var(--ink-3); font-size: var(--t-s); }
+.rp-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.rp-stat { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; background: var(--well); }
+.rp-stat b { font-size: var(--t-2xl); line-height: 1.1; font-variant-numeric: tabular-nums; }
+.rp-stat span { font-size: var(--t-xs); color: var(--ink-2); }
+.rp-stat small { font-size: var(--t-2xs); color: var(--ink-3); }
+.rp-week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; height: 64px; align-items: end; }
+.rp-week span { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; height: 100%; }
+.rp-week i { width: 100%; min-height: 3px; background: var(--well-2); border-radius: 2px; }
+.rp-week i.on { background: var(--ok); }
+.rp-week small { font-size: var(--t-2xs); color: var(--ink-3); }
+.modal-box.report h3 { margin: 6px 0 0; font-size: var(--t-m); }
+.rp-bar { height: 10px; }
+.rp-line { margin: 0; font-size: var(--t-s); color: var(--ink-2); }
+.rp-chapters { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+.rp-chapters li { display: grid; grid-template-columns: 9em 1fr 3em; gap: 10px; align-items: center; font-size: var(--t-s); }
+.rp-chapters i { height: 8px; background: var(--well-2); border-radius: 4px; overflow: hidden; }
+.rp-chapters i b { display: block; height: 100%; background: var(--m-mastered); }
+.rp-chapters em { font-style: normal; text-align: right; color: var(--ink-3); font-size: var(--t-xs); font-variant-numeric: tabular-nums; }
+.rp-review { display: flex; flex-wrap: wrap; gap: 6px; }
+.rp-acts { display: flex; gap: 8px; margin-top: 6px; }
+.rp-msg:empty { display: none; }
+.rp-msg { margin: 0; font-size: var(--t-s); color: var(--ok); }
+.rp-note { margin: 0; font-size: var(--t-2xs); color: var(--ink-3); }

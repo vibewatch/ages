@@ -27,6 +27,7 @@ import { LessonView } from '../ui/lesson.ts';
 import { Help, HubMenu, SettingsMenu } from '../ui/menus.ts';
 import { Music } from '../ui/music.ts';
 import { ALL_KEYS, PathView } from '../ui/path.ts';
+import { ReportView } from '../ui/report.ts';
 import { level } from '../../shared/lib/mastery.ts';
 import { Period } from '../ui/period.ts';
 import { Quiz } from '../ui/quiz.ts';
@@ -59,6 +60,7 @@ export class App {
   settings!: SettingsMenu;
   hub!: HubMenu;
   help = new Help();
+  report = new ReportView(this.progress);
   quiz!: Quiz;
   lesson!: LessonView;
   path!: PathView;
@@ -146,6 +148,7 @@ export class App {
       play: e => { this.openEvent(e); void this.playStory(e); },
       mistakes: () => this.learn.onReviewMistakes(),
       review: due => this.startReview(due),
+      report: () => this.report.toggle(true),
       myMap: on => { this.refocus(); if (on) { this.closeCard(); void this.atlas.home(); } },
       course: () => this.learn.toggle(true),
       close: () => this.showPath(false),
@@ -159,7 +162,7 @@ export class App {
     this.hub = new HubMenu();
     this.shell = new Shell(this.root, {
       atlas: this.atlas, timeline: this.timeline, period: this.period, hub: this.hub, settings: this.settings, search: this.search,
-      trail: this.trail, caption: this.caption, music: this.music, lowfx: this.lowfx, dialogs: [this.learn.el, this.help.el],
+      trail: this.trail, caption: this.caption, music: this.music, lowfx: this.lowfx, dialogs: [this.learn.el, this.help.el, this.report.el],
       // the stack's root is the learning path
       views: [
         { el: this.path.el, close: () => this.showPath(false) },
@@ -359,6 +362,7 @@ export class App {
       this.root.classList.add('quiz-on');
     };
     this.atlas.masteryOf = id => level(this.progress.mastery[id]);
+    this.report.onEvent = e => this.openEvent(e);
     this.progress.onMastery = () => this.atlas.repaintMastery();
     this.learn.onTest = (b, u) => { this.leaveForLesson(); this.lesson.startTest(b, u); };
     this.settings.onChange = (k, on) => this.atlas.setLayer(k, on);
@@ -728,6 +732,7 @@ export class App {
 
   private key(e: KeyboardEvent): void {
     this.help.focus.trap(e);
+    this.report.focus.trap(e);
     this.learn.focus.trap(e);
     const tag = (e.target as HTMLElement).tagName;
     if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
@@ -736,6 +741,7 @@ export class App {
       // popovers and dialogs first, then the story, then the panel's stack one view at a time (a trail before its root)
       if (this.shell.popOpen) this.shell.pop(null);
       else if (!this.help.el.hidden) this.help.toggle(false);
+      else if (this.report.open) this.report.toggle(false);
       else if (this.learn.open) this.learn.toggle(false);
       else if (this.reader.open && this.shell.panel.top === this.card.el) this.reader.close();
       else if (this.player.state !== 'idle') this.stopStory(true);
@@ -782,6 +788,7 @@ export class App {
     this.settings.render();
     this.hub.render();
     this.help.render();
+    this.report.render();
     this.quiz.relabel();
     this.lesson.relabel();
     this.path.refresh();

@@ -33,6 +33,8 @@ export interface PathHooks {
   review: (due: string[]) => void;
   /** the learner's own map: every event to know, marked by mastery */
   myMap: (on: boolean) => void;
+  /** the weekly report */
+  report: () => void;
   course: () => void;
   close: () => void;
   /** the open chapter changed (the learning focus follows it) */
@@ -176,7 +178,9 @@ export class PathView {
         h('b', { class: 'm-mastered', style: `flex:${ms.mastered}` }), h('b', { class: 'm-practised', style: `flex:${ms.practised}` }),
         h('b', { class: 'm-due', style: `flex:${ms.due + ms.weak}` }), h('b', { class: 'm-seen', style: `flex:${ms.seen - ms.mastered - ms.practised - ms.due - ms.weak}` }),
         h('b', { class: 'm-new', style: `flex:${ms.total - ms.seen}` })),
-      h('small', { text: t('mastLine', { m: ms.mastered, p: ms.practised, d: ms.due + ms.weak, n: ms.total }) }),
+      h('div', { class: 'pm-foot' },
+        h('small', { text: t('mastLine', { m: ms.mastered, p: ms.practised, d: ms.due + ms.weak, n: ms.total }) }),
+        h('button', { type: 'button', class: 'pm-report', 'data-act': 'report', text: `${t('rpOpen')} →`, onclick: () => this.hooks.report() })),
       this.myMap ? h('p', { class: 'pm-hint', text: t('mastHint') }) : null) : null;
 
     const intro = started || this.openId ? null : h('p', { class: 'path-intro', text: t('pathIntro') });
