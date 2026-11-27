@@ -5,8 +5,11 @@
  *
  *   node scripts/build-territories.ts            (npm run data:territories)
  *   node scripts/build-territories.ts --preview  also writes .territory-preview/<phase>.png for checking
+ *   node scripts/build-territories.ts --try src/shared/data/own/tang.ts
+ *       one era file on its own (not yet in own/index.ts): previews and .territory-preview/try-<era>.json only, nothing else
+ *       written; check it against another map with scripts/territory/compare.ts
  */
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import sharp from 'sharp';
 import { POLITY } from '../src/shared/data/polities.ts';
 import { STAGES } from '../src/shared/data/stage.ts';
@@ -16,9 +19,18 @@ import type { LonLat, Polity } from '../src/shared/data/types.ts';
 import { encodeRing } from '../src/shared/lib/rings.ts';
 import { allocate, areas, cellLat, cellLon, despeckle, fillHoles, ringArea, simplify, smooth, trace, type Grid, type Source } from './territory/gen.ts';
 
-const PREVIEW = process.argv.includes('--preview');
+const TRY = process.argv.includes('--try') ? process.argv[process.argv.indexOf('--try') + 1] : null;
+const PREVIEW = !!TRY || process.argv.includes('--preview');
+async function erasToBuild(): Promise<OwnEra[]> {
+  if (!TRY) return ERAS_OWN;
+  const mod = await import(new URL('../' + TRY, import.meta.url).href) as Record<string, unknown>;
+  const eras = Object.values(mod).filter((v): v is OwnEra => !!v && typeof v === 'object' && 'seats' in v && 'holds' in v);
+  if (!eras.length) throw new Error(`${TRY}: no OwnEra export`);
+  return eras;
+}
+const ERAS = await erasToBuild();
 /** generation window and resolution (degrees) */
-const WIN = { west: 70, east: 140, south: 15, north: 56 }, STEP = 0.1;
+const WIN = { west: 60, east: 142, south: 15, north: 58 }, STEP = 0.1;
 
 async function loadGrid(): Promise<Grid> {
   const st = STAGES.china;
@@ -106,9 +118,11 @@ async function preview(g: Grid, owner: Int16Array, list: string[], colorOf: (id:
       if (xx >= 0 && yy >= 0 && xx < g.w && yy < g.h) px.set(hex(col), (yy * g.w + xx) * 3);
     }
   }
-  // the Chinese heartland, doubled
+  // the Chinese heartland, doubled, and the whole window
+  const img = () => sharp(Buffer.from(px), { raw: { width: g.w, height: g.h, channels: 3 } });
   const crop = { left: Math.round((95 - g.west) / g.step), top: Math.round((g.north - 46) / g.step), width: Math.round(36 / g.step), height: Math.round(26 / g.step) };
-  await sharp(Buffer.from(px), { raw: { width: g.w, height: g.h, channels: 3 } }).extract(crop).resize(crop.width * 2, crop.height * 2, { kernel: 'nearest' }).png().toFile(file);
+  await img().extract(crop).resize(crop.width * 2, crop.height * 2, { kernel: 'nearest' }).png().toFile(file);
+  await img().png().toFile(file.replace(/\.png$/, '-wide.png'));
 }
 
 const grid = await loadGrid();
@@ -119,7 +133,7 @@ const rings: string[] = [];
 const snaps: Record<string, { p: [string, null, string | null, LonLat | null, number[]][]; g: []; f: [] }> = {};
 const meta: { replaces: string; phases: { id: string; from: number; to: number; title: unknown; note?: unknown; changes: [number, string, string | null, string | null, string?][] }[]; sources: OwnEra['sources']; polities: Polity[] }[] = [];
 
-for (const era of ERAS_OWN) {
+for (const era of ERAS) {
   const extra = new Map((era.polities ?? []).map(p => [p.id, p]));
   const polity = (id: string) => extra.get(id) ?? POLITY.get(id);
   const seatById = new Map(era.seats.map(s => [s.id, s]));
@@ -178,11 +192,19 @@ for (const era of ERAS_OWN) {
 }
 
 const seatNames: Record<string, { zh: string; en: string; at: LonLat; modern?: string }> = {};
-for (const era of ERAS_OWN) for (const s of era.seats) seatNames[s.id] = { ...s.name, at: s.at, modern: s.modern };
+// keyed per era: the same city has different names in different periods
+for (const era of ERAS) for (const s of era.seats) seatNames[`${era.replaces}:${s.id}`] = { ...s.name, at: s.at, modern: s.modern };
 
-writeFileSync('public/data/atlas/own.json', JSON.stringify({
+const shapes = JSON.stringify({
   source: { repo: 'own', sha: '', license: 'GPL-3.0 (own data, see docs/data/territories.md)' },
   rings, names: [], snaps, provinces: [], lakes: [],
-}));
-writeFileSync('src/shared/data/gen/own.json', JSON.stringify({ eras: meta, seats: seatNames }, null, 0));
-console.log(`wrote ${Object.keys(snaps).length} phases, ${rings.length} rings, ${(readFileSync('public/data/atlas/own.json').length / 1024).toFixed(0)} KB`);
+});
+if (TRY) {
+  const f = `.territory-preview/try-${ERAS.map(e => e.replaces).join('-')}.json`;
+  writeFileSync(f, shapes);
+  console.log(`trial: ${Object.keys(snaps).length} phases → .territory-preview/<phase>.png, <phase>-wide.png and ${f}`);
+} else {
+  writeFileSync('public/data/atlas/own.json', shapes);
+  writeFileSync('src/shared/data/gen/own.json', JSON.stringify({ eras: meta, seats: seatNames }, null, 0));
+  console.log(`wrote ${Object.keys(snaps).length} phases, ${rings.length} rings, ${(shapes.length / 1024).toFixed(0)} KB`);
+}

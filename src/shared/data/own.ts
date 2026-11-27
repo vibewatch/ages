@@ -20,6 +20,8 @@ const J = RAW as unknown as Raw;
 /** A holding that changed since the previous phase: a seat passing from one polity to another, with the source. */
 export interface Change { year: Year; seat: I18n; from: string | null; to: string | null; src?: I18n }
 
+const seatName = (era: string, id: string): I18n => { const s = J.seats[`${era}:${id}`]; return { zh: s?.zh ?? id, en: s?.en ?? id }; };
+
 export const OWN_POLITIES: Polity[] = J.eras.flatMap(e => e.polities);
 /** Imported dynasties replaced by our own maps. */
 export const OWN_REPLACES: ReadonlySet<string> = new Set(J.eras.map(e => e.replaces));
@@ -27,7 +29,7 @@ export const OWN_REPLACES: ReadonlySet<string> = new Set(J.eras.map(e => e.repla
 export const OWN_SNAPSHOTS: Snapshot[] = J.eras.flatMap(e => e.phases.map(p => ({
   id: p.id, scope: 'china' as const, year: p.from, end: p.to, dyn: e.replaces, title: p.title, note: p.note, regions: [], shapes: p.id, own: true,
   changes: p.changes.map(([year, seat, from, to, src]): Change => ({
-    year, seat: { zh: J.seats[seat]?.zh ?? seat, en: J.seats[seat]?.en ?? seat }, from, to, src: src ? e.sources[src] : undefined,
+    year, seat: seatName(e.replaces, seat), from, to, src: src ? e.sources[src] : undefined,
   })),
 })));
 
