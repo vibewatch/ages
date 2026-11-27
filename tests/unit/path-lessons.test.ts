@@ -2,8 +2,9 @@
 import { describe, expect, it } from 'vitest';
 import { CHAPTERS } from '../../src/shared/data/chapters.ts';
 import { EVENT } from '../../src/shared/data/events.ts';
+import { PATH_LESSONS } from '../../src/shared/data/lessons/index.ts';
 import type { Lesson } from '../../src/shared/data/types.ts';
-import { checkLesson } from './lesson-rules.ts';
+import { bilingual, checkLesson } from './lesson-rules.ts';
 
 for (const n of [2, 3, 4, 5, 6, 7]) {
   describe(`ch${n}`, () => {
@@ -56,3 +57,9 @@ for (const n of [2, 3, 4, 5, 6, 7]) {
     });
   });
 }
+
+describe('sources', () => {
+  it('every step of every learning-path lesson cites a bilingual source', () => {
+    for (const l of PATH_LESSONS) l.steps.forEach((s, i) => bilingual(s.src, `${l.id} step ${i} src`));
+  });
+});

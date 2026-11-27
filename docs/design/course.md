@@ -40,7 +40,8 @@ The learning path (`docs/design/learning-redesign.md`) teaches chapters 2–7 wi
 per chapter, 5–9 steps and 3–5 checks each, at most 10 minutes, in time order, never repeating an event within the
 chapter, and together teaching every event the chapter lists to know. They follow the same rules as textbook lessons;
 `book`/`unit` name the closest textbook unit. In the player, every third step is followed by an unscored quick recall
-("when did …?") about a step just read.
+("when did …?") about a step just read. Every step carries `src`, a short bilingual citation of where its content
+comes from (the 统编版 textbook unit and/or a primary or standard reference), shown under the step.
 
 ## Writing a lesson
 

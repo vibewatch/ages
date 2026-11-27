@@ -11,30 +11,37 @@ export const CH5: Lesson[] = [
         year: 581, at: [110, 34, 50],
         title: { zh: '杨坚建隋', en: 'Yang Jian founds the Sui' },
         body: { zh: '北周统一北方后，外戚杨坚掌握了朝政。581年他夺取北周政权，建立隋朝，定都长安，他就是隋文帝。', en: 'After the Northern Zhou reunited the north, the empress’s father Yang Jian took control at court. In 581 he seized the throne and founded the Sui with its capital at Chang’an; he is Emperor Wen of Sui.' },
+        src: { zh: '统编版七年级下册第一单元 · 《隋书·高祖纪》', en: 'PEP textbook, Grade 7 vol. 2, unit 1 · Suishu, Annals of Gaozu' },
       },
       {
         ev: 'sui_unify', polity: 'sui',
         body: { zh: '589年隋军渡江南下，攻破建康，灭掉陈朝，结束了西晋末年以来近三百年的分裂局面。隋文帝勤于政务，社会经济迅速发展。', en: 'In 589 Sui armies crossed the Yangtze, took Jiankang and ended the Chen, closing nearly three hundred years of division since the late Western Jin. Emperor Wen worked hard at government and the economy grew quickly.' },
+        src: { zh: '统编版七年级下册第一单元 · 《隋书·高祖纪》', en: 'PEP textbook, Grade 7 vol. 2, unit 1 · Suishu, Annals of Gaozu' },
       },
       {
         ev: 'keju',
         body: { zh: '隋文帝开始用分科考试的办法选拔官员，隋炀帝设置进士科，标志着科举制正式诞生。从此读书人可以凭才学做官，打破了士族对官职的垄断。', en: 'Emperor Wen began choosing officials through examinations in several subjects, and Emperor Yang’s jinshi degree marks the birth of the imperial examinations. Scholars could now win office by learning, breaking the great clans’ monopoly.' },
+        src: { zh: '统编版七年级下册第一单元 · 《隋书》 · 《通典·选举》', en: 'PEP textbook, Grade 7 vol. 2, unit 1 · Suishu · Tongdian, Selection of Officials' },
       },
       {
         ev: 'grand_canal',
         body: { zh: '隋炀帝时开通大运河，以洛阳为中心，北达涿郡，南至余杭，分为永济渠、通济渠、邗沟、江南河四段，连接五大水系，是古代世界最长的运河。', en: 'Emperor Yang opened the Grand Canal. Centred on Luoyang, it ran from Zhuojun in the north to Yuhang in the south in four sections, the Yongji, Tongji, Hangou and Jiangnan canals, linking five river systems: the longest canal of the ancient world.' },
+        src: { zh: '统编版七年级下册第一单元 · 《隋书·炀帝纪》 · 《资治通鉴》', en: 'PEP textbook, Grade 7 vol. 2, unit 1 · Suishu, Annals of Yangdi · Zizhi Tongjian' },
       },
       {
         ev: 'zhaozhou',
         body: { zh: '隋朝工匠李春主持设计建造了赵州桥。它是世界上现存最古老的石拱桥，大拱两肩各有两个小拱，既减轻桥身重量，又便于泄洪。', en: 'The Sui craftsman Li Chun designed and built the Zhaozhou Bridge, the oldest surviving stone arch bridge in the world. Two small arches on each shoulder of the main arch lighten the bridge and let floodwater through.' },
+        src: { zh: '统编版七年级下册第一单元 · 张嘉贞《安济桥铭》', en: 'PEP textbook, Grade 7 vol. 2, unit 1 · Zhang Jiazhen, Inscription on the Anji Bridge' },
       },
       {
         ev: 'm-sui-612',
         body: { zh: '隋炀帝营建东都、开凿运河、三征高句丽，频繁征发兵役和徭役，百姓负担沉重，各地农民纷纷起义。', en: 'Emperor Yang built an eastern capital, dug canals and launched three campaigns against Goguryeo. Endless call-ups of soldiers and labourers crushed the people, and peasant risings broke out everywhere.' },
+        src: { zh: '《隋书·炀帝纪》 · 《资治通鉴》', en: 'Suishu, Annals of Yangdi · Zizhi Tongjian' },
       },
       {
         ev: 'm-sui-618',
         body: { zh: '618年隋炀帝在江都被部下杀死，隋朝灭亡。隋朝的速亡成为后来唐朝统治者的深刻教训。', en: 'In 618 Emperor Yang was killed by his own officers at Jiangdu and the Sui came to an end. Its swift fall became a hard lesson for the Tang rulers who followed.' },
+        src: { zh: '《隋书·炀帝纪》 · 《资治通鉴》', en: 'Suishu, Annals of Yangdi · Zizhi Tongjian' },
       },
     ],
     checks: [
@@ -68,26 +75,32 @@ export const CH5: Lesson[] = [
         year: 618, at: [108.9, 34.3, 40],
         title: { zh: '唐朝建立', en: 'The Tang is founded' },
         body: { zh: '隋末天下大乱，太原留守李渊起兵，攻入长安。618年李渊称帝，建立唐朝，定都长安，此后逐步统一全国。', en: 'As the Sui collapsed, Li Yuan, garrison commander at Taiyuan, rose and took Chang’an. In 618 he declared himself emperor of the Tang with Chang’an as capital, and went on to reunite the country.' },
+        src: { zh: '统编版七年级下册第一单元 · 《旧唐书·高祖本纪》', en: 'PEP textbook, Grade 7 vol. 2, unit 1 · Old Book of Tang, Annals of Gaozu' },
       },
       {
         ev: 'zhenguan', polity: 'tang',
         body: { zh: '唐太宗认识到“水能载舟，亦能覆舟”，虚心听取魏征等大臣的意见，轻徭薄赋，完善科举制。政治清明，经济发展，史称“贞观之治”。', en: 'Emperor Taizong saw that the people, like water, can carry the boat or overturn it. He heeded ministers such as Wei Zheng, lightened taxes and labour and improved the exams. Government was clean and the economy grew: the Reign of Zhenguan.' },
+        src: { zh: '统编版七年级下册第一单元 · 吴兢《贞观政要》', en: 'PEP textbook, Grade 7 vol. 2, unit 1 · Wu Jing, Zhenguan Zhengyao' },
       },
       {
         ev: 'm-tang-630',
         body: { zh: '630年唐朝大将李靖打败东突厥，北方和西北各族首领尊称唐太宗为“天可汗”。', en: 'In 630 the Tang general Li Jing defeated the Eastern Turks, and the chiefs of the northern and north-western peoples hailed Emperor Taizong as the Heavenly Khan.' },
+        src: { zh: '《旧唐书·太宗本纪》 · 《资治通鉴》', en: 'Old Book of Tang, Annals of Taizong · Zizhi Tongjian' },
       },
       {
         ev: 'wuzetian',
         body: { zh: '690年武则天称帝，改国号为周，是我国历史上唯一的女皇帝。她重视人才选拔，创立殿试和武举，奖励农桑，被称为“政启开元，治宏贞观”。', en: 'In 690 Wu Zetian took the throne and renamed the dynasty Zhou, the only woman emperor in Chinese history. She cared about choosing talent, created the palace exam and the military exam and encouraged farming, carrying on the work of Zhenguan and preparing that of Kaiyuan.' },
+        src: { zh: '统编版七年级下册第一单元 · 《旧唐书·则天皇后本纪》', en: 'PEP textbook, Grade 7 vol. 2, unit 1 · Old Book of Tang, Annals of Empress Wu' },
       },
       {
         ev: 'm-tang-702',
         body: { zh: '唐朝加强对西域的管理。702年武则天在庭州设置北庭都护府，管辖天山以北的广大地区。', en: 'The Tang tightened its hold on the Western Regions. In 702 Wu Zetian set up the Beiting Protectorate at Tingzhou to govern the lands north of the Tianshan.' },
+        src: { zh: '《新唐书·地理志》', en: 'New Book of Tang, Treatise on Geography' },
       },
       {
         ev: 'kaiyuan', polity: 'tang',
         body: { zh: '唐玄宗前期励精图治，任用贤能，整顿吏治，发展经济，唐朝进入全盛时期，史称“开元盛世”。农民改进了曲辕犁和筒车，长安成为国际性大都市。', en: 'In his early years Emperor Xuanzong ruled diligently, appointed able men, cleaned up officialdom and built up the economy: the Tang reached its height, the Kaiyuan golden age. Farmers used the curved-shaft plough and the bamboo water wheel, and Chang’an became a cosmopolitan city.' },
+        src: { zh: '统编版七年级下册第一单元 · 《新唐书·玄宗本纪》 · 杜甫《忆昔》', en: 'PEP textbook, Grade 7 vol. 2, unit 1 · New Book of Tang, Annals of Xuanzong · Du Fu, Yi Xi' },
       },
     ],
     checks: [
@@ -121,26 +134,32 @@ export const CH5: Lesson[] = [
         year: 627, at: [108.9, 34.3, 80],
         title: { zh: '国际性大都市长安', en: 'Chang’an, a city of the world' },
         body: { zh: '唐朝国力强盛，对外交往频繁，陆上和海上交通发达。都城长安规模宏大，各国使节、商人、留学生和僧人汇聚于此。', en: 'The strong Tang traded and talked with many lands by road and by sea. Its vast capital Chang’an drew envoys, merchants, students and monks from many countries.' },
+        src: { zh: '统编版七年级下册第一单元', en: 'PEP textbook, Grade 7 vol. 2, unit 1' },
       },
       {
         ev: 'xuanzang',
-        body: { zh: '唐太宗时，高僧玄奘从长安出发，历经艰险到达天竺，在那烂陀寺学习佛经。十几年后他带回大量佛经，还写下《大唐西域记》。', en: 'Under Taizong the monk Xuanzang set out from Chang’an and, through many hardships, reached India, where he studied at the Nalanda monastery. More than ten years later he came home with many sutras and wrote the Great Tang Records on the Western Regions.' },
+        body: { zh: '唐太宗贞观初年，高僧玄奘从长安出发，历经艰险到达天竺，在那烂陀寺学习佛经。十几年后他带回大量佛经，还写下《大唐西域记》。', en: 'Early in Taizong’s Zhenguan reign the monk Xuanzang set out from Chang’an and, through many hardships, reached India, where he studied at the Nalanda monastery. More than ten years later he came home with many sutras and wrote the Great Tang Records on the Western Regions.' },
+        src: { zh: '统编版七年级下册第一单元 · 《大唐西域记》《大慈恩寺三藏法师传》', en: 'PEP textbook, Grade 7 vol. 2, unit 1 · Datang Xiyuji · Life of the Tripitaka Master of Daci’en' },
       },
       {
         ev: 'kentoshi',
         body: { zh: '日本先后十几次派遣唐使来华，学习唐朝的制度和文化。日本的大化改新以唐朝制度为蓝本，都城平城京也仿照长安城布局。', en: 'Japan sent envoys to the Tang more than ten times to study its government and culture. Japan’s Taika Reform took Tang institutions as its model, and its capital Heijo-kyo was laid out like Chang’an.' },
+        src: { zh: '统编版七年级下册第一单元 · 《旧唐书·日本传》 · 《日本书纪》', en: 'PEP textbook, Grade 7 vol. 2, unit 1 · Old Book of Tang, Account of Japan · Nihon Shoki' },
       },
       {
         ev: 'wencheng', polity: 'tubo',
         body: { zh: '7世纪前期松赞干布统一青藏高原，建立吐蕃政权。641年唐太宗把文成公主嫁给松赞干布，她带去了中原的生产技术和书籍，促进了唐蕃友好。', en: 'Early in the 7th century Songtsen Gampo united the Tibetan plateau and founded the Tubo kingdom. In 641 Taizong married Princess Wencheng to him; she took Central Plains crafts and books with her, furthering Tang–Tibetan friendship.' },
+        src: { zh: '统编版七年级下册第一单元 · 《旧唐书·吐蕃传》', en: 'PEP textbook, Grade 7 vol. 2, unit 1 · Old Book of Tang, Account of Tubo' },
       },
       {
         ev: 'tang_poetry',
         body: { zh: '唐朝是诗歌的黄金时代，“诗仙”李白、“诗圣”杜甫和白居易留下了大量名篇；颜真卿、柳公权的书法和“画圣”吴道子的绘画也名扬后世。', en: 'The Tang was the golden age of poetry: Li Bai, the Immortal of Poetry, Du Fu, the Sage of Poetry, and Bai Juyi left many famous poems. The calligraphy of Yan Zhenqing and Liu Gongquan and the painting of Wu Daozi, the Sage of Painting, are still admired.' },
+        src: { zh: '统编版七年级下册第一单元 · 《全唐诗》', en: 'PEP textbook, Grade 7 vol. 2, unit 1 · Complete Tang Poems (Quan Tangshi)' },
       },
       {
         ev: 'jianzhen',
         body: { zh: '唐朝高僧鉴真应邀东渡日本，前五次都失败了，双目失明仍不放弃，753年第六次终于成功。他在日本传播佛教和唐文化，设计建造了唐招提寺。', en: 'Invited to Japan, the Tang monk Jianzhen failed five times and lost his sight, yet kept trying and arrived on his sixth attempt in 753. He spread Buddhism and Tang culture there and designed the Toshodai-ji temple.' },
+        src: { zh: '统编版七年级下册第一单元 · 真人元开《唐大和上东征传》', en: 'PEP textbook, Grade 7 vol. 2, unit 1 · Omi no Mifune, Voyage East of the Tang Master' },
       },
     ],
     checks: [
@@ -174,30 +193,37 @@ export const CH5: Lesson[] = [
         year: 745, at: [112, 37, 50],
         title: { zh: '盛世背后的危机', en: 'Trouble beneath the golden age' },
         body: { zh: '唐玄宗后期沉迷享乐，任用李林甫、杨国忠等人，政治日益腐败。边疆节度使手握重兵，势力越来越大。', en: 'Late in his reign Xuanzong gave himself to pleasure and trusted ministers such as Li Linfu and Yang Guozhong, and government decayed. Frontier military governors commanded large armies and grew ever more powerful.' },
+        src: { zh: '统编版七年级下册第一单元 · 《旧唐书·玄宗本纪》', en: 'PEP textbook, Grade 7 vol. 2, unit 1 · Old Book of Tang, Annals of Xuanzong' },
       },
       {
         ev: 'anshi',
         body: { zh: '755年节度使安禄山和史思明从范阳起兵叛乱，先后攻占洛阳、长安，史称“安史之乱”。', en: 'In 755 the military governor An Lushan and his ally Shi Siming rebelled at Fanyang and captured Luoyang and then Chang’an: the An–Shi Rebellion.' },
+        src: { zh: '统编版七年级下册第一单元 · 《旧唐书·安禄山传》', en: 'PEP textbook, Grade 7 vol. 2, unit 1 · Old Book of Tang, Biography of An Lushan' },
       },
       {
         ev: 'm-tang-756',
         body: { zh: '756年唐玄宗逃往四川，途经马嵬驿时，随行将士杀死杨国忠，杨贵妃也被赐死。太子在灵武即位，组织平叛。', en: 'In 756 Xuanzong fled towards Sichuan. At Mawei Station his escort killed Yang Guozhong, and Consort Yang was ordered to die. The crown prince took the throne at Lingwu and organised the fight back.' },
+        src: { zh: '《旧唐书·后妃传》 · 《资治通鉴》', en: 'Old Book of Tang, Consorts · Zizhi Tongjian' },
       },
       {
         ev: 'm-tang-763',
         body: { zh: '安史之乱历时八年，到763年才被平定。它是唐朝由盛转衰的转折点，此后藩镇割据的局面逐渐形成。', en: 'The rebellion lasted eight years and was put down only in 763. It was the turning point from prosperity to decline, and regional governors went on to rule their provinces as warlords.' },
+        src: { zh: '《资治通鉴·唐纪》', en: 'Zizhi Tongjian, Tang annals' },
       },
       {
         ev: 'diamond_sutra',
         body: { zh: '唐朝发明了雕版印刷术。敦煌发现的868年印制的《金刚经》，是世界上现存最早的标有确切日期的雕版印刷品。', en: 'The Tang invented woodblock printing. The Diamond Sutra found at Dunhuang, printed in 868, is the world’s oldest surviving printed book with an exact date.' },
+        src: { zh: '统编版七年级下册第一单元 · 敦煌藏经洞《金刚经》（大英图书馆藏）', en: 'PEP textbook, Grade 7 vol. 2, unit 1 · Dunhuang Diamond Sutra, British Library' },
       },
       {
         ev: 'huangchao',
         body: { zh: '唐朝后期藩镇割据、宦官专权，百姓生活困苦。875年爆发黄巢起义，起义军一度攻入长安，沉重打击了唐朝的统治。', en: 'Late Tang China suffered warlord governors and eunuch rule, and the people lived in hardship. The Huang Chao rising broke out in 875; the rebels even took Chang’an, dealing Tang rule a heavy blow.' },
+        src: { zh: '统编版七年级下册第一单元 · 《旧唐书·黄巢传》', en: 'PEP textbook, Grade 7 vol. 2, unit 1 · Old Book of Tang, Biography of Huang Chao' },
       },
       {
         ev: 'tang_fall',
         body: { zh: '907年节度使朱温灭唐，建立后梁。此后中原相继出现五个朝代，南方等地先后存在十个政权，史称“五代十国”。', en: 'In 907 the military governor Zhu Wen ended the Tang and founded the Later Liang. Five dynasties followed one another in the north while ten states rose elsewhere: the Five Dynasties and Ten Kingdoms.' },
+        src: { zh: '统编版七年级下册第二单元 · 《旧五代史·梁太祖纪》', en: 'PEP textbook, Grade 7 vol. 2, unit 2 · Old History of the Five Dynasties, Liang Taizu' },
       },
     ],
     checks: [

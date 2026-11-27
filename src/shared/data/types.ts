@@ -135,6 +135,8 @@ export interface LessonStep {
   at?: [number, number, number?];
   /** a polity of that year's map, framed and highlighted */
   polity?: string;
+  /** where the step's content comes from: a textbook unit or a classical/modern reference (shown under the step) */
+  src?: I18n;
 }
 
 /**

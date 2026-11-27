@@ -11,22 +11,27 @@ export const CH2: Lesson[] = [
         year: -2100, at: [113, 35, 30],
         title: { zh: '黄河岸边的部落联盟', en: 'Tribal alliances on the Yellow River' },
         body: { zh: '传说尧、舜、禹时期，部落联盟首领由推举产生，称为“禅让”。禹因治水有功受到拥戴，中原地区正在走向国家。', en: 'In the age of the legendary Yao, Shun and Yu, leaders of the tribal alliance were chosen and the post was handed on to the worthy. Yu, honoured for taming the floods, led the Central Plains towards statehood.' },
+        src: { zh: '统编版七年级上册第二单元 · 《史记·夏本纪》', en: 'PEP textbook, Grade 7 vol. 1, unit 2 · Shiji, Annals of Xia' },
       },
       {
         ev: 'xia_found', polity: 'xia',
         body: { zh: '约公元前2070年禹建立夏朝，这是我国历史上第一个王朝。禹死后其子启继位，王位世袭制代替了禅让制。', en: 'Around 2070 BCE Yu founded the Xia, the first dynasty in Chinese history. When he died his son Qi took the throne, and hereditary succession replaced abdication.' },
+        src: { zh: '统编版七年级上册第二单元 · 《史记·夏本纪》', en: 'PEP textbook, Grade 7 vol. 1, unit 2 · Shiji, Annals of Xia' },
       },
       {
         ev: 'shang_found', polity: 'shang',
         body: { zh: '夏朝末代君主桀统治残暴。约公元前1600年，商汤起兵灭夏，建立商朝。', en: 'Jie, the last Xia ruler, governed cruelly. Around 1600 BCE Tang of Shang rose against him, destroyed the Xia and founded the Shang dynasty.' },
+        src: { zh: '统编版七年级上册第二单元 · 《史记·殷本纪》', en: 'PEP textbook, Grade 7 vol. 1, unit 2 · Shiji, Annals of Yin' },
       },
       {
         ev: 'pangeng', polity: 'shang',
         body: { zh: '商朝曾多次迁都，盘庚把都城迁到殷（今河南安阳），统治逐渐稳定。殷墟出土的甲骨文是目前已知最早的成熟文字。', en: 'The Shang moved their capital several times until Pangeng settled at Yin, today’s Anyang in Henan, and rule grew stable. The oracle-bone script found at Yinxu is the earliest known mature Chinese writing.' },
+        src: { zh: '统编版七年级上册第二单元 · 《尚书·盘庚》 · 殷墟甲骨文', en: 'PEP textbook, Grade 7 vol. 1, unit 2 · Book of Documents, Pangeng · Yinxu oracle bones' },
       },
       {
         ev: 'houmuwu',
         body: { zh: '商朝青铜铸造技术高超。后母戊鼎是已发现的世界上最重的青铜器之一，四羊方尊造型精美；三星堆的青铜器展现了另一支灿烂文化。', en: 'Shang bronze casting was superb. The Houmuwu ding is one of the heaviest bronzes ever found and the four-goat square zun is finely made; the Sanxingdui bronzes show another brilliant culture.' },
+        src: { zh: '统编版七年级上册第二单元 · 殷墟、三星堆考古发掘', en: 'PEP textbook, Grade 7 vol. 1, unit 2 · Excavations at Yinxu and Sanxingdui' },
       },
     ],
     checks: [
@@ -60,30 +65,37 @@ export const CH2: Lesson[] = [
         year: -1070, at: [110, 34.5, 35],
         title: { zh: '渭水流域的周族', en: 'The Zhou of the Wei valley' },
         body: { zh: '商朝后期，纣王统治残暴，社会矛盾尖锐。与此同时，渭水流域的周族逐渐强盛起来，准备东进伐商。', en: 'In the late Shang, King Zhou ruled harshly and discontent grew. Meanwhile the Zhou people of the Wei River valley grew strong and prepared to march east against the Shang.' },
+        src: { zh: '统编版七年级上册第二单元 · 《史记·周本纪》', en: 'PEP textbook, Grade 7 vol. 1, unit 2 · Shiji, Annals of Zhou' },
       },
       {
         ev: 'muye', polity: 'zhou',
         body: { zh: '公元前1046年，周武王在牧野大败商军，商朝灭亡。周朝建立，定都镐京，史称西周。', en: 'In 1046 BCE King Wu of Zhou crushed the Shang army at Muye and the Shang fell. The Zhou dynasty was founded with its capital at Haojing: the Western Zhou.' },
+        src: { zh: '统编版七年级上册第二单元 · 《史记·周本纪》 · 利簋铭文', en: 'PEP textbook, Grade 7 vol. 1, unit 2 · Shiji, Annals of Zhou · Li gui inscription' },
       },
       {
         ev: 'fenfeng', polity: 'zhou',
         body: { zh: '为巩固统治，西周把土地和人民分封给王族、功臣和古代帝王的后代。诸侯要服从周王、定期朝贡、随从作战，周的统治区域因此扩大。', en: 'To secure its rule the Western Zhou granted land and people to royal kin, loyal followers and descendants of earlier rulers. The lords had to obey the king, bring tribute and fight for him, and Zhou rule spread.' },
+        src: { zh: '统编版七年级上册第二单元 · 《史记·周本纪》 · 《左传》', en: 'PEP textbook, Grade 7 vol. 1, unit 2 · Shiji, Annals of Zhou · Zuozhuan' },
       },
       {
         ev: 'pingwang',
         body: { zh: '公元前771年西周灭亡。次年周平王迁都洛邑，东周开始，分为春秋和战国两个时期，周王室从此日渐衰微。', en: 'The Western Zhou fell in 771 BCE. The next year King Ping moved the capital to Luoyi and the Eastern Zhou began, divided into the Spring and Autumn and Warring States periods; royal power faded from then on.' },
+        src: { zh: '统编版七年级上册第二单元 · 《史记·周本纪》', en: 'PEP textbook, Grade 7 vol. 1, unit 2 · Shiji, Annals of Zhou' },
       },
       {
         ev: 'kuiqiu',
         body: { zh: '春秋时期诸侯争当霸主。齐桓公任用管仲改革，以“尊王攘夷”为号召，在葵丘会盟诸侯，成为春秋时期第一个霸主。', en: 'In the Spring and Autumn period the lords competed to be hegemon. Duke Huan of Qi reformed his state with Guan Zhong and, calling to “honour the king and repel the barbarians”, gathered the lords at Kuiqiu as the first hegemon.' },
+        src: { zh: '统编版七年级上册第二单元 · 《左传·僖公九年》', en: 'PEP textbook, Grade 7 vol. 1, unit 2 · Zuozhuan, Duke Xi year 9' },
       },
       {
         ev: 'chengpu',
         body: { zh: '公元前632年，晋文公在城濮之战中打败楚军，成为新的霸主。南方的楚国也不断向北扩张。', en: 'In 632 BCE Duke Wen of Jin defeated Chu at Chengpu and became the new hegemon, while Chu in the south kept pushing north.' },
+        src: { zh: '统编版七年级上册第二单元 · 《左传·僖公二十八年》', en: 'PEP textbook, Grade 7 vol. 1, unit 2 · Zuozhuan, Duke Xi year 28' },
       },
       {
         ev: 'goujian',
         body: { zh: '春秋后期吴越争霸。越王勾践被吴国打败后卧薪尝胆、发愤图强，最终灭掉吴国。', en: 'Late in the period Wu and Yue fought for supremacy. Beaten by Wu, King Goujian of Yue slept on brushwood and tasted gall to steel himself, rebuilt his state and finally destroyed Wu.' },
+        src: { zh: '统编版七年级上册第二单元 · 《史记·越王勾践世家》', en: 'PEP textbook, Grade 7 vol. 1, unit 2 · Shiji, House of Goujian of Yue' },
       },
     ],
     checks: [
@@ -116,34 +128,42 @@ export const CH2: Lesson[] = [
         year: -551, at: [114, 35, 45],
         title: { zh: '大变革的时代', en: 'An age of great change' },
         body: { zh: '春秋战国时期，生产工具进步，旧的制度逐渐瓦解，诸侯之间的兼并越来越激烈，思想文化也空前活跃。', en: 'In the Spring and Autumn and Warring States periods better tools appeared, the old order broke down, the states swallowed one another ever more fiercely, and thought flourished as never before.' },
+        src: { zh: '统编版七年级上册第二单元', en: 'PEP textbook, Grade 7 vol. 1, unit 2' },
       },
       {
         ev: 'confucius',
         body: { zh: '春秋末年，孔子创立儒家学派，主张“仁”和“为政以德”。他兴办私学，提出“有教无类”“因材施教”，言行被弟子编成《论语》。', en: 'Late in the Spring and Autumn period Confucius founded the Confucian school, teaching benevolence and rule by virtue. He opened private schools, taught all who came and suited lessons to each student; his disciples gathered his sayings in the Analects.' },
+        src: { zh: '统编版七年级上册第二单元 · 《论语》 · 《史记·孔子世家》', en: 'PEP textbook, Grade 7 vol. 1, unit 2 · Analects · Shiji, House of Confucius' },
       },
       {
         ev: 'tieli',
         body: { zh: '春秋时期出现了铁农具和牛耕，战国时期逐渐推广，农业生产力大大提高，井田制逐渐瓦解。', en: 'Iron farm tools and ox ploughing appeared in the Spring and Autumn period and spread in the Warring States. Farm output rose sharply and the old well-field system broke down.' },
+        src: { zh: '统编版七年级上册第二单元', en: 'PEP textbook, Grade 7 vol. 1, unit 2' },
       },
       {
         ev: 'sanjia',
-        body: { zh: '韩、赵、魏三家瓜分晋国，战国时期开始。齐、楚、燕、韩、赵、魏、秦并称“战国七雄”，兼并战争日益激烈。', en: 'Han, Zhao and Wei divided the state of Jin and the Warring States period began. Qi, Chu, Yan, Han, Zhao, Wei and Qin, the Seven Warring States, fought ever larger wars of conquest.' },
+        body: { zh: '春秋末年韩、赵、魏三家瓜分晋国，前403年被周天子承认为诸侯。战国时期，齐、楚、燕、韩、赵、魏、秦并称“战国七雄”，兼并战争日益激烈。', en: 'At the end of the Spring and Autumn period Han, Zhao and Wei divided the state of Jin, and in 403 BCE the Zhou king recognised them as lords. In the Warring States period Qi, Chu, Yan, Han, Zhao, Wei and Qin, the Seven Warring States, fought ever larger wars of conquest.' },
+        src: { zh: '统编版七年级上册第二单元 · 《史记·晋世家》 · 《资治通鉴》卷一', en: 'PEP textbook, Grade 7 vol. 1, unit 2 · Shiji, House of Jin · Zizhi Tongjian, ch. 1' },
       },
       {
         ev: 'shangyang', polity: 'qin_s',
         body: { zh: '各国纷纷变法图强。商鞅在秦国变法：承认土地私有，奖励耕战，建立县制。秦国经济发展、军队战斗力增强，成为最强大的诸侯国。', en: 'Every state reformed to grow strong. Shang Yang’s reforms in Qin recognised private land, rewarded farming and fighting and set up counties; Qin’s economy and army grew until it was the strongest state.' },
+        src: { zh: '统编版七年级上册第二单元 · 《史记·商君列传》', en: 'PEP textbook, Grade 7 vol. 1, unit 2 · Shiji, Biography of Lord Shang' },
       },
       {
         ev: 'baijia',
         body: { zh: '战国时期，儒家的孟子、道家的庄子、墨家的墨子、法家的韩非等著书立说、相互辩论，形成“百家争鸣”的局面。', en: 'In the Warring States period thinkers such as the Confucian Mencius, the Daoist Zhuangzi, Mozi of the Mohists and the Legalist Han Fei wrote and argued with one another: the Hundred Schools of Thought.' },
+        src: { zh: '统编版七年级上册第二单元 · 《孟子》《庄子》《墨子》《韩非子》', en: 'PEP textbook, Grade 7 vol. 1, unit 2 · Mencius, Zhuangzi, Mozi, Han Feizi' },
       },
       {
         ev: 'changping',
         body: { zh: '公元前260年，秦军在长平之战中大败赵军。此后东方六国再也无力单独抵抗秦国，统一的趋势越来越明显。', en: 'In 260 BCE Qin crushed Zhao at Changping. After that no eastern state could stand against Qin alone, and unification drew nearer.' },
+        src: { zh: '统编版七年级上册第二单元 · 《史记·白起王翦列传》', en: 'PEP textbook, Grade 7 vol. 1, unit 2 · Shiji, Biographies of Bai Qi and Wang Jian' },
       },
       {
         ev: 'dujiangyan',
         body: { zh: '战国时期，秦国蜀郡守李冰主持修建都江堰，既能分洪又能灌溉，使成都平原成为“天府之国”，至今仍发挥作用。', en: 'Li Bing, Qin’s governor of Shu, built the Dujiangyan works to control floods and irrigate fields. The Chengdu Plain became a “land of abundance”, and the system still works today.' },
+        src: { zh: '统编版七年级上册第二单元 · 《史记·河渠书》 · 《华阳国志》', en: 'PEP textbook, Grade 7 vol. 1, unit 2 · Shiji, Treatise on Rivers · Huayang Guozhi' },
       },
     ],
     checks: [
