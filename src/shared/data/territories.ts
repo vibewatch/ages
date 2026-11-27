@@ -1,4 +1,5 @@
 import { IMPORTED_SNAPSHOTS } from './jiangshan.ts';
+import { OWN_SNAPSHOTS } from './own.ts';
 import type { LonLat, Region, Snapshot } from './types.ts';
 
 /**
@@ -862,11 +863,12 @@ const CURATED: Snapshot[] = [
 
 /**
  * The territorial timeline: our schematic maps for the early states (before 403 BCE) and for the PRC (from 1949),
- * and in between the 165 dated phases imported from jiangshan-map (geometry loaded at runtime).
+ * and in between our own generated phases (own.ts, the Warring States so far) and the dated phases imported from jiangshan-map (geometry loaded at runtime).
  */
-const FIRST_IMPORTED = IMPORTED_SNAPSHOTS[0]?.year ?? Infinity;
+const FIRST_IMPORTED = Math.min(IMPORTED_SNAPSHOTS[0]?.year ?? Infinity, ...OWN_SNAPSHOTS.map(s => s.year));
 export const SNAPSHOTS: Snapshot[] = [
   ...CURATED.filter(s => s.year < FIRST_IMPORTED),
+  ...OWN_SNAPSHOTS,
   ...IMPORTED_SNAPSHOTS,
   // the imported phases stop at Manchukuo; the textbook map of the occupied areas covers 1937–1945
   ...CURATED.filter(s => s.id === 'war1940').map(s => ({ ...s, end: 1945 })),

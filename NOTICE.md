@@ -2,6 +2,13 @@
 
 长河 Ages is released under the **GNU General Public License v3.0** (see [LICENSE](LICENSE)).
 
+## Our own territory data
+
+The Warring States maps (403–221 BCE) are our own work, released under GPL-3.0 with the code: seats, holdings and
+sources in `src/shared/data/own/`, generated over the public-domain relief by `scripts/build-territories.ts`
+(see [docs/data/territories.md](docs/data/territories.md)). They replace the imported Warring States phases, which
+the app no longer shows. Further eras will follow.
+
 ## Imported content: jiangshan-map
 
 The following content is imported from [jiangshan-map 江山图](https://github.com/DeanChensj/jiangshan-map) by DeanChensj

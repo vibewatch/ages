@@ -85,7 +85,7 @@ docs/               product spec, roadmap, architecture & ADRs, content guide
 See [docs/README.md](docs/README.md).
 
 ## Content and accuracy
-Territories from 403 BCE to 1949 come from jiangshan-map, which traces them from Tan Qixiang's *Historical Atlas of China*, CHGIS and other academic sources; earlier periods, 1937–1945 and the PRC are our own schematic simplifications of the textbook maps. All boundaries are for teaching, not authoritative. The app says so in its help panel and footer. Textbook events follow the national middle-school (统编版) and high-school curricula; about 750 further chronicle entries come from jiangshan-map. Corrections are welcome. See [docs/content-guide.md](docs/content-guide.md).
+The Warring States maps (403–221 BCE) are our own, generated from sourced seat holdings over the relief ([docs/data/territories.md](docs/data/territories.md)); the rest of 221 BCE – 1949 comes from jiangshan-map, which traces them from Tan Qixiang's *Historical Atlas of China*, CHGIS and other academic sources; earlier periods, 1937–1945 and the PRC are our own schematic simplifications of the textbook maps. All boundaries are for teaching, not authoritative. The app says so in its help panel and footer. Textbook events follow the national middle-school (统编版) and high-school curricula; about 750 further chronicle entries come from jiangshan-map. Corrections are welcome. See [docs/content-guide.md](docs/content-guide.md).
 
 ## Credits
 * Elevation: [AWS Terrain Tiles](https://registry.opendata.aws/terrain-tiles/) (Mapzen), derived from SRTM, GMTED2010, ETOPO1 and other public-domain sources.

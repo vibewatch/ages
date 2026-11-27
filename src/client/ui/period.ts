@@ -275,7 +275,16 @@ export class Period {
       h('div', { class: 'pv-src', 'data-testid': 'period-sources', 'data-source-kind': src.kind },
         h('span', { class: 'pv-src-badge', text: tr(src.badge, L) }),
         h('p', { class: 'pv-src-text', text: tr(src.source, L) }),
-        h('p', { class: 'pv-src-note', text: tr(src.uncertainty, L) })),
+        h('p', { class: 'pv-src-note', text: tr(src.uncertainty, L) }),
+        s.changes?.length ? h('details', { class: 'pv-changes', 'data-testid': 'period-changes' },
+          h('summary', { text: t('pvChanges', { n: s.changes.length }) }),
+          h('ul', {}, ...s.changes.map(c => {
+            const name = (id: string | null) => (id ? tr(POLITY.get(id)?.name, L) : t('pvNobody'));
+            return h('li', {},
+              h('b', { text: tr(c.seat, L) }),
+              h('span', { text: ` ${name(c.from)} → ${name(c.to)} · ${formatYear(c.year, L, { short: true })}` }),
+              c.src ? h('small', { text: tr(c.src, L) }) : null);
+          }))) : null),
       worldList.length ? h('div', { class: 'pv-world', 'data-testid': 'period-world' },
         h('span', { class: 'pv-world-h', text: `🌍 ${t('worldSync')}` }),
         ...worldList.map(w => h('p', { class: 'pv-world-item' },

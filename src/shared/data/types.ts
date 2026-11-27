@@ -81,6 +81,10 @@ export interface Snapshot {
   shapes?: string;
   /** administrative divisions, filled from the shape store */
   admin?: AdminUnit[];
+  /** one of our own generated maps (src/shared/data/own.ts) */
+  own?: boolean;
+  /** our maps: the holdings that changed since the previous phase, with sources */
+  changes?: { year: Year; seat: I18n; from: string | null; to: string | null; src?: I18n }[];
 }
 
 /** A city or site with names that change over time (长安 → 大兴 → 西安). */

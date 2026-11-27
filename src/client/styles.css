@@ -805,6 +805,11 @@ i.seen { color: var(--k-economy); font-style: normal; margin-left: auto; }
 .src-list b { color: var(--ink); font-weight: 700; }
 .pv-src { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--rule); }
 .pv-src .src-unc { margin: 6px 0 4px; }
+.pv-changes { margin-top: 8px; font-size: 12.5px; }
+.pv-changes summary { cursor: pointer; color: var(--ink-2); font-weight: 600; }
+.pv-changes ul { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 4px; max-height: 220px; overflow: auto; }
+.pv-changes li b { font-weight: 600; }
+.pv-changes li small { display: block; color: var(--ink-2); font-size: 11.5px; }
 .pv-cmp-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .pv-cmp-sel { flex: 1; min-width: 140px; font: inherit; font-size: var(--t-xs); padding: 6px 8px; border: 0; background: var(--well); color: var(--ink); }
 .pv-cmp-acts { display: flex; gap: 4px; }

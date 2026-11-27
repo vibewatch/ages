@@ -1,3 +1,4 @@
+import { ownCites } from './own.ts';
 import type { HistEvent, I18n, Snapshot } from './types.ts';
 
 export interface EventSourceInfo {
@@ -8,7 +9,7 @@ export interface EventSourceInfo {
 }
 
 export interface SnapshotSourceInfo {
-  kind: 'curated' | 'imported' | 'schematic';
+  kind: 'curated' | 'imported' | 'schematic' | 'own';
   badge: I18n;
   source: I18n;
   uncertainty: I18n;
@@ -214,6 +215,22 @@ export function snapshotSources(s: Snapshot): SnapshotSourceInfo {
       uncertainty: {
         zh: '边界说明：先秦方国与诸侯尚无近代划界，色块表示核心控制区与山川自然分界；共和元年（前841年）以前年代为近似拟年。',
         en: 'Boundary note: Pre-imperial states lacked modern demarcated borders; shaded areas indicate core spheres of control and natural terrain divides, and pre-841 BCE dates are approximate.',
+      },
+    };
+  }
+  if (s.own) {
+    const cites = ownCites(s);
+    const list = (l: 'zh' | 'en') => cites.map(c => c[l]).join(l === 'zh' ? '、' : '; ');
+    return {
+      kind: 'own',
+      badge: { zh: '自制疆域 · 按治所归属推算', en: 'Our own map · from who held each seat' },
+      source: {
+        zh: `底图来源：本站整理各治所（都城、郡县、要邑）的归属与年代，按地形推算疆界${cites.length ? `；本阶段变化依据${list('zh')}` : ''}。`,
+        en: `Source: we record who held each seat (capitals, commanderies, walled cities) and when, and derive the borders over the relief${cites.length ? `; this phase’s changes follow ${list('en')}` : ''}.`,
+      },
+      uncertainty: {
+        zh: '疆界说明：边界由治所位置与山川地形推算，表示控制范围的大致走向，并非当时的实际划界；标“推定”的年份为史料无明确记载时的推断。',
+        en: 'Boundary note: borders are derived from seat locations and the lie of the land; they show the rough extent of control, not borders drawn at the time. Dates marked “inferred” are our inference where the sources are silent.',
       },
     };
   }

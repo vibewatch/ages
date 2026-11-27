@@ -1,4 +1,5 @@
 import { IMPORTED_POLITIES } from './jiangshan.ts';
+import { OWN_POLITIES } from './own.ts';
 import type { Polity } from './types.ts';
 
 const P = (id: string, zh: string, en: string, color: string, role: Polity['role'] = 'main', wiki?: Polity['wiki']): Polity =>
@@ -105,6 +106,7 @@ export const POLITIES: Polity[] = [
   P('jp_taiwan', '日本占据（台湾）', 'Japanese-occupied Taiwan', '#566573', 'occupied'),
   P('mongolia', '蒙古国', 'Mongolia', '#b8b09a', 'neighbor'),
   P('ussr', '苏联', 'Soviet Union', '#aab7b8', 'neighbor'),
+  ...OWN_POLITIES,
   ...IMPORTED_POLITIES,
 ];
 

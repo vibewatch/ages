@@ -290,7 +290,7 @@ describe('historical sources & uncertainty notes', () => {
 
     for (const s of SNAPSHOTS) {
       const src = snapshotSources(s);
-      expect(['curated', 'imported', 'schematic']).toContain(src.kind);
+      expect(['curated', 'imported', 'schematic', 'own']).toContain(src.kind);
       expect(src.badge.zh).toBeTruthy();
       expect(src.source.zh).toBeTruthy();
       expect(src.uncertainty.zh).toBeTruthy();

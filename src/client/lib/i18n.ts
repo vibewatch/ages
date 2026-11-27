@@ -89,6 +89,8 @@ const S = {
   rcGo: { zh: '继续', en: 'Continue' },
   pvChapter: { zh: '学习路线 · 第{n}讲', en: 'Learning path · chapter {n}' },
   pvLearn: { zh: '学这一讲', en: 'Learn this chapter' },
+  pvChanges: { zh: '本阶段变化（{n} 处，附出处）', en: 'What changed in this phase ({n}, with sources)' },
+  pvNobody: { zh: '无', en: 'none' },
   pvMore: { zh: '地图来源、世界同期与对比', en: 'Map sources, the world at the time and compare' },
   pvPhase: { zh: '此刻的疆域阶段', en: 'The borders right now' },
   cardTrack: { zh: '第{n}讲 · {i}/{m}', en: 'Chapter {n} · {i}/{m}' },

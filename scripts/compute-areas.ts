@@ -3,7 +3,7 @@
  * dynasty (regions in the `main` or `protectorate` role, plus the Zhou vassal and warring states before 221 BC), `p` the area of each polity, most first (under 5,000 km²
  * dropped). Feeds the area readout, the legend and the timeline area curve without decoding geometry at runtime.
  *
- * Reads the imported geometry (public/data/atlas/shapes.json) and the curated snapshots; rerun after either changes:
+ * Reads the imported geometry (public/data/atlas/shapes.json), our own (public/data/atlas/own.json) and the curated snapshots; rerun after either changes:
  *   node scripts/compute-areas.ts   (npm run data:areas)
  */
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -14,10 +14,12 @@ import type { LonLat } from '../src/shared/data/types.ts';
 import { decodeRing } from '../src/shared/lib/rings.ts';
 
 type Ring = [number, number][];
-const raw = JSON.parse(readFileSync('public/data/atlas/shapes.json', 'utf8')) as {
-  rings: string[];
-  snaps: Record<string, { p: [string, string | null, string | null, LonLat | null, number[]][] }>;
-};
+type RawShapes = { rings: string[]; snaps: Record<string, { p: [string, string | null, string | null, LonLat | null, number[]][] }> };
+// the imported shapes and our own (scripts/build-territories.ts), merged with shifted ring indices
+const raw = JSON.parse(readFileSync('public/data/atlas/shapes.json', 'utf8')) as RawShapes;
+const own = JSON.parse(readFileSync('public/data/atlas/own.json', 'utf8')) as RawShapes;
+for (const [k, v] of Object.entries(own.snaps)) raw.snaps[k] = { p: v.p.map(([p, c, r, l, rs]) => [p, c, r, l, rs.map(i => i + raw.rings.length)]) };
+raw.rings.push(...own.rings);
 const cache = new Map<number, Ring>();
 const ring = (i: number): Ring => {
   let r = cache.get(i);

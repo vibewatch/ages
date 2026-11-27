@@ -160,7 +160,7 @@ export class Atlas {
     this.lang = lang;
     const [hm, shapes] = await Promise.all([
       loadHeightmap(import.meta.env.BASE_URL + this.geo.stage.terrain),
-      ShapeStore.load(import.meta.env.BASE_URL + 'data/atlas/shapes.json'),
+      ShapeStore.load(import.meta.env.BASE_URL + 'data/atlas/shapes.json', import.meta.env.BASE_URL + 'data/atlas/own.json'),
     ]);
     this.shapes = shapes;
     this.geo.setHeightmap(hm.rgba, hm.w, hm.h);

@@ -3,6 +3,7 @@ import type { EventKind, HistEvent, I18n, LonLat, ModelRecipe, Place, Polity, Sn
 import { EXTRA_JOURNEYS, EXTRA_PEOPLE } from './journeys.ts';
 import { FIGURES } from './figures.ts';
 import { COMMERCIAL, NONCOMMERCIAL_DYN } from './licence.ts';
+import { OWN_REPLACES } from './own.ts';
 
 /**
  * Content imported from DeanChensj/jiangshan-map (GPL-3.0, see NOTICE.md) by scripts/import-jiangshan.ts:
@@ -88,7 +89,8 @@ export const IMPORTED_POLITIES: Polity[] = J.polities.map(p => ({ id: p.id, name
 
 /** Dated phases from 403 BCE to 1949; `regions` are filled from the shape store when it has loaded. */
 // a commercial build leaves out the non-commercial imported territories (licence.ts)
-export const IMPORTED_SNAPSHOTS: Snapshot[] = J.timeline.filter(t => !COMMERCIAL || !NONCOMMERCIAL_DYN.has(t.dyn)).map(t => ({
+// eras with our own maps (own.ts) drop the imported phases
+export const IMPORTED_SNAPSHOTS: Snapshot[] = J.timeline.filter(t => !OWN_REPLACES.has(t.dyn) && (!COMMERCIAL || !NONCOMMERCIAL_DYN.has(t.dyn))).map(t => ({
   id: t.id, scope: 'china', year: t.start, end: t.end, dyn: t.dyn, title: t.title, note: t.note, regions: [], shapes: t.id,
 }));
 // a dynasty's last phase and the next dynasty's first can share their boundary year: the new dynasty takes the next year

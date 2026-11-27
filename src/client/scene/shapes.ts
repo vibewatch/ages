@@ -12,6 +12,15 @@ interface RawShapes {
   lakes: [string, number, Year | null, Year | null, number[]][];
 }
 
+/** Appends `b`'s rings, names and snapshots to `a` (indices shifted). */
+function merge(a: RawShapes, b: RawShapes): RawShapes {
+  const ro = a.rings.length, no = a.names.length / 2;
+  const adm = (l: RawAdmin[] | string): RawAdmin[] | string => (typeof l === 'string' ? l : l.map(([n, c, at, rs]) => [n + no, c + no, at, rs.map(i => i + ro)]));
+  const snaps = { ...a.snaps };
+  for (const [k, s] of Object.entries(b.snaps)) snaps[k] = { p: s.p.map(([p, c, r, l, rs]) => [p, c, r, l, rs.map(i => i + ro)]), g: adm(s.g), f: adm(s.f) };
+  return { ...a, rings: [...a.rings, ...b.rings], names: [...a.names, ...b.names], snaps };
+}
+
 export interface Lake { name: string; rank: number; from: Year; to: Year; rings: LonLat[][] }
 
 /**
@@ -22,15 +31,20 @@ export class ShapeStore {
   private cache = new Map<number, LonLat[]>();
   private constructor(private raw: RawShapes) {}
 
-  static async load(url: string): Promise<ShapeStore | null> {
-    try {
-      const r = await fetch(url);
-      if (!r.ok) throw new Error(`${url}: ${r.status}`);
-      return new ShapeStore(await r.json() as RawShapes);
-    } catch (e) {
-      console.warn('territory shapes unavailable', e);
-      return null;
-    }
+  /** Loads the imported shapes and then our own (public/data/atlas/own.json), merged into one store. */
+  static async load(...urls: string[]): Promise<ShapeStore | null> {
+    const all = await Promise.all(urls.map(async url => {
+      try {
+        const r = await fetch(url);
+        if (!r.ok) throw new Error(`${url}: ${r.status}`);
+        return await r.json() as RawShapes;
+      } catch (e) {
+        console.warn('territory shapes unavailable', e);
+        return null;
+      }
+    }));
+    const ok = all.filter((x): x is RawShapes => !!x);
+    return ok.length ? new ShapeStore(ok.reduce(merge)) : null;
   }
 
   private ring(i: number): LonLat[] {

@@ -22,6 +22,13 @@ import { readFileSync } from 'node:fs';
 
 /** Fills snapshots from public/data/atlas/shapes.json the way ShapeStore does in the browser (regions only). */
 const SHAPES = JSON.parse(readFileSync(new URL('../../public/data/atlas/shapes.json', import.meta.url), 'utf8'));
+// our own generated maps, merged as the client does
+{
+  const own = JSON.parse(readFileSync(new URL('../../public/data/atlas/own.json', import.meta.url), 'utf8'));
+  const ro = SHAPES.rings.length;
+  for (const [k, v] of Object.entries(own.snaps) as [string, { p: [string, unknown, unknown, unknown, number[]][] }][]) SHAPES.snaps[k] = { ...v, p: v.p.map(([p, c, r, l, rs]) => [p, c, r, l, rs.map(i => i + ro)]) };
+  SHAPES.rings.push(...own.rings);
+}
 const hydrated = (s: Snapshot | null): Snapshot | null => {
   if (!s?.shapes || !SHAPES.snaps[s.shapes]) return s;
   return { ...s, regions: SHAPES.snaps[s.shapes].p.map(([polity, , , , rs]: [string, unknown, unknown, unknown, number[]]) => ({ polity, rings: rs.map(i => decodeRing(SHAPES.rings[i])) })) };
@@ -137,7 +144,7 @@ describe('territorial snapshots', () => {
   it('snapshotAt picks the latest snapshot not after the year', () => {
     expect(snapshotAt(-5000)).toBeNull();
     expect(snapshotAt(-221)?.id).toBe('s_qin_a');
-    expect(snapshotAt(-222)?.id).toMatch(/^s_zhanguo/);
+    expect(snapshotAt(-222)?.id).toMatch(/^o_zhanguo/);
     expect(snapshotAt(-100)?.id).toMatch(/^s_xihan/);
     expect(snapshotAt(742)?.id).toMatch(/^s_tang/);
     expect(snapshotAt(1405)?.id).toMatch(/^s_ming/);

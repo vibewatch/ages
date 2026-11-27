@@ -14,7 +14,8 @@ describe('commercial build data', () => {
       expect(s.g).toEqual([]);
       expect(s.f).toEqual([]);
     }
-    const dropped = IMPORTED_SNAPSHOTS.filter(s => s.dyn && NONCOMMERCIAL_DYN.has(s.dyn)).map(s => s.id);
+    // the imported Warring States phases (the app shows our own instead)
+    const dropped = Object.keys(store.snaps).filter(id => /^s_zhanguo_/.test(id));
     expect(dropped.length).toBeGreaterThan(10);
     for (const id of dropped) expect(out.snaps[id]).toBeUndefined();
   });

@@ -16,6 +16,7 @@
     "data:terrain": "node scripts/fetch-terrain.ts",
     "data:jiangshan": "node scripts/import-jiangshan.ts",
     "data:areas": "node scripts/compute-areas.ts",
+    "data:territories": "node scripts/build-territories.ts && node scripts/compute-areas.ts",
     "build:commercial": "tsc --noEmit -p tsconfig.json && VITE_COMMERCIAL=1 vite build"
   },
   "engines": {
