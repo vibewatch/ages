@@ -695,7 +695,7 @@ test.describe('Ages atlas', () => {
   test('journeys play as 3D stories; places and people open their own cards', async ({ page }) => {
     const errs = watchErrors(page);
     await openApp(page, 'y=1085&lang=zh');
-    await expect(page.locator('.tl-ruler')).toHaveText('北宋神宗 · 元丰八年');
+    await expect(page.locator('.tl-ruler')).toHaveText('宋神宗 · 元丰八年');
     await page.locator('.b-hub').click();
     await page.locator('.hub-tabs [data-tab=journeys]').click();
     await expect(page.locator('.journeys .jn')).toHaveCount(43);
@@ -749,18 +749,26 @@ test.describe('Ages atlas', () => {
     await page.mouse.click(free!.x, free!.y);
     await expect(card.locator('h2')).toHaveText(free!.title);
     await expect(tip).toBeHidden();
-    // event pins are kind badges: hovering one shows its title in the same tooltip
+    // event pins are kind badges: hovering one shows its title in the same tooltip (card closed, a year full of events)
+    await page.keyboard.press('Escape');
+    await expect(card).toBeHidden();
+    await page.evaluate(() => { location.hash = 'y=-260&lang=zh'; });
+    await expect.poll(() => page.evaluate(() => (window as any).__atlas.atlas.year)).toBe(-260);
+    await setMapPose(page, { lon: 113, lat: 35, dist: 26, tilt: 0.6 });
     await expect.poll(() => page.evaluate(() => (window as any).__atlas.atlas.view.flying)).toBe(false);
     await expect.poll(async () => {
-      const pinId = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.labels .pin[data-id][aria-pressed=false]')].find(el => {
+      const pinIds = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.labels .pin[data-id][aria-pressed=false]')].filter(el => {
         const r = el.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 3;
         return r.width > 0 && document.elementFromPoint(x, y)?.closest('.pin') === el;
-      })?.dataset.id);
-      if (!pinId) return false;
-      const pin = page.locator(`.labels .pin[data-id="${pinId}"]`);
-      if (!await pin.hover({ timeout: 2000 }).then(() => true, () => false)) return false;
-      await page.waitForTimeout(300);
-      return await tip.isVisible() && (await tip.locator('b').textContent()) === await pin.getAttribute('aria-label');
+      }).map(el => el.dataset.id!));
+      // any free pin will do (one may sit under a model's hover area)
+      for (const pinId of pinIds) {
+        const pin = page.locator(`.labels .pin[data-id="${pinId}"]`);
+        if (!await pin.hover({ timeout: 2000 }).then(() => true, () => false)) continue;
+        await page.waitForTimeout(300);
+        if (await tip.isVisible() && (await tip.locator('b').textContent()) === await pin.getAttribute('aria-label')) return true;
+      }
+      return false;
     }, { timeout: 30_000 }).toBe(true);
     // the tooltip never rides along with a moving map: any camera motion clears the hover
     const cameraX = await page.evaluate(() => (window as any).__atlas.atlas.view.camera.position.x as number);

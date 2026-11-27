@@ -1,6 +1,7 @@
 import { LANDMARKS_EARLY, MILESTONES_EARLY } from './events-early.ts';
 import { LANDMARKS_LATE, MILESTONES_LATE } from './events-late.ts';
 import { LANDMARKS_MIDDLE, MILESTONES_MIDDLE } from './events-middle.ts';
+import { JOURNEYS, PEOPLE } from './people.ts';
 import { PASSES } from './places-early.ts';
 import { REGIONAL, REIGNS } from './reigns.ts';
 import type { Content } from './types.ts';
@@ -18,4 +19,5 @@ export const OWN_CONTENT: Partial<Content> = {
   milestones: [...MILESTONES_EARLY, ...MILESTONES_MIDDLE, ...MILESTONES_LATE],
   landmarks: [...LANDMARKS_EARLY, ...LANDMARKS_MIDDLE, ...LANDMARKS_LATE],
   passes: PASSES,
+  people: PEOPLE, journeys: JOURNEYS,
 };
