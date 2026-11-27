@@ -1374,6 +1374,21 @@ export class Atlas {
     this.layoutDirty = true;
   }
 
+  /** 画疆域: the territories hidden too — relief and rivers only — while a border is drawn from memory. */
+  setDrawing(on: boolean): void {
+    this.terrain.uniforms.uTerrOn.value = !on && this.layers.territory ? 1 : 0;
+    if (!on) this.fx.clear('story');
+  }
+
+  /** The learner's outline so far: the first point marked, the ring closed from three points. */
+  sketch(pts: LonLat[]): void {
+    this.fx.clear('story');
+    if (!pts.length) return;
+    const line = pts.length >= 3 ? [...pts, pts[0]] : pts;
+    if (line.length >= 2) this.fx.work({ lines: [line], kind: 'sketch' }, 'story');
+    this.fx.ring(this.geo.pos(pts[0][0], pts[0][1], 0.02), '#c8372d', 3600);
+  }
+
   /** Routes the next map click to `fn`; `blind` also hides place names so they cannot give the answer away. */
   setPickMode(fn: ((lon: number, lat: number) => void) | null, blind = false): void {
     this.pickHandler = fn;

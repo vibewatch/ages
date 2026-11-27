@@ -93,6 +93,8 @@ const WORK = {
   sea: { w: 0.07, c: '#1f5f8b', a: 0.5 },
   road: { w: 0.05, c: '#8a5a2b', a: 0.75 },
   rail: { w: 0.05, c: '#3d3229', a: 0.9 },
+  /** a learner's outline (画疆域) */
+  sketch: { w: 0.07, c: '#c8372d', a: 0.95 },
 } as const;
 
 /** Model scale for a viewing distance. */

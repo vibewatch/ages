@@ -482,7 +482,7 @@ test.describe('Ages atlas', () => {
     expect(errs).toEqual([]);
   });
 
-  test('读图题: reads unlabelled maps — period, highlighted polity, which came first, what changed', async ({ page }) => {
+  test('读图题: reads unlabelled maps — period, highlighted polity, which came first, what changed, and draws a border', async ({ page }) => {
     const errs = watchErrors(page);
     await openApp(page, 'y=700&lang=en');
     await practice(page, 'path-quiz');
@@ -507,6 +507,30 @@ test.describe('Ages atlas', () => {
         await quiz.locator('.qz-map[data-map="0"]').click();
         await expect.poll(() => page.evaluate(() => (window as any).__atlas.atlas.year)).toBe(q.years[0]);
       }
+      if (q.kind === 'draw') {
+        // territories hidden too; a click on the map adds a point, undo takes it back
+        await expect(quiz.locator('[data-testid=draw-hint]')).toBeVisible();
+        await expect(quiz.locator('[data-act=draw-done]')).toBeDisabled();
+        const box = (await page.locator('canvas').first().boundingBox())!;
+        await page.mouse.click(box.x + box.width * 0.62, box.y + box.height * 0.5);
+        await expect(quiz.locator('[data-testid=draw-n]')).toContainText('1');
+        await quiz.locator('[data-act=draw-undo]').click();
+        await expect(quiz.locator('[data-testid=draw-n]')).toContainText('0');
+        // trace the real border (its largest ring), as a careful learner would
+        await page.evaluate((polity: string) => {
+          const a = (window as any).__atlas.atlas;
+          const rings: [number, number][][] = a.snapshot.regions.filter((r: any) => r.polity === polity).flatMap((r: any) => r.rings);
+          const ring = rings.sort((x, y) => y.length - x.length)[0];
+          const step = Math.max(1, Math.floor(ring.length / 40));
+          for (let k = 0; k < ring.length; k += step) a.pickHandler(ring[k][0], ring[k][1]);
+        }, q.polity);
+        await shot(page, 'desktop-draw');
+        await quiz.locator('[data-act=draw-done]').click();
+        await expect(quiz.locator('.qz-fb')).toContainText(/Correct.*overlap/);
+        await expect(app).not.toHaveClass(/map-blind/);
+        await quiz.locator('[data-act=next]').click();
+        continue;
+      }
       if (i === 0) await shot(page, 'desktop-mapread');
       // the first answer is wrong on purpose: it goes to mistake review
       const pick = i === 0 ? (q.answer + 1) % q.options.length : q.answer;
@@ -518,7 +542,7 @@ test.describe('Ages atlas', () => {
       await quiz.locator('[data-act=next]').click();
     }
     await expect(quiz.locator('.qz-done')).toContainText(`${total - 1}/${total}`);
-    expect(kinds).toEqual(new Set(['period', 'polity', 'first', 'change']));
+    expect(kinds).toEqual(new Set(['period', 'polity', 'first', 'change', 'draw']));
     const missed = await page.evaluate(() => [...(window as any).__atlas.progress.mistakes].filter((k: string) => k.startsWith('map:')));
     expect(missed).toHaveLength(1);
     await quiz.locator('[data-act=close], header .ib').first().click();

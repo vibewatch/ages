@@ -1608,6 +1608,8 @@ i.seen { color: var(--k-economy); font-style: normal; margin-left: auto; }
 .qz-maps { display: flex; gap: 8px; margin: 4px 18px 10px; }
 .qz-maps .qz-map { flex: 1; padding: 8px 10px; border: 1px solid var(--rule-2); background: transparent; font: inherit; font-weight: 600; cursor: pointer; color: var(--ink); }
 .qz-maps .qz-map:hover { color: var(--zhu); }
+.qz-draw { display: flex; align-items: center; gap: 8px; margin: 4px 18px 12px; }
+.qz-draw .qz-dn { flex: 1; color: var(--ink-2); font-size: 13px; font-variant-numeric: tabular-nums; }
 .qz-maps .qz-map.on { background: var(--ink); color: var(--panel-solid); border-color: transparent; }
 
 /* ---------- mastery (v2.3): what the learner knows, on the path and on the map ---------- */

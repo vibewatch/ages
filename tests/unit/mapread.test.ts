@@ -13,10 +13,11 @@ const HAN = /[㐀-鿿]/;
 describe('读图题 (map-reading questions)', () => {
   const rounds = Array.from({ length: 40 }, (_, s) => makeMapQuiz({ seed: s + 1 }));
 
-  it('makes full rounds that cycle the four kinds', () => {
+  it('makes full rounds that cycle the four kinds and end with drawing a border', () => {
     for (const qs of rounds) {
       expect(qs).toHaveLength(9);
-      expect(new Set(qs.map(q => q.kind))).toEqual(new Set(['period', 'polity', 'first', 'change']));
+      expect(new Set(qs.map(q => q.kind))).toEqual(new Set(['period', 'polity', 'first', 'change', 'draw']));
+      expect(qs[qs.length - 1].kind).toBe('draw');
       expect(new Set(qs.map(q => q.key)).size).toBe(qs.length);
     }
   });
@@ -26,7 +27,7 @@ describe('读图题 (map-reading questions)', () => {
   });
 
   it('has distinct, bilingual options with the answer among them', () => {
-    for (const q of rounds.flat()) {
+    for (const q of rounds.flat().filter(x => x.kind !== 'draw')) {
       expect(q.answer).toBeGreaterThanOrEqual(0);
       expect(q.answer).toBeLessThan(q.options.length);
       expect(new Set(q.options.map(o => o.zh)).size).toBe(q.options.length);
@@ -44,7 +45,8 @@ describe('读图题 (map-reading questions)', () => {
       const ph = phaseAt(q.years[0]);
       expect(ph?.snap.id).toBe(snapId);
       if (q.kind === 'period') expect(q.options[q.answer]).toEqual(eraAt(q.years[0], MAP_ERAS)!.name);
-      if (q.kind === 'polity') expect(snapPolities(snapId).map(([id]) => id)).toContain(q.polity);
+      if (q.kind === 'polity' || q.kind === 'draw') expect(snapPolities(snapId).map(([id]) => id)).toContain(q.polity);
+      if (q.kind === 'draw') expect(q.options).toEqual([]);
       if (q.kind === 'first') {
         expect(q.years).toHaveLength(2);
         expect(q.answer).toBe(q.years[0] < q.years[1] ? 0 : 1);
@@ -62,7 +64,7 @@ describe('读图题 (map-reading questions)', () => {
 
   it('spreads the answer over the options', () => {
     const at = [0, 0, 0, 0];
-    for (const q of rounds.flat()) if (q.kind !== 'first') at[q.answer]++;
+    for (const q of rounds.flat()) if (q.kind !== 'first' && q.kind !== 'draw') at[q.answer]++;
     for (const n of at) expect(n).toBeGreaterThan(20);
   });
 
@@ -74,7 +76,8 @@ describe('读图题 (map-reading questions)', () => {
   it('keeps a chapter round within its years', () => {
     const qs = makeMapQuiz({ n: 6, seed: 5, range: [581, 907] });
     expect(qs.length).toBe(6);
-    for (const q of qs.filter(x => x.kind === 'period' || x.kind === 'polity')) {
+    expect(qs[5].kind).toBe('draw');
+    for (const q of qs.filter(x => x.kind === 'period' || x.kind === 'polity' || x.kind === 'draw')) {
       expect(q.years[0]).toBeGreaterThanOrEqual(581);
       expect(q.years[0]).toBeLessThanOrEqual(907);
     }

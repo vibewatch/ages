@@ -3,7 +3,9 @@ import { BOOKS } from '../../shared/data/curriculum.ts';
 import { ERAS } from '../../shared/data/eras.ts';
 import { EVENT, EVENTS } from '../../shared/data/events.ts';
 import { tr } from '../../shared/data/i18n.ts';
-import type { Book, HistEvent, I18n } from '../../shared/data/types.ts';
+import type { Book, HistEvent, I18n, LonLat } from '../../shared/data/types.ts';
+import { snapshotAt } from '../../shared/data/territories.ts';
+import { gradeDraw, overlap } from '../../shared/lib/draw.ts';
 import { PLACE, PLACES } from '../../shared/data/places.ts';
 import { makeMapQuiz } from '../../shared/lib/mapread.ts';
 import { distKm, gradeWhere, locatePoints, makeLocateQuiz, makeMistakeQuiz, makeQuiz, rankOf, type Question } from '../../shared/lib/quiz.ts';
@@ -239,6 +241,48 @@ export class Quiz {
         },
       })));
       nodes.push(opts);
+    } else if (q.type === 'map' && q.kind === 'draw') {
+      // 画疆域: names and territories hidden; click round the border, then compare with the real one
+      this.mapOn = true;
+      this.drawing = true;
+      this.onBlind(true);
+      this.atlas.setDrawing(true);
+      this.onYear(q.years[0]);
+      void this.atlas.home();
+      const pts: LonLat[] = [];
+      const hint = h('p', { class: 'qz-hint', 'data-testid': 'draw-hint', text: t('drawHint') });
+      const count = h('span', { class: 'qz-dn', 'data-testid': 'draw-n' });
+      const undo = h('button', { type: 'button', class: 'btn ghost', 'data-act': 'draw-undo', text: t('drawUndo'), onclick: () => { pts.pop(); update(); } }) as HTMLButtonElement;
+      const done = h('button', { type: 'button', class: 'btn primary', 'data-act': 'draw-done', text: t('drawDone'), onclick: () => grade() }) as HTMLButtonElement;
+      const bar = h('div', { class: 'qz-draw' }, count, undo, done);
+      const update = () => {
+        this.atlas.sketch(pts);
+        count.textContent = t('drawN', { n: pts.length });
+        undo.disabled = !pts.length;
+        done.disabled = pts.length < 3;
+      };
+      const grade = () => {
+        if (this.answered || pts.length < 3) return;
+        this.atlas.setPickMode(null);
+        const id = q.key.split(':')[2];
+        const snap = this.atlas.snapshot?.id === id ? this.atlas.snapshot : snapshotAt(q.years[0]);
+        const o = overlap(pts, snap?.regions ?? [], q.polity!);
+        const g = gradeDraw(o.iou);
+        this.progress.answer(q.key, g === 'correct');
+        this.onBlind(false);
+        this.drawing = false;
+        this.atlas.setDrawing(false);
+        this.atlas.sketch(pts);
+        this.atlas.flyToPolity(q.polity!);
+        this.atlas.hold(q.polity!);
+        hint.hidden = true;
+        bar.hidden = true;
+        const msg = `${t(g === 'correct' ? 'correct' : g === 'close' ? 'close_' : 'wrong')} ${t('drawScore', { n: Math.round(o.iou * 100) })}`;
+        finish(g === 'correct', msg, g === 'correct' ? 1 : 0, undefined, q.why);
+      };
+      this.atlas.setPickMode((lon, lat) => { if (!this.answered) { pts.push([lon, lat]); update(); } }, true);
+      update();
+      nodes.push(hint, bar);
     } else if (q.type === 'map') {
       // 读图题: the map without its names; answering brings them back on the same map
       this.mapOn = true;
@@ -353,9 +397,12 @@ export class Quiz {
 
   /** Lifts a map-reading question: names back, highlight released. */
   private mapOn = false;
+  /** a 画疆域 question is open: the territories are hidden */
+  private drawing = false;
   private clearMap(): void {
     if (!this.mapOn) return;
     this.mapOn = false;
+    if (this.drawing) { this.drawing = false; this.atlas.setDrawing(false); }
     this.onBlind(false);
     this.atlas.hold(null);
   }

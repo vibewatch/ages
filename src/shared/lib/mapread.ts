@@ -12,9 +12,11 @@ import { eraAt, formatYear } from './timeline.ts';
  * - `polity`: which polity is highlighted? (the year is given)
  * - `first`: which of two maps, A or B, is earlier?
  * - `change`: from map A to the next map B, what changed? (a polity appears, is gone, grows or shrinks)
+ * - `draw` (画疆域): the territories are hidden too, and the learner outlines a polity from memory (scored by overlap,
+ *   src/shared/lib/draw.ts); it has no options.
  * Every question is generated from the territory snapshots, so it is always true to the map shown.
  */
-export type MapKind = 'period' | 'polity' | 'first' | 'change';
+export type MapKind = 'period' | 'polity' | 'first' | 'change' | 'draw';
 export interface MapQuestion {
   type: 'map';
   kind: MapKind;
@@ -22,7 +24,7 @@ export interface MapQuestion {
   key: string;
   /** the year(s) to show: one map, or maps A and B */
   years: Year[];
-  /** the polity to highlight (`polity` questions) */
+  /** the polity to highlight (`polity` questions) or to draw (`draw`) */
   polity?: string;
   prompt: I18n;
   options: I18n[];
@@ -235,6 +237,33 @@ function firstPair(r: () => number, eras: Era[]): MapQuestion | null {
   return null;
 }
 
+/** Draw a polity's territory from memory: the largest of Chinese history on the map (or `polity`), big enough to draw. */
+/** The polity to draw on a map: the era's own dynasty (唐 on a 唐 map) if it is there, else the largest main one (魏 before 曹操(北方)). */
+function drawTarget(x: MapSnap): { p: Polity; k: number } | undefined {
+  const here = onMap(x).filter(o => o.k >= 300);
+  return here.find(o => o.p.name.zh === x.era.name.zh)
+    ?? here.find(o => (o.p.role === 'main' || o.p.role === 'rival') && !/[(（]/.test(o.p.name.zh)) ?? here.find(o => o.p.role === 'main');
+}
+
+function drawQuestion(x: MapSnap, polity?: string): MapQuestion | null {
+  const target = polity ? onMap(x).find(o => o.p.id === polity && o.k >= 300) : drawTarget(x);
+  if (!target) return null;
+  const n = target.p.name;
+  return {
+    type: 'map', kind: 'draw', key: `map:draw:${x.snap.id}:${target.p.id}`, years: [x.mid], polity: target.p.id,
+    options: [], answer: -1,
+    prompt: both(l => (l === 'zh'
+      ? `画疆域：凭记忆在地图上圈出${formatYear(x.mid, l)}${n.zh}的疆域`
+      : `Draw the border: outline ${n.en} in ${formatYear(x.mid, l)} from memory`)),
+    why: both(l => {
+      const when = n.zh === x.era.name.zh ? formatYear(x.mid, l) : `${x.era.name[l]}${l === 'zh' ? '，' : ', '}${formatYear(x.mid, l)}`;
+      return l === 'zh'
+        ? `${n.zh}（${when}）：${formatArea(target.k, l)}。高亮的是真实疆域，红线是你画的。`
+        : `${n.en} (${when}): ${formatArea(target.k, l)}. The real territory is highlighted; the red line is yours.`;
+    }),
+  };
+}
+
 /** A change question on a map in the round's years and the one after it. */
 function changePair(snaps: MapSnap[], r: () => number): MapQuestion | null {
   for (const x of shuffle(snaps, r)) {
@@ -247,7 +276,7 @@ function changePair(snaps: MapSnap[], r: () => number): MapQuestion | null {
 
 /**
  * A round of map-reading questions, cycling period → polity → first → change, one era at a time so every period is met
- * (optionally only the years `range`, for a chapter).
+ * (optionally only the years `range`, for a chapter); a round of six or more ends with drawing a border.
  */
 export function makeMapQuiz(opts: { n?: number; seed?: number; range?: [Year, Year] } = {}): MapQuestion[] {
   const r = rng(opts.seed ?? Date.now());
@@ -258,7 +287,13 @@ export function makeMapQuiz(opts: { n?: number; seed?: number; range?: [Year, Ye
   const out: MapQuestion[] = [];
   const used = new Set<string>();
   let order = shuffle(eras, r);
-  for (let i = 0, guard = 0; out.length < n && guard < n * 10; guard++) {
+  // drawn at each era's widest extent (the textbook map), not mid-conquest
+  const widest = (e: Era) => byEra(e.id).filter(x => x.mid >= lo && x.mid <= hi)
+    .map(x => ({ x, k: drawTarget(x)?.k ?? 0 })).filter(o => o.k).sort((a, b) => b.k - a.k)[0]?.x;
+  const draws = shuffle(eras, r).map(widest).filter((x): x is MapSnap => !!x).map(x => drawQuestion(x)).filter((q): q is MapQuestion => !!q);
+  const last = n >= 6 ? draws[0] : undefined;
+  const m = last ? n - 1 : n;
+  for (let i = 0, guard = 0; out.length < m && guard < n * 10; guard++) {
     if (!order.length) order = shuffle(eras, r);
     const era = order.pop()!;
     const snaps = byEra(era.id).filter(x => x.mid >= lo && x.mid <= hi);
@@ -272,6 +307,7 @@ export function makeMapQuiz(opts: { n?: number; seed?: number; range?: [Year, Ye
     out.push(q);
     i++;
   }
+  if (last) out.push(last);
   return out;
 }
 
@@ -284,6 +320,7 @@ export function mapQuestionFromKey(key: string, seed = 1): MapQuestion | null {
   const r = rng(seed);
   if (kind === 'period') return periodQuestion(x, r);
   if (kind === 'polity') return polityQuestion(x, r, b);
+  if (kind === 'draw') return b ? drawQuestion(x, b) : null;
   const y = b ? SNAP.get(b) : undefined;
   if (!y) return null;
   return kind === 'first' ? firstQuestion(x, y) : kind === 'change' ? changeQuestion(x, y, r) : null;
