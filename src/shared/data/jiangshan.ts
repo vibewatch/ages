@@ -4,6 +4,7 @@ import { EXTRA_JOURNEYS, EXTRA_PEOPLE } from './journeys.ts';
 import { FIGURES } from './figures.ts';
 import { COMMERCIAL, NONCOMMERCIAL_DYN } from './licence.ts';
 import { OWN_REPLACES } from './own.ts';
+import { OWN_CONTENT } from './content/index.ts';
 
 /**
  * Content imported from DeanChensj/jiangshan-map (GPL-3.0, see NOTICE.md) by scripts/import-jiangshan.ts:
@@ -31,7 +32,8 @@ interface Raw {
   rivers: RiverLabel[];
   music: { name: I18n; mp3: string; ogg: string }[];
 }
-const J = RAW as unknown as Raw;
+// our own content replaces the imported lists one by one (content/index.ts)
+const J = { ...(RAW as unknown as Raw), ...OWN_CONTENT } as Raw;
 
 export interface JourneyStop {
   year: Year; era: I18n; name: I18n; modern: I18n; lon: number; lat: number; via?: LonLat[]; from?: LonLat;
