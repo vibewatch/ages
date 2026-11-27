@@ -35,6 +35,8 @@ export interface PathHooks {
   myMap: (on: boolean) => void;
   /** the weekly report */
   report: () => void;
+  /** the classroom playlist, optionally filled with a chapter's events */
+  classroom: (c?: Chapter) => void;
   course: () => void;
   close: () => void;
   /** the open chapter changed (the learning focus follows it) */
@@ -192,7 +194,8 @@ export class PathView {
     const practice = h('div', { class: 'path-practice' },
       h('h3', { text: t('pathPractice') }),
       this.tile('quiz', t('quizTitle'), t('quizDesc'), 'path-quiz', () => this.hooks.quiz()),
-      this.tile('book', t('pathCourse'), t('pathCourseDesc'), 'path-course', () => this.hooks.course()));
+      this.tile('book', t('pathCourse'), t('pathCourseDesc'), 'path-course', () => this.hooks.course()),
+      this.tile('present', t('pTitle'), t('pTile'), 'path-classroom', () => this.hooks.classroom()));
     this.body.replaceChildren(intro ?? '', cta, review ?? '', meter, mastery ?? '', list, practice);
     this.hooks.changed?.();
   }
@@ -258,7 +261,9 @@ export class PathView {
       h('button', { type: 'button', class: 'pl-check' + (this.progress.chapterPassed(c.id) ? ' ok' : ''), 'data-act': 'chapter-check', onclick: () => this.hooks.check(c) },
         h('i', { text: this.progress.chapterPassed(c.id) ? '✓' : '?' }),
         h('span', {}, h('b', { text: t('chCheck') }), chk ? h('small', { text: t('pathScore', { r: chk[0], n: chk[1] }) }) : null),
-        h('em', { text: chk ? t('again') : t('start') }))));
+        h('em', { text: chk ? t('again') : t('start') })),
+      // for a teacher: the chapter's events as a classroom playlist
+      h('button', { type: 'button', class: 'pl-present', 'data-act': 'chapter-present', onclick: () => this.hooks.classroom(c) }, icon('present'), h('span', { text: t('pFromChapter') }))));
     return li;
   }
 }

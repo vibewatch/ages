@@ -1681,3 +1681,47 @@ i.seen { color: var(--k-economy); font-style: normal; margin-left: auto; }
 .rp-msg:empty { display: none; }
 .rp-msg { margin: 0; font-size: var(--t-s); color: var(--ok); }
 .rp-note { margin: 0; font-size: var(--t-2xs); color: var(--ink-3); }
+
+/* ---------- 课堂演示: classroom playlist and presentation mode (v2.3) ---------- */
+.modal-box.classroom { width: min(560px, calc(100vw - 24px)); max-height: calc(100dvh - 40px); overflow: auto; padding: 22px 24px 18px; display: flex; flex-direction: column; gap: 12px; }
+.cr-title { width: 100%; padding: 9px 12px; border: 1px solid var(--rule-2); background: var(--panel-solid); font: inherit; font-size: var(--t-m); color: var(--ink); }
+.cr-shared { margin: 0; padding: 8px 12px; background: var(--zhu-fill); color: var(--zhu); font-size: var(--t-s); }
+.cr-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.cr-list li { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: var(--well); }
+.cr-list li > i { flex: none; width: 22px; font-style: normal; font-weight: 700; color: var(--ink-3); font-size: var(--t-s); text-align: center; }
+.cr-list li > span { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.cr-list li b { font-size: var(--t-s); font-weight: 600; }
+.cr-list li small { font-size: var(--t-xs); color: var(--ink-3); }
+.cr-list .ib { width: 28px; height: 28px; }
+.cr-empty { margin: 0; padding: 14px; background: var(--well); color: var(--ink-2); font-size: var(--t-s); line-height: 1.6; }
+.cr-msg:empty { display: none; }
+.cr-msg { margin: 0; font-size: var(--t-s); color: var(--ok); word-break: break-all; }
+.rp-acts .btn .ic { width: 16px; height: 16px; fill: currentColor; }
+.rp-acts .btn { display: inline-flex; align-items: center; gap: 6px; }
+.pl-present { display: flex; align-items: center; gap: 8px; width: 100%; margin-top: 6px; padding: 8px 10px; border: 0; background: transparent; color: var(--ink-2); font: inherit; font-size: var(--t-s); cursor: pointer; box-shadow: inset 0 0 0 1px var(--rule); }
+.pl-present .ic { width: 16px; height: 16px; fill: currentColor; }
+.pl-present:hover { color: var(--zhu); box-shadow: inset 0 0 0 1px var(--zhu); }
+.card-show.on { color: var(--zhu); }
+
+/* presenting: the map for a projector — no side panel or toolbar, one big caption */
+#app.present-on .panel, #app.present-on .bar, #app.present-on .hud-tr { display: none; }
+#app.present-on .hud-bl { visibility: hidden; }
+.present { position: absolute; z-index: 12; left: 24px; bottom: calc(var(--tl-b, 120px) + 16px); width: min(620px, 46vw); padding: 20px 24px 18px; background: var(--panel); -webkit-backdrop-filter: var(--glass); backdrop-filter: var(--glass); box-shadow: 0 10px 40px rgba(0, 0, 0, 0.18); display: flex; flex-direction: column; gap: 8px; }
+.present[hidden] { display: none; }
+.pr-top { display: flex; justify-content: space-between; gap: 12px; font-size: var(--t-s); color: var(--ink-3); }
+.pr-n { font-variant-numeric: tabular-nums; font-weight: 600; }
+.pr-y { margin: 0; font-size: clamp(16px, 1.5vw, 22px); color: var(--zhu); font-weight: 700; }
+.pr-t { margin: 0; font-size: clamp(26px, 2.8vw, 44px); line-height: 1.2; }
+.pr-sum { margin: 0; font-size: clamp(16px, 1.45vw, 23px); line-height: 1.6; color: var(--ink-2); }
+.story-on .pr-sum { display: none; }
+.pr-ctl { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.pr-ctl .ib { width: 40px; height: 40px; }
+.pr-ctl .pr-play { display: inline-flex; align-items: center; gap: 6px; }
+.pr-ctl .pr-play .ic { width: 16px; height: 16px; fill: currentColor; }
+.pr-ctl .pr-exit { margin-left: auto; }
+.pr-bar { display: block; height: 3px; background: var(--well-2); }
+.pr-bar b { display: block; height: 100%; background: var(--zhu); transition: width .3s var(--ease-out); }
+@media (max-width: 720px) {
+  .present { left: 8px; right: 8px; width: auto; padding: 14px 16px 12px; }
+  .pr-sum { font-size: var(--t-m); max-height: 7.5em; overflow: auto; }
+}

@@ -21,7 +21,7 @@ Do not make world coverage or account synchronization a prerequisite for this ro
 Data-integrity checks do not replace source-by-source historical verification. Before any commercial rollout,
 resolve the academic/non-commercial restrictions on imported GIS data documented in `NOTICE.md`.
 
-## Following round: teacher playlists
+## Following round: teacher playlists (first slice done: local playlists, presentation mode, `#show=` links)
 
 Build shareable ordered playlists of existing events, journeys and lesson steps, with large-caption presentation mode.
 Begin with locally saved playlists and a bounded, versioned share format; classroom accounts, grading and cloud storage are separate projects.

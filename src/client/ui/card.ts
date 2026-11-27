@@ -40,6 +40,9 @@ export interface CardHooks {
   person(p: Person): void;
   life(l: LifeItem): void;
   year?(y: Year): void;
+  /** adds the event to the classroom playlist or takes it out; returns whether it is in it now */
+  present?(e: HistEvent): boolean;
+  inShow?(e: HistEvent): boolean;
 }
 
 /** The phone layout (the bottom sheet), as in styles.css. */
@@ -173,9 +176,22 @@ export class Card {
     fill(this.nav,
       prev ? iconBtn('prev', t('prev'), prev) : null,
       next ? iconBtn('next', t('next'), next) : null,
+      this.event && this.hooks.present ? this.showBtn(this.event) : null,
       iconBtn('link', t('share'), e => void this.share(e.currentTarget as HTMLElement), 'card-share'),
       iconBtn('close', t('close'), () => this.hooks.close(), 'card-x'));
   }
+  /** 加入演示: puts the event in the teacher's classroom playlist (or takes it out). */
+  private showBtn(e: HistEvent): HTMLElement {
+    const on = !!this.hooks.inShow?.(e);
+    const b = iconBtn('present', t(on ? 'pAdded' : 'pAdd'), () => {
+      const now = this.hooks.present!(e);
+      b.classList.toggle('on', now);
+      b.title = t(now ? 'pAdded' : 'pAdd');
+      b.setAttribute('aria-label', b.title);
+    }, 'card-show' + (on ? ' on' : ''));
+    return b;
+  }
+
   private async share(b: HTMLElement): Promise<void> {
     const subject = this.body.querySelector('h2')?.textContent;
     const r = await shareLink(subject ? `${subject} · ${document.title}` : document.title);

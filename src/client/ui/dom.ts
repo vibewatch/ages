@@ -39,6 +39,7 @@ const PATHS = {
   grid: 'M4 4h7v7H4zm2 2v3h3V6zm7-2h7v7h-7zm2 2v3h3V6zM4 13h7v7H4zm2 2v3h3v-3zm7-2h7v7h-7zm2 2v3h3v-3z',
   sliders: 'M3 6h9.2a3 3 0 0 1 5.6 0H21v2h-3.2a3 3 0 0 1-5.6 0H3zm12 0a1 1 0 1 0 0 2 1 1 0 0 0 0-2zM3 16h3.2a3 3 0 0 1 5.6 0H21v2h-9.2a3 3 0 0 1-5.6 0H3zm6 0a1 1 0 1 0 0 2 1 1 0 0 0 0-2z',
   plus: 'M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z',
+  present: 'M3 4h18v12H3zm2 2v8h14V6zm6 11h2v2h4v2H7v-2h4z',
   minus: 'M5 11h14v2H5z',
   full: 'M4 4h6v2H6v4H4zm10 0h6v6h-2V6h-4zM4 14h2v4h4v2H4zm14 0h2v6h-6v-2h4z',
   chevron: 'M8.6 7.4 10 6l6 6-6 6-1.4-1.4 4.6-4.6z',

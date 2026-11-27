@@ -591,6 +591,64 @@ test.describe('Ages atlas', () => {
     expect(errs).toEqual([]);
   });
 
+  test('classroom: a chapter becomes a playlist, presents on the map with a clicker, and opens from its link', async ({ page, context }) => {
+    const errs = watchErrors(page);
+    await openApp(page, 'y=600&lang=en');
+    const path = page.locator('[data-testid=path]');
+    if (!(await path.isVisible())) await page.locator('.b-path').click();
+    await path.locator('.pl-head').nth(4).click();
+    await path.locator('[data-act=chapter-present]').click();
+    const dlg = page.locator('[data-testid=classroom]');
+    await expect(dlg).toBeVisible();
+    const keys = await page.evaluate(() => (window as any).__atlas.classroom.list.items.map((x: any) => x.id));
+    expect(keys.length).toBeGreaterThan(3);
+    await expect(dlg.locator('[data-testid=classroom-list] li')).toHaveCount(keys.length);
+    // reorder: the second item moves up
+    await dlg.locator('[data-testid=classroom-list] li').nth(1).locator('.cr-up').click();
+    const order = await page.evaluate(() => (window as any).__atlas.classroom.list.items.map((x: any) => x.id));
+    expect(order.slice(0, 2)).toEqual([keys[1], keys[0]]);
+
+    await dlg.locator('[data-act=present]').click();
+    const pr = page.locator('[data-testid=presenter]');
+    await expect(pr).toBeVisible();
+    await expect(page.locator('#app')).toHaveClass(/present-on/);
+    await expect(page.locator('.panel')).toBeHidden();
+    await expect(pr.locator('[data-testid=presenter-n]')).toHaveText(`1 / ${keys.length}`);
+    await expect.poll(() => page.evaluate(() => (window as any).__atlas.atlas.selected?.id)).toBe(order[0]);
+    // a clicker sends Page Down / Page Up
+    await page.keyboard.press('PageDown');
+    await expect(pr.locator('[data-testid=presenter-n]')).toHaveText(`2 / ${keys.length}`);
+    await expect.poll(() => page.evaluate(() => (window as any).__atlas.atlas.selected?.id)).toBe(order[1]);
+    await shot(page, 'desktop-present');
+    await page.keyboard.press('PageUp');
+    await expect(pr.locator('[data-testid=presenter-n]')).toHaveText(`1 / ${keys.length}`);
+    await page.keyboard.press('Escape');
+    await expect(pr).toBeHidden();
+    await expect(page.locator('#app')).not.toHaveClass(/present-on/);
+
+    // an event card adds itself to the playlist
+    await page.evaluate(() => { location.hash = 'e=qin_unify&lang=en'; });
+    const add = page.locator('.card-show');
+    await expect(add).toBeVisible();
+    await add.click();
+    await expect(add).toHaveClass(/on/);
+    expect(await page.evaluate(() => (window as any).__atlas.classroom.list.items.some((x: any) => x.id === 'qin_unify'))).toBe(true);
+    await add.click();
+    expect(await page.evaluate(() => (window as any).__atlas.classroom.list.items.some((x: any) => x.id === 'qin_unify'))).toBe(false);
+    expect(errs).toEqual([]);
+
+    // the shared link opens the same playlist for someone else
+    const url = await page.evaluate(() => { const items = (window as any).__atlas.classroom.list.items; return `${location.origin}${location.pathname}?lowfx=1#show=${items.map((x: any) => `${x.k}.${x.id}`).join('~')}&st=Test&lang=en`; });
+    const other = await context.newPage();
+    await other.goto(url);
+    await other.waitForFunction(() => !!(window as any).__atlas?.ready, null, { timeout: 180_000 });
+    const dlg2 = other.locator('[data-testid=classroom]');
+    await expect(dlg2).toBeVisible();
+    await expect(dlg2.locator('[data-testid=classroom-title]')).toHaveValue('Test');
+    await expect(dlg2.locator('[data-testid=classroom-list] li')).toHaveCount(keys.length);
+    await other.close();
+  });
+
   test('journeys play as 3D stories; places and people open their own cards', async ({ page }) => {
     const errs = watchErrors(page);
     await openApp(page, 'y=1085&lang=zh');

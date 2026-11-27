@@ -28,6 +28,8 @@ import { Help, HubMenu, SettingsMenu } from '../ui/menus.ts';
 import { Music } from '../ui/music.ts';
 import { ALL_KEYS, PathView } from '../ui/path.ts';
 import { ReportView } from '../ui/report.ts';
+import { ClassroomView, Presenter } from '../ui/present.ts';
+import { decodePlaylist, type Playlist } from '../../shared/lib/playlist.ts';
 import { level } from '../../shared/lib/mastery.ts';
 import { Period } from '../ui/period.ts';
 import { Quiz } from '../ui/quiz.ts';
@@ -61,6 +63,8 @@ export class App {
   hub!: HubMenu;
   help = new Help();
   report = new ReportView(this.progress);
+  classroom = new ClassroomView();
+  presenter!: Presenter;
   quiz!: Quiz;
   lesson!: LessonView;
   path!: PathView;
@@ -79,6 +83,8 @@ export class App {
       play: e => this.playStory(e),
       read: (w, title) => this.read(w, title),
       open: e => this.openEvent(e),
+      present: e => { this.classroom.toggleEvent(e); return this.classroom.has(e); },
+      inShow: e => this.classroom.has(e),
       era: id => this.openEra(id),
       place: p => this.openPlace(p),
       lesson: l => this.startLesson(l),
@@ -106,6 +112,8 @@ export class App {
 
   async start(): Promise<void> {
     const link = readLink();
+    // read before anything rewrites the address
+    const showParams = new URLSearchParams(location.hash.slice(1));
     const subjects = linkSubjects(link);
     const year: Year = clampYear(linkYear(link) ?? load<number>('year', -221));
     const intro = new BootIntro(year, lang, this.lowfx);
@@ -149,6 +157,7 @@ export class App {
       mistakes: () => this.learn.onReviewMistakes(),
       review: due => this.startReview(due),
       report: () => this.report.toggle(true),
+      classroom: c => { if (c) this.classroom.fromChapter(c); this.classroom.toggle(true); },
       myMap: on => { this.refocus(); if (on) { this.closeCard(); void this.atlas.home(); } },
       course: () => this.learn.toggle(true),
       close: () => this.showPath(false),
@@ -160,9 +169,16 @@ export class App {
     this.atlas.setSurface(surface);
     this.settings = new SettingsMenu(this.atlas.layers, surface);
     this.hub = new HubMenu();
+    this.presenter = new Presenter({
+      event: e => this.presentEvent(e),
+      play: e => void this.playStory(e),
+      journey: j => { this.stopStory(); void this.playJourney(j); },
+      exit: () => this.endPresent(),
+    });
+    this.classroom.onPresent = p => this.present(p);
     this.shell = new Shell(this.root, {
       atlas: this.atlas, timeline: this.timeline, period: this.period, hub: this.hub, settings: this.settings, search: this.search,
-      trail: this.trail, caption: this.caption, music: this.music, lowfx: this.lowfx, dialogs: [this.learn.el, this.help.el, this.report.el],
+      trail: this.trail, caption: this.caption, music: this.music, lowfx: this.lowfx, dialogs: [this.learn.el, this.help.el, this.report.el, this.classroom.el, this.presenter.el],
       // the stack's root is the learning path
       views: [
         { el: this.path.el, close: () => this.showPath(false) },
@@ -191,6 +207,40 @@ export class App {
     if (!linked && load<boolean>('pathOpen', true, v => typeof v === 'boolean')) this.showPath(true, false);
     this.ready = true;
     intro.finish(this.atlas, subjects.length > 0);
+    // a shared classroom playlist (#show=…): open it for the teacher to start
+    const sp = showParams;
+    const show = decodePlaylist(sp.get('show'));
+    if (show.length) { this.showPath(false, false); this.classroom.loadShared({ title: sp.get('st') ?? '', items: show }); this.classroom.toggle(true); }
+  }
+
+  // ------------------------------------------------------------------------------------------------ classroom
+
+  /** Presentation mode: the map for a projector, one playlist item at a time. */
+  present(p: Playlist): void {
+    this.timeline.setPlaying(false);
+    this.stopStory();
+    this.closeCard();
+    this.lesson.stop();
+    if (this.quiz.open) this.toggleQuiz();
+    this.showPath(false, false);
+    this.shell.pop(null);
+    this.root.classList.add('present-on');
+    this.presenter.start(p);
+  }
+
+  private presentEvent(e: HistEvent): void {
+    this.stopStory();
+    this.timeline.set(e.year, true, false);
+    this.atlas.setYear(e.year);
+    this.atlas.select(e, true);
+    this.progress.see(e.id);
+  }
+
+  private endPresent(): void {
+    this.stopStory();
+    this.atlas.select(null, false);
+    this.root.classList.remove('present-on');
+    writeLink({ year: this.timeline.year, ...this.linkExtras() });
   }
 
   // ------------------------------------------------------------------------------------------------ navigation
@@ -733,15 +783,29 @@ export class App {
   private key(e: KeyboardEvent): void {
     this.help.focus.trap(e);
     this.report.focus.trap(e);
+    this.classroom.focus.trap(e);
     this.learn.focus.trap(e);
     const tag = (e.target as HTMLElement).tagName;
     if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+    // presenting: arrows and a clicker's Page Up / Down move through the playlist, P plays the story, Esc leaves
+    if (this.presenter.on && !e.altKey && !e.metaKey && !e.ctrlKey) {
+      const k = e.key;
+      if (k === 'Escape') { if (this.player.state !== 'idle') this.stopStory(); else this.presenter.stop(); }
+      else if (k === 'ArrowRight' || k === 'PageDown' || k === 'ArrowDown') this.presenter.step(1);
+      else if (k === 'ArrowLeft' || k === 'PageUp' || k === 'ArrowUp') this.presenter.step(-1);
+      else if (k === 'p' || k === 'P' || (k === 'Enter' && !(e.target as HTMLElement).closest('button'))) this.presenter.play();
+      else if (k === ' ' && this.player.state !== 'idle') this.player.toggle();
+      else return;
+      e.preventDefault();
+      return;
+    }
     if (e.key === '/') { this.search.input.focus(); e.preventDefault(); return; }
     if (e.key === 'Escape') {
       // popovers and dialogs first, then the story, then the panel's stack one view at a time (a trail before its root)
       if (this.shell.popOpen) this.shell.pop(null);
       else if (!this.help.el.hidden) this.help.toggle(false);
       else if (this.report.open) this.report.toggle(false);
+      else if (this.classroom.open) this.classroom.toggle(false);
       else if (this.learn.open) this.learn.toggle(false);
       else if (this.reader.open && this.shell.panel.top === this.card.el) this.reader.close();
       else if (this.player.state !== 'idle') this.stopStory(true);
@@ -789,6 +853,8 @@ export class App {
     this.hub.render();
     this.help.render();
     this.report.render();
+    this.classroom.render();
+    this.presenter.render();
     this.quiz.relabel();
     this.lesson.relabel();
     this.path.refresh();
