@@ -526,6 +526,23 @@ test.describe('Ages atlas', () => {
     expect(errs).toEqual([]);
   });
 
+  test('读图题 by chapter: a chapter’s map round only shows its own maps', async ({ page }) => {
+    const errs = watchErrors(page);
+    await openApp(page, 'y=700&lang=en');
+    const path = page.locator('[data-testid=path]');
+    if (!(await path.isVisible())) await page.locator('.b-path').click();
+    await path.locator('.pl-head').nth(0).click();
+    await expect(path.locator('[data-act=chapter-maps]')).toHaveCount(0);
+    await path.locator('.pl-head').nth(4).click();
+    await path.locator('[data-act=chapter-maps]').click();
+    await expect(page.locator('.quiz')).toBeVisible();
+    await expect(page.locator('#app')).toHaveClass(/map-blind/);
+    const qs = await page.evaluate(() => (window as any).__atlas.quiz.qs);
+    expect(qs).toHaveLength(6);
+    for (const q of qs) if (q.kind !== 'first') { expect(q.years[0]).toBeGreaterThanOrEqual(581); expect(q.years[0]).toBeLessThanOrEqual(907); }
+    expect(errs).toEqual([]);
+  });
+
   test('mastery: answers raise mastery, the path shows it, my map lights it up and today’s review asks what is due', async ({ page }) => {
     const errs = watchErrors(page);
     // one event practised long ago (due), one missed after being right (weak)

@@ -161,6 +161,7 @@ export class App {
       mistakes: () => this.learn.onReviewMistakes(),
       review: due => this.startReview(due),
       report: () => this.report.toggle(true),
+      maps: c => this.startChapterMaps(c),
       classroom: c => { if (c) this.classroom.fromChapter(c); this.classroom.toggle(true); },
       myMap: on => { this.refocus(); if (on) { this.closeCard(); void this.atlas.home(); } },
       course: () => this.learn.toggle(true),
@@ -558,6 +559,16 @@ export class App {
   }
 
   /** A learning-path chapter's check, over the path; closing it returns to the path. */
+  /** A round of 读图题 on a chapter's maps. */
+  startChapterMaps(c: Chapter): void {
+    this.timeline.setPlaying(false);
+    this.stopStory();
+    this.closeCard();
+    this.lesson.stop();
+    this.quiz.startMapChapter(c);
+    this.root.classList.toggle('quiz-on', this.quiz.open);
+  }
+
   /** Today's review from the learning path: the mistakes, then the events falling due. */
   startReview(due: string[]): void {
     this.timeline.setPlaying(false);

@@ -60,6 +60,7 @@ export class Quiz {
     this.phase = 'setup';
     this.chapter = null;
     this.extra = [];
+    this.mapRange = null;
     this.atlas.setPickMode(null);
     this.clearMap();
     const mistakeCount = this.progress.mistakes.size;
@@ -101,10 +102,23 @@ export class Quiz {
 
   /** events falling due, asked after the mistakes in today's review */
   private extra: string[] = [];
+  /** a chapter's years, for a round of 读图题 on its maps only */
+  private mapRange: [number, number] | null = null;
+
+  /** A round of 读图题 on one chapter's maps. */
+  startMapChapter(c: Chapter, seed = Date.now()): void {
+    this.chapter = null;
+    this.extra = [];
+    this.mode = 'maps';
+    this.mapRange = c.span;
+    // shown only once the round is allowed (a gated build may refuse it)
+    if (this.start(seed)) this.el.hidden = false;
+  }
 
   /** Today's review: the mistakes queue, then `due` events (alternating when / where), at most 12 questions. */
   startReview(due: string[], seed = Date.now()): void {
     this.chapter = null;
+    this.mapRange = null;
     this.mode = 'mistakes';
     this.extra = due;
     this.el.hidden = false;
@@ -114,6 +128,7 @@ export class Quiz {
   /** Opens the quiz directly in mistake-review mode. */
   startMistakes(seed = Date.now()): void {
     this.chapter = null;
+    this.mapRange = null;
     this.extra = [];
     this.mode = 'mistakes';
     this.el.hidden = false;
@@ -123,6 +138,7 @@ export class Quiz {
   /** Opens the quiz directly filtered to a specific dynasty/era. */
   startEra(eraId: string, seed = Date.now()): void {
     this.chapter = null;
+    this.mapRange = null;
     this.mode = 'events';
     this.book = '';
     this.era = eraId;
@@ -132,6 +148,7 @@ export class Quiz {
 
   /** Opens a learning-path chapter's check. */
   startChapter(c: Chapter, seed = Date.now()): void {
+    this.mapRange = null;
     this.mode = 'events';
     this.chapter = c;
     this.el.hidden = false;
@@ -141,12 +158,13 @@ export class Quiz {
   /** asked before a round of 读图题 (a gated build counts and may refuse it) */
   beforeMaps: () => boolean = () => true;
 
-  start(seed = Date.now()): void {
+  /** Starts a round; false when it was refused (读图题 over a gated build's free limit). */
+  start(seed = Date.now()): boolean {
     const c = this.chapter;
-    if (!c && this.mode === 'maps' && !this.beforeMaps()) return;
+    if (!c && this.mode === 'maps' && !this.beforeMaps()) return false;
     this.qs = c ? makeQuiz(EVENTS, { n: 5, seed, range: c.span, prefer: c.keys })
       : this.mode === 'maps'
-      ? makeMapQuiz({ n: 9, seed })
+      ? makeMapQuiz(this.mapRange ? { n: 6, seed, range: this.mapRange } : { n: 9, seed })
       : this.mode === 'locate'
       ? makeLocateQuiz(PLACES, { n: 10, seed })
       : this.mode === 'mistakes'
@@ -155,6 +173,7 @@ export class Quiz {
     this.i = 0;
     this.score = 0;
     this.ask();
+    return true;
   }
 
   private ask(): void {

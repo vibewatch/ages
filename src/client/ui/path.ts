@@ -35,6 +35,8 @@ export interface PathHooks {
   myMap: (on: boolean) => void;
   /** the weekly report */
   report: () => void;
+  /** a round of 读图题 on a chapter's maps */
+  maps: (c: Chapter) => void;
   /** the classroom playlist, optionally filled with a chapter's events */
   classroom: (c?: Chapter) => void;
   course: () => void;
@@ -262,6 +264,8 @@ export class PathView {
         h('i', { text: this.progress.chapterPassed(c.id) ? '✓' : '?' }),
         h('span', {}, h('b', { text: t('chCheck') }), chk ? h('small', { text: t('pathScore', { r: chk[0], n: chk[1] }) }) : null),
         h('em', { text: chk ? t('again') : t('start') })),
+      // read the chapter's maps (from the first states on)
+      c.span[1] > -2070 ? h('button', { type: 'button', class: 'pl-present pl-maps', 'data-act': 'chapter-maps', onclick: () => this.hooks.maps(c) }, icon('layers'), h('span', { text: t('chMaps') })) : null,
       // for a teacher: the chapter's events as a classroom playlist
       h('button', { type: 'button', class: 'pl-present', 'data-act': 'chapter-present', onclick: () => this.hooks.classroom(c) }, icon('present'), h('span', { text: t('pFromChapter') }))));
     return li;

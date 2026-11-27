@@ -191,6 +191,7 @@ const S = {
   proTry: { zh: '在这台设备上试用 Pro', en: 'Try Pro on this device' },
   proLater: { zh: '以后再说', en: 'Not now' },
   proNote: { zh: '预览版：还没有开通付费，试用会一直保留在这台设备上。', en: 'Preview: payment is not open yet; trying Pro stays on this device.' },
+  chMaps: { zh: '读图练习：认出本讲的地图', en: 'Read this chapter’s maps' },
   mapA: { zh: '地图 A', en: 'Map A' },
   mapB: { zh: '地图 B', en: 'Map B' },
   mapHint: { zh: '地图上的名字和年份已隐藏，只看疆域和地形。', en: 'Names and the year are hidden: read the borders and the land.' },
