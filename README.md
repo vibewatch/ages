@@ -90,7 +90,7 @@ The territory maps from 403 BCE to 1949 are our own, generated from sourced seat
 ## Credits
 * Elevation: [AWS Terrain Tiles](https://registry.opendata.aws/terrain-tiles/) (Mapzen), derived from SRTM, GMTED2010, ETOPO1 and other public-domain sources.
 * Background reading: [Wikipedia](https://www.wikipedia.org/), text under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/), fetched live and attributed in the reader.
-* Territories, administrative divisions, chronicle events, settlements, people, journeys, reign eras and great works: imported from [jiangshan-map 江山图](https://github.com/DeanChensj/jiangshan-map) by DeanChensj (GPL-3.0) with `npm run data:jiangshan`. Its CHGIS / Hartwell-derived boundaries remain academic, non-commercial use only. See [NOTICE.md](NOTICE.md).
+* Chronicle events, settlements, people, journeys, reign eras and great works: imported from [jiangshan-map 江山图](https://github.com/DeanChensj/jiangshan-map) by DeanChensj (GPL-3.0) with `npm run data:jiangshan`. Its CHGIS / Hartwell-derived boundaries remain academic, non-commercial use only. See [NOTICE.md](NOTICE.md).
 * Architecture patterns and the low-poly model kit (figures, timber buildings, ships, animals): adapted from the pocket-planet (Terrastra) project.
 * Fonts: [Geist / Geist Mono](https://vercel.com/font) (Vercel) under the SIL Open Font License 1.1; Chinese uses the system CJK sans.
 

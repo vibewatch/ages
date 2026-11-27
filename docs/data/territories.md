@@ -10,7 +10,7 @@ Qixiang's atlas) to maps we generate from our own data. The goals:
 
 Status: every period from 403 BCE to 1949 is ours: 17 eras, 198 phases and about 4 900 seats (`src/shared/data/own/`).
 The builds no longer ship the imported phases (`pruneShapes` in `scripts/commercial-data.ts`). Still to do (GitHub
-issue #11): administrative divisions (郡 / 州 / 府) from our own seats, a historian's review of the `est` dates, and
+issue #11): a historian's review of the `est` dates, and
 replacing the imported events, places and people.
 
 ## Method
@@ -33,6 +33,10 @@ replacing the imported events, places and people.
 npm run data:territories            # regenerate maps and areas
 node scripts/build-territories.ts --preview   # also writes .territory-preview/<phase>.png
 ```
+
+The administrative layer (政区) comes from the same allocation: each seat's own share of its polity's land is drawn as
+the unit it is the seat of (狄道（陇西郡） → 陇西郡; 扬州 → 扬州), with its kind (郡, 王国, 州, 府, 军, 路, 省 …) read from the
+name. Units are approximate catchments of their seats, not surveyed boundaries.
 
 An era with our own maps replaces the imported dynasty named by `replaces` (`src/shared/data/own.ts`,
 `jiangshan.ts`).

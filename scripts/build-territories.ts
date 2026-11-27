@@ -14,10 +14,10 @@ import sharp from 'sharp';
 import { POLITY } from '../src/shared/data/polities.ts';
 import { STAGES } from '../src/shared/data/stage.ts';
 import { ERAS_OWN } from '../src/shared/data/own/index.ts';
-import { holderAt, type OwnEra } from '../src/shared/data/own/types.ts';
+import { holderAt, type OwnEra, type Seat } from '../src/shared/data/own/types.ts';
 import type { LonLat, Polity } from '../src/shared/data/types.ts';
 import { encodeRing } from '../src/shared/lib/rings.ts';
-import { allocate, areas, cellLat, cellLon, despeckle, fillHoles, ringArea, simplify, smooth, trace, type Grid, type Source } from './territory/gen.ts';
+import { allocateSeats, areas, cellLat, cellLon, despeckle, fillHoles, ringArea, simplify, smooth, trace, traceWhere, type CellBox, type Grid, type Source } from './territory/gen.ts';
 
 const TRY = process.argv.includes('--try') ? process.argv[process.argv.indexOf('--try') + 1] : null;
 const PREVIEW = !!TRY || process.argv.includes('--preview');
@@ -131,7 +131,29 @@ if (PREVIEW) mkdirSync('.territory-preview', { recursive: true });
 
 const rings: string[] = [];
 const ringIndex = new Map<string, number>();
-const snaps: Record<string, { p: [string, null, string | null, LonLat | null, number[]][]; g: []; f: [] }> = {};
+// unchanged outlines repeat from phase to phase: store each once
+const ringId = (r: LonLat[]): number => { const e = encodeRing(r); let k = ringIndex.get(e); if (k === undefined) { k = rings.length; rings.push(e); ringIndex.set(e, k); } return k; };
+const names: string[] = [];
+const nameAt = new Map<string, number>();
+const nameIndex = (n: { zh: string; en: string }): number => { const k = n.zh + '|' + n.en; let i = nameAt.get(k); if (i === undefined) { i = names.length / 2; names.push(n.zh, n.en); nameAt.set(k, i); } return i; };
+type RawAdmin = [number, number, LonLat, number[]];
+/** Unit kinds by the last character(s) of their name. */
+const KIND: [RegExp, string, string][] = [
+  [/都护府$/, '都护府', 'protectorate'], [/都督府$/, '都督府', 'area command'], [/都司$/, '都司', 'regional military command'],
+  [/郡$/, '郡', 'commandery'], [/国$/, '王国', 'kingdom'], [/州$/, '州', 'prefecture'], [/府$/, '府', 'prefecture'], [/军$/, '军', 'military prefecture'],
+  [/监$/, '监', 'industrial prefecture'], [/路$/, '路', 'circuit'], [/省$/, '省', 'province'], [/盟$/, '盟', 'league'], [/卫$/, '卫', 'guard'],
+  [/镇$/, '镇', 'garrison'], [/厅$/, '厅', 'sub-prefecture'], [/道$/, '道', 'circuit'], [/(冯翊|扶风|京兆尹?)$/, '郡', 'commandery'],
+];
+/** A seat's unit: the 郡 / 州 / 府 … it is the seat of (named in brackets, as in 狄道（陇西郡）) or the seat itself. */
+function unitOf(s: Seat): { name: { zh: string; en: string }; cat: { zh: string; en: string } } {
+  const inner = /（([^）]+)）$/.exec(s.name.zh)?.[1];
+  const named = inner && KIND.some(([re]) => re.test(inner)) ? inner : null;
+  const zh = named ?? s.name.zh.replace(/（[^）]*）$/, '');
+  const en = named ? (/\(([^)]+)\)$/.exec(s.name.en)?.[1] ?? s.name.en) : s.name.en.replace(/\s*\([^)]*\)$/, '');
+  const k = KIND.find(([re]) => re.test(zh));
+  return { name: { zh, en }, cat: k ? { zh: k[1], en: k[2] } : { zh: '治所辖区', en: 'seat and its land' } };
+}
+const snaps: Record<string, { p: [string, null, string | null, LonLat | null, number[]][]; g: RawAdmin[]; f: [] }> = {};
 const meta: { replaces: string; phases: { id: string; from: number; to: number; title: unknown; note?: unknown; changes: [number, string, string | null, string | null, string?][]; cites: string[] }[]; sources: OwnEra['sources']; polities: Polity[] }[] = [];
 
 for (const era of ERAS) {
@@ -154,14 +176,16 @@ for (const era of ERAS) {
     const list: string[] = [];
     const idx = (p: string) => { let i = list.indexOf(p); if (i < 0) { i = list.length; list.push(p); } return i; };
     const sources: Source[] = [];
+    const srcSeat: Seat[] = [];
     const now = new Map<string, string | null>();
     for (const s of era.seats) {
       const p = holderAt(era.holds[s.id], year);
       now.set(s.id, p);
       if (!p) continue;
       sources.push({ owner: idx(p), lon: s.at[0], lat: s.at[1], reach: s.r ?? era.reach, boost: s.b });
+      srcSeat.push(s);
     }
-    const owner = allocate(grid, sources);
+    const { owner, seat } = allocateSeats(grid, sources);
     despeckle(grid, owner);
     fillHoles(grid, owner);
     const area = areas(grid, owner, list.length);
@@ -173,11 +197,28 @@ for (const era of ERAS) {
       const rs = trace(grid, owner, i).map(r => smooth(simplify(r, STEP * 1.0))).filter(r => ringArea(r) > 1);
       if (!rs.length) continue;
       // unchanged outlines repeat from phase to phase: store each once
-      const ids = rs.map(r => { const e = encodeRing(r); let k = ringIndex.get(e); if (k === undefined) { k = rings.length; rings.push(e); ringIndex.set(e, k); } return k; });
+      const ids = rs.map(ringId);
       const role = era.roles?.[list[i]] ?? null;
       entry.push([list[i], null, role, at[i], ids]);
     }
-    snaps[ph.id] = { p: entry, g: [], f: [] };
+    // 政区: each seat's own share of its polity's land, named after the unit it is the seat of
+    const units: RawAdmin[] = [];
+    const box = sources.map((): CellBox => [Infinity, Infinity, -1, -1]);
+    for (let c = 0; c < seat.length; c++) {
+      const i = seat[c];
+      if (i < 0 || owner[c] !== sources[i].owner) continue;
+      const x = c % grid.w, y = (c - x) / grid.w, b = box[i];
+      if (x < b[0]) b[0] = x; if (y < b[1]) b[1] = y; if (x > b[2]) b[2] = x; if (y > b[3]) b[3] = y;
+    }
+    sources.forEach((src, i) => {
+      const role = era.roles?.[list[src.owner]] ?? polity(list[src.owner])!.role;
+      if (role === 'neighbor' || box[i][2] < 0) return;
+      const rs = traceWhere(grid, c => seat[c] === i && owner[c] === src.owner, box[i]).map(r => smooth(simplify(r, STEP * 1.2))).filter(r => ringArea(r) > 0.8);
+      if (!rs.length) return;
+      const u = unitOf(srcSeat[i]);
+      units.push([nameIndex(u.name), nameIndex(u.cat), srcSeat[i].at, rs.map(ringId)]);
+    });
+    snaps[ph.id] = { p: entry, g: units, f: [] };
     // what changed since the previous phase, with sources (for the map's notes)
     const changes: [number, string, string | null, string | null, string?][] = [];
     if (prev) for (const s of era.seats) {
@@ -204,7 +245,7 @@ for (const era of ERAS) for (const s of era.seats) seatNames[`${era.replaces}:${
 
 const shapes = JSON.stringify({
   source: { repo: 'own', sha: '', license: 'GPL-3.0 (own data, see docs/data/territories.md)' },
-  rings, names: [], snaps, provinces: [], lakes: [],
+  rings, names, snaps, provinces: [], lakes: [],
 });
 if (TRY) {
   const f = `.territory-preview/try-${ERAS.map(e => e.replaces).join('-')}.json`;

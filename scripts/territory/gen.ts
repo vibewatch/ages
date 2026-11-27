@@ -78,7 +78,10 @@ class Heap {
  * Shares the land out between the sources: each land cell goes to the source that reaches it most cheaply, within that
  * source's reach. Returns the owner per cell (-1 = nobody's).
  */
-export function allocate(g: Grid, sources: Source[]): Int16Array {
+export function allocate(g: Grid, sources: Source[]): Int16Array { return allocateSeats(g, sources).owner; }
+
+/** As `allocate`, also returning which source (seat) won each cell (-1 = none). */
+export function allocateSeats(g: Grid, sources: Source[]): { owner: Int16Array; seat: Int32Array } {
   const n = g.w * g.h;
   const best = new Float64Array(n).fill(Infinity);
   const owner = new Int16Array(n).fill(-1);
@@ -116,7 +119,7 @@ export function allocate(g: Grid, sources: Source[]): Int16Array {
       heap.push(nc, m);
     }
   }
-  return owner;
+  return { owner, seat };
 }
 
 function nearestLand(g: Grid, c: number): number {
@@ -183,15 +186,24 @@ export function fillHoles(g: Grid, owner: Int16Array, max = 600): void {
  * stay simple.
  */
 export function trace(g: Grid, owner: Int16Array, who: number): LonLat[][] {
+  return traceWhere(g, c => owner[c] === who);
+}
+
+/** Cell bounds [x0, y0, x1, y1] (inclusive) to trace within. */
+export type CellBox = [number, number, number, number];
+
+/** The outline of the cells for which `inside(cell)` holds, within `box` (default: the whole grid). */
+export function traceWhere(g: Grid, inside: (cell: number) => boolean, box: CellBox = [0, 0, g.w - 1, g.h - 1]): LonLat[][] {
   const W = g.w + 1;
-  const isIn = (x: number, y: number) => x >= 0 && y >= 0 && x < g.w && y < g.h && owner[y * g.w + x] === who;
+  const [bx0, by0, bx1, by1] = box;
+  const isIn = (x: number, y: number) => x >= bx0 && y >= by0 && x <= bx1 && y <= by1 && inside(y * g.w + x);
   // directed edges keyed by start corner; dir 0 = east, 1 = south, 2 = west, 3 = north (y grows southwards)
   const out = new Map<number, number[]>();
   const add = (cx: number, cy: number, dir: number) => {
     const k = cy * W + cx;
     const l = out.get(k); if (l) l.push(dir); else out.set(k, [dir]);
   };
-  for (let y = 0; y < g.h; y++) for (let x = 0; x < g.w; x++) {
+  for (let y = by0; y <= by1; y++) for (let x = bx0; x <= bx1; x++) {
     if (!isIn(x, y)) continue;
     // region on the left of each edge, walking counter-clockwise on screen (clockwise in lon/lat)
     if (!isIn(x, y - 1)) add(x + 1, y, 2);      // top edge, westwards

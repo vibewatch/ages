@@ -7,7 +7,8 @@
 The territory maps from 403 BCE to 1949 are our own work, released under GPL-3.0 with the code: seats, holdings and
 sources in `src/shared/data/own/`, generated over the public-domain relief by `scripts/build-territories.ts`
 (see [docs/data/territories.md](docs/data/territories.md)). They replace every imported territorial phase; the builds
-no longer ship the imported phases or their administrative layers, including the CHGIS / Hartwell-derived material.
+no longer ship the imported phases or their administrative layers, including the CHGIS / Hartwell-derived material;
+the administrative layer (郡 / 州 / 府) is generated from our own seats as well.
 
 ## Imported content: jiangshan-map
 
@@ -34,12 +35,10 @@ jiangshan-map's historical GIS references include Tan Qixiang's *Historical Atla
 Historical GIS remain subject to their original terms (**academic, non-commercial use only**) and are not relicensed
 under GPL-3.0.
 
-**Commercial build:** `npm run build:commercial` (VITE_COMMERCIAL=1) leaves this material out: every snapshot's
-administrative regions and prefectures, the 14 imported Warring States snapshots, and every ring of geometry only they
-used are removed from `data/atlas/shapes.json` (`scripts/commercial-data.ts`), the administrative layer is hidden, and
-the Warring States period falls back to our own schematic map (`src/shared/data/territories.ts`, id `zhanguo`). Tests:
-`tests/unit/commercial.test.ts`. Before selling, replace the Warring States phases with commercially licensed or
-self-drawn data and have the remaining imported material reviewed.
+**Commercial build:** since the app now ships only our own territory and administrative maps, none of the CHGIS /
+Hartwell-derived material reaches users in any build. `npm run build:commercial` (VITE_COMMERCIAL=1) still strips it
+from `data/atlas/shapes.json` as a safeguard (`scripts/commercial-data.ts`, `tests/unit/commercial.test.ts`). The
+remaining imported content (events, places, people, reign eras, works; GPL-3.0) should still be reviewed before selling.
 
 ## Other sources
 

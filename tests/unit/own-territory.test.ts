@@ -72,6 +72,15 @@ describe('our own territory data', () => {
     expect(OWN_SNAPSHOTS.map(s => s.id)).toEqual(ids);
     for (const id of ids) expect(own.snaps[id]?.p.length, id).toBeGreaterThan(3);
     for (const e of ERAS_OWN) expect(IMPORTED_SNAPSHOTS.some(s => s.dyn === e.replaces)).toBe(false);
+    // 政区: units named after the seat's 郡 / 州 / 府, inside the dynasty's land
+    const names: string[] = own.names;
+    const tang = own.snaps.o_tang_10.g as [number, number, [number, number], number[]][];
+    expect(tang.length).toBeGreaterThan(150);
+    const zh = tang.map(([n]) => names[n * 2]);
+    expect(zh).toContain('扬州');
+    expect(new Set(tang.map(([, c]) => names[c * 2]))).toContain('州');
+    const han = (own.snaps.o_xihan_4.g as [number][]).map(([n]) => names[n * 2]);
+    expect(han).toEqual(expect.arrayContaining(['陇西郡', '南郡']));
     // changes after the first phase carry their sources
     const later = OWN_SNAPSHOTS.slice(1).flatMap(s => s.changes ?? []);
     expect(later.length).toBeGreaterThan(20);
