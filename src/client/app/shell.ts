@@ -64,7 +64,8 @@ export class Shell {
     for (const b of [pathBtn, period.btn, hubBtn]) { b.classList.add('lbl'); b.append(h('span', { class: 'lbl-t' })); }
     const setBtn = iconBtn('sliders', t('settings'), () => this.pop(settings.el.hidden ? 'settings' : null), 'b-settings');
     const langBtn = h('button', {
-      type: 'button', class: 'ib lang b-lang', title: t('langTitle'), 'aria-label': t('langTitle'), text: t('lang'),
+      // its name is in the language it switches to, so a screen reader reads it with that voice
+      type: 'button', class: 'ib lang b-lang', title: t('langTitle'), 'aria-label': t('langTitle'), text: t('lang'), lang: lang === 'zh' ? 'en' : 'zh-CN',
       onclick: () => setLang(lang === 'zh' ? 'en' : 'zh'),
     });
     const fullBtn = iconBtn('full', t('fullscreen'), () => { if (document.fullscreenElement) void document.exitFullscreen(); else void document.documentElement.requestFullscreen?.().catch(() => {}); }, 'b-full');
@@ -129,8 +130,11 @@ export class Shell {
     period.pressed(which === 'details');
     if (which === 'hub') hub.show(); else hub.toggle(false);
     settings.toggle(which === 'settings');
-    this.root.querySelector('.b-hub')?.classList.toggle('on', which === 'hub');
-    this.root.querySelector('.b-settings')?.classList.toggle('on', which === 'settings');
+    for (const [sel, k] of [['.b-hub', 'hub'], ['.b-settings', 'settings']] as const) {
+      const b = this.root.querySelector(sel);
+      b?.classList.toggle('on', which === k);
+      b?.setAttribute('aria-expanded', String(which === k));
+    }
     if (which === 'hub' || which === 'settings') {
       const menu = which === 'hub' ? hub.el : settings.el;
       if (!menu.contains(document.activeElement)) menu.querySelector<HTMLElement>('button, input')?.focus({ preventScroll: true });
@@ -177,7 +181,7 @@ export class Shell {
     const word = (cls: string, k: Parameters<typeof t>[0]) => { const el = this.root.querySelector<HTMLElement>(`${cls} .lbl-t`); if (el) el.textContent = t(k); };
     word('.b-path', 'learnBtn'); word('.b-details', 'periodBtn'); word('.b-hub', 'exploreBtn'); set('.b-full', 'fullscreen'); set('.b-lang', 'langTitle');
     const lb = this.root.querySelector<HTMLElement>('.b-lang');
-    if (lb) lb.textContent = t('lang');
+    if (lb) { lb.textContent = t('lang'); lb.lang = lang === 'zh' ? 'en' : 'zh-CN'; }
     document.title = lang === 'zh' ? '长河 · 3D 中国历史地图' : 'Ages · 3D Atlas of Chinese History';
   }
 }

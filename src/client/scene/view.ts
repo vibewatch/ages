@@ -100,6 +100,12 @@ export class View {
     this.camera.fov = w / h < 0.8 ? 52 : 36;
     this.camera.updateProjectionMatrix();
     this.applyInset();
+    // a new screen (browser zoom, another monitor) may have another pixel density
+    const max = Math.min(window.devicePixelRatio || 1, this.lowfx ? 1 : 2);
+    if (max !== this.maxRatio) { this.maxRatio = max; this.ratio = Math.min(this.ratio, max) || max; this.renderer.setPixelRatio(this.ratio); }
+    // resizing clears the canvas: draw it again now rather than at the next (possibly throttled) frame
+    this.wake();
+    if (!document.hidden) this.renderer.render(this.scene, this.camera);
   }
 
   /** Recolours the sky dome (horizon haze and zenith, raw sRGB). */
@@ -412,6 +418,8 @@ export class View {
     if (next !== this.ratio) {
       this.ratio = next;
       this.renderer.setPixelRatio(next);
+      // the new buffer starts blank: fill it in the same frame
+      this.renderer.render(this.scene, this.camera);
     }
   }
 }

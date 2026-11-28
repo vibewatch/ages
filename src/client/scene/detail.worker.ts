@@ -19,7 +19,8 @@ function tile(z: number, x: number, y: number): Promise<Int16Array | null> {
   if (p) { cache.delete(key); cache.set(key, p); return p; }
   p = (async () => {
     try {
-      const r = await fetch(`${URL_T}/${key}.png`);
+      // a stalled request must not hold up close-up relief for the rest of the session
+      const r = await fetch(`${URL_T}/${key}.png`, { signal: AbortSignal.timeout(20_000) });
       if (!r.ok) return null;
       const bmp = await createImageBitmap(await r.blob(), { colorSpaceConversion: 'none', premultiplyAlpha: 'none' });
       try {

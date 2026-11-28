@@ -116,6 +116,8 @@ export class Atlas {
   private sceneryKey = '';
   private lastSceneryEra = '';
   private prefetchTimer = 0;
+  private sceneryReq = 0;
+  private abandonScenery: (() => void) | null = null;
   private pendingCommit: (() => void) | null = null;
   eraReady = false;
   private storyMode = false;
@@ -171,7 +173,9 @@ export class Atlas {
     this.host.append(canvas, vignette);
     this.view = new View(canvas, this.geo, this.lowfx);
     // stories, cross-fades and pending years animate: full frame rate while they run
-    this.view.busy = () => this.storyMode || !!this.fade || this.pendingYear !== null || (this.fx?.count('story') ?? 0) > 0;
+    this.view.busy = () => this.storyMode || !!this.fade || this.pendingYear !== null || this.hiT >= 0 || (this.fx?.rising ?? 0) > 0
+      // a story's marks animate; the learner's border sketch (drawing mode) holds still
+      || (!this.drawing && (this.fx?.count('story') ?? 0) > 0);
     this.labels = new Labels(this.view, this.host);
     this.terrain = buildTerrain(this.geo, this.lowfx);
     this.view.scene.add(this.terrain.mesh);
@@ -736,7 +740,8 @@ export class Atlas {
     this.texCache.set(key, tex);
     if (this.texCache.size > 6) {
       for (const [k, old] of this.texCache) {
-        if (old !== this.texA && old !== this.fade?.tex) {
+        // never one a uniform still points at (uTerrB keeps the last faded-in map after an instant switch)
+        if (old !== this.texA && old !== this.fade?.tex && old !== this.terrain.uniforms.uTerrB.value) {
           this.texCache.delete(k);
           old.dispose();
           break;
@@ -1088,6 +1093,11 @@ export class Atlas {
     if (key === this.sceneryKey) return;
     const prevEra = this.lastSceneryEra;
     this.sceneryKey = key;
+    // each request has its own number: going A → B → A, loads started for the first A are stale too
+    const req = ++this.sceneryReq;
+    // models a superseded request built but kept hidden (waiting for its atomic swap) are dropped now
+    this.abandonScenery?.();
+    this.abandonScenery = null;
     this.lastSceneryEra = era?.id ?? '';
     this.pendingCommit = null;
     if (this.prefetchTimer) { clearTimeout(this.prefetchTimer); this.prefetchTimer = 0; }
@@ -1116,6 +1126,11 @@ export class Atlas {
     const hasOldModels = this.marks.some(x => (x.layer === 'base' || x.layer === 'scenery') && x.g.parent);
     let pendingCap: Mark | null = null;
     const pendingMarks: Mark[] = [];
+    this.abandonScenery = () => {
+      for (const m of [...(pendingCap ? [pendingCap] : []), ...pendingMarks]) { this.fx.removeGroup(m.g); this.labels.remove(m.label); }
+      pendingCap = null;
+      pendingMarks.length = 0;
+    };
     let capDone = !(cap && capRecipe);
     const total = items.length;
     let done = 0;
@@ -1125,7 +1140,7 @@ export class Atlas {
       if (!capDone || done < total) return;
       if (hasOldModels) {
         this.pendingCommit = () => {
-          if (this.sceneryKey !== key) return;
+          if (this.sceneryReq !== req) return;
           for (const m of this.marks.filter(x => x.layer === 'base' || x.layer === 'scenery')) {
             this.fx.removeGroup(m.g);
             this.labels.remove(m.label);
@@ -1144,6 +1159,7 @@ export class Atlas {
             this.addMark(mark);
           }
           pendingMarks.length = 0;
+          this.abandonScenery = null;
           this.eraReady = true;
           this.scheduleAdjacentEraPrefetch(era);
         };
@@ -1158,7 +1174,7 @@ export class Atlas {
         lon: cap.lon, lat: cap.lat, model: capRecipe, scale: 1.9, yaw: 0, ring: KIND_COLOR.capital,
         priority: 100, tag,
       }, 'base').then(g => {
-        if (this.sceneryKey !== key) {
+        if (this.sceneryReq !== req) {
           if (g) this.fx.removeGroup(g);
           return;
         }
@@ -1196,7 +1212,7 @@ export class Atlas {
       const scale = s.kind === 'person' ? 1.8 : s.kind === 'food' ? 1.3 : 1.5;
       const priority = s.level === 1 ? 85 : s.level === 2 ? 60 : 40;
       this.fx.spawn({ lon: s.lon, lat: s.lat, model: s.model, scale, yaw: s.yaw, ring: KIND_COLOR[s.kind], priority, tag }, 'scenery').then(g => {
-        if (this.sceneryKey !== key) {
+        if (this.sceneryReq !== req) {
           if (g) this.fx.removeGroup(g);
           return;
         }
@@ -1379,9 +1395,12 @@ export class Atlas {
 
   /** 画疆域: the territories hidden too — relief and rivers only — while a border is drawn from memory. */
   setDrawing(on: boolean): void {
+    this.drawing = on;
     this.terrain.uniforms.uTerrOn.value = !on && this.layers.territory ? 1 : 0;
     if (!on) this.fx.clear('story');
   }
+
+  private drawing = false;
 
   /** The learner's outline so far: the first point marked, the ring closed from three points. */
   sketch(pts: LonLat[]): void {

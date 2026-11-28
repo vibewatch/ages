@@ -27,10 +27,15 @@ function fatal(msg: string, retry: boolean): void {
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   const hadController = !!navigator.serviceWorker.controller;
   let refreshing = false;
+  // a new version took over: reload into it at once if the visitor has not started yet, otherwise the next time they
+  // leave the tab, so a lesson, story or open article is never cut off mid-way
+  let used = false;
+  for (const ev of ['pointerdown', 'keydown'] as const) addEventListener(ev, () => { used = true; }, { once: true, capture: true });
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (!hadController || refreshing) return;
-    refreshing = true;
-    location.reload();
+    const go = () => { if (refreshing) return; refreshing = true; location.reload(); };
+    if (!used) go();
+    else document.addEventListener('visibilitychange', () => { if (document.hidden) go(); });
   });
   addEventListener('load', () => {
     navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`, { updateViaCache: 'none' })

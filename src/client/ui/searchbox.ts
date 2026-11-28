@@ -23,17 +23,18 @@ export class SearchBox {
   onPick: (h: Hit) => void = () => {};
 
   constructor() {
-    this.input = h('input', { type: 'search', class: 'q', placeholder: t('search'), 'aria-label': t('search'), autocomplete: 'off', spellcheck: 'false' });
-    this.list = h('ul', { class: 'hits', role: 'listbox', hidden: true });
+    this.input = h('input', { type: 'search', class: 'q', placeholder: t('search'), 'aria-label': t('search'), autocomplete: 'off', spellcheck: 'false',
+      role: 'combobox', 'aria-autocomplete': 'list', 'aria-expanded': 'false', 'aria-controls': 'search-hits' });
+    this.list = h('ul', { class: 'hits', id: 'search-hits', role: 'listbox', hidden: true });
     this.el = h('div', { class: 'search' }, icon('search'), this.input, this.list);
     this.input.addEventListener('input', () => this.update());
     this.input.addEventListener('focus', () => this.update());
-    this.input.addEventListener('blur', () => setTimeout(() => { if (document.activeElement !== this.input) this.list.hidden = true; }, 150));
+    this.input.addEventListener('blur', () => setTimeout(() => { if (document.activeElement !== this.input) this.show(false); }, 150));
     this.input.addEventListener('keydown', e => {
       if (e.key === 'ArrowDown') { this.move(1); e.preventDefault(); }
       else if (e.key === 'ArrowUp') { this.move(-1); e.preventDefault(); }
       else if (e.key === 'Enter') { const x = this.hits[this.cur]; if (x) this.pick(x); }
-      else if (e.key === 'Escape') { this.input.value = ''; this.list.hidden = true; this.input.blur(); }
+      else if (e.key === 'Escape') { this.input.value = ''; this.show(false); this.input.blur(); }
       e.stopPropagation();
     });
   }
@@ -51,24 +52,33 @@ export class SearchBox {
       trails: TRAILS,
     }, 8) : [];
     this.cur = 0;
-    if (!q) { this.list.hidden = true; return; }
+    if (!q) { this.show(false); return; }
     this.list.replaceChildren(...(this.hits.length ? this.hits.map((x, i) => h('li', {
-      role: 'option', class: i === this.cur ? 'cur' : '', 'aria-selected': String(i === this.cur),
+      role: 'option', id: `search-hit-${i}`, class: i === this.cur ? 'cur' : '', 'aria-selected': String(i === this.cur),
       onmousedown: (e: Event) => { e.preventDefault(); this.pick(x); },
     }, h('span', { class: `ty ty-${x.type}`, 'aria-hidden': 'true', text: ({ year: '⏱', event: '◆', era: '▬', place: '●', person: '☺', journey: '⇢', life: '✦', lesson: '✎', trail: '⤳' } as const)[x.type] }),
       h('span', { class: 'lb', text: tr(x.label, lang) }, 'sub' in x && x.sub ? h('small', { text: ' ' + tr(x.sub, lang) }) : null),
       'year' in x ? h('span', { class: 'yr', text: formatYear(x.year, lang, { short: true }) }) : null)) : [h('li', { class: 'none', text: t('noHits') })]));
-    this.list.hidden = false;
+    this.show(true);
+  }
+
+  /** Opens or closes the result list, keeping the combobox's state for screen readers. */
+  private show(on: boolean): void {
+    this.list.hidden = !on;
+    this.input.setAttribute('aria-expanded', String(on));
+    if (on && this.hits.length) this.input.setAttribute('aria-activedescendant', `search-hit-${this.cur}`);
+    else this.input.removeAttribute('aria-activedescendant');
   }
 
   private move(d: number): void {
     if (!this.hits.length) return;
     this.cur = (this.cur + d + this.hits.length) % this.hits.length;
     [...this.list.children].forEach((c, i) => { c.classList.toggle('cur', i === this.cur); c.setAttribute('aria-selected', String(i === this.cur)); });
+    this.input.setAttribute('aria-activedescendant', `search-hit-${this.cur}`);
   }
 
   private pick(x: Hit): void {
-    this.list.hidden = true;
+    this.show(false);
     this.input.value = '';
     this.input.blur();
     this.onPick(x);

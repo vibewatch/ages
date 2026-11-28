@@ -239,9 +239,11 @@ for (const era of ERAS) {
   meta.push({ replaces: era.replaces, phases, sources: era.sources, polities: era.polities ?? [] });
 }
 
-const seatNames: Record<string, { zh: string; en: string; at: LonLat; modern?: string }> = {};
-// keyed per era: the same city has different names in different periods
-for (const era of ERAS) for (const s of era.seats) seatNames[`${era.replaces}:${s.id}`] = { ...s.name, at: s.at, modern: s.modern };
+// the names of the seats a phase's changes mention, keyed per era (the same city has different names in different
+// periods); only these ship in the app bundle
+const named = new Set(meta.flatMap(e => e.phases.flatMap(p => p.changes.map(c => `${e.replaces}:${c[1]}`))));
+const seatNames: Record<string, { zh: string; en: string }> = {};
+for (const era of ERAS) for (const s of era.seats) { const k = `${era.replaces}:${s.id}`; if (named.has(k)) seatNames[k] = { zh: s.name.zh, en: s.name.en }; }
 
 const shapes = JSON.stringify({
   source: { repo: 'own', sha: '', license: 'GPL-3.0 (own data, see docs/data/territories.md)' },

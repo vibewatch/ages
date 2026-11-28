@@ -193,7 +193,7 @@ export class App {
       ],
     }, {
       learn: () => this.showPath(!(this.path.open && this.shell.panel.top === this.path.el)),
-      panelChanged: () => this.refocus(),
+      panelChanged: () => { this.refocus(); setTimeout(() => this.armBack(), 0); },
     });
     this.wire();
     if (link.compare != null) {
@@ -208,6 +208,9 @@ export class App {
     this.atlas.onLife = l => this.openLife(l);
     for (const s of subjects) this.navigate(s, 'arrive');
     const linked = subjects.length > 0 || link.year != null || link.compare != null;
+    // a link that named nothing we know (#e=gone) or a year out of range: the address shows what is actually open
+    const named = location.hash.length > 1 && /(^|[#&])(e|event|era|p|place|person|life|j|journey|lesson|trail)=/.test(location.hash);
+    if ((named && !subjects.length) || (link.year != null && clampYear(link.year) !== link.year)) this.syncLink();
     // the learning path is the starting point: it opens on arrival unless a link names a subject or the learner closed it
     if (!linked && load<boolean>('pathOpen', true, v => typeof v === 'boolean')) this.showPath(true, false);
     this.ready = true;
@@ -271,7 +274,19 @@ export class App {
       case 'lesson': return this.startLesson(s.l, s.resume);
       case 'trail': return this.trail.start(s.trail, s.stop);
       case 'journey':
-        if (how === 'arrive') { setTimeout(() => void this.playJourney(s.j), 600); return; }
+        if (how === 'arrive') {
+          // a visitor who starts doing something first keeps control: the linked journey then waits for them
+          let touched = false;
+          const mark = () => { touched = true; };
+          window.addEventListener('pointerdown', mark, { once: true, capture: true });
+          window.addEventListener('keydown', mark, { once: true, capture: true });
+          setTimeout(() => {
+            window.removeEventListener('pointerdown', mark, { capture: true });
+            window.removeEventListener('keydown', mark, { capture: true });
+            if (!touched) void this.playJourney(s.j);
+          }, 600);
+          return;
+        }
         void this.playJourney(s.j);
         return;
       case 'year':
@@ -304,7 +319,8 @@ export class App {
       if (l.lang && l.lang !== lang) setLang(l.lang);
       const cmp = l.compare != null ? clampYear(l.compare) : null;
       if (cmp !== this.period.compareYear) this.setCompare(cmp, false);
-      if (!l.trail && this.trail.active) this.trail.close(false);
+      // no trail in the link, or one that does not exist: the running trail ends
+      if ((!l.trail || !TRAIL.get(l.trail)) && this.trail.active) this.trail.close(false);
       if (l.trail) {
         const trl = TRAIL.get(l.trail);
         if (trl && (this.trail.active?.trail.id !== trl.id || this.trail.active?.index !== (l.trailStop ?? 0))) {
@@ -459,7 +475,10 @@ export class App {
     this.timeline.onRender = y => { this.chronicle.update(y); this.period.setYear(y); this.path.setYear(y); };
     onLang(l => this.onLang(l));
     window.addEventListener('keydown', e => this.key(e));
-    window.addEventListener('hashchange', () => this.onHash());
+    window.addEventListener('hashchange', () => { if (performance.now() > this.ignoreHashUntil) this.onHash(); });
+    window.addEventListener('popstate', () => this.onPop());
+    // after any click or key has opened something, arm Back for it
+    for (const ev of ['click', 'keyup'] as const) window.addEventListener(ev, () => setTimeout(() => this.armBack(), 0), true);
   }
 
   // ------------------------------------------------------------------------------------------------ cinematic titles
@@ -519,6 +538,8 @@ export class App {
     save('year', y);
     if (this.card.place) writeLink({ place: this.card.place.p.id, year: y, ...this.linkExtras() });
     else if (this.card.era && y >= this.card.era.start && y <= this.card.era.end) writeLink({ era: this.card.era.id, year: y, ...this.linkExtras() });
+    // an open person, life or lesson stays in the link (as syncLink writes it) while the year moves
+    else if (this.card.era || this.card.person || this.card.life || (this.lesson.open && this.lesson.id && !this.lesson.id.startsWith('test:'))) this.syncLink();
     else if (!this.card.event) writeLink({ year: y, ...this.linkExtras() });
   }
 
@@ -799,6 +820,48 @@ export class App {
 
   // ------------------------------------------------------------------------------------------------ keyboard & language
 
+  /** One step back: popovers and dialogs first, then the story, then the panel's stack one view at a time (a trail
+   * before its root). Esc and the browser's (phone's) Back button both take it. */
+  private back(): void {
+    if (this.shell.popOpen) this.shell.pop(null);
+    else if (!this.help.el.hidden) this.help.toggle(false);
+    else if (this.report.open) this.report.toggle(false);
+    else if (this.classroom.open) this.classroom.toggle(false);
+    else if (this.pro.open) this.pro.toggle(false);
+    else if (this.learn.open) this.learn.toggle(false);
+    else if (this.reader.open && this.shell.panel.top === this.card.el) this.reader.close();
+    else if (this.player.state !== 'idle') this.stopStory(true);
+    else if (this.trail.active && (!this.shell.panel.open || this.shell.panel.top === this.path.el)) this.trail.close(true);
+    else this.shell.panel.pop();
+  }
+
+  /** Something is open that Back can close. */
+  private get canGoBack(): boolean {
+    return this.shell.popOpen || this.shell.panel.open || !this.help.el.hidden || this.report.open || this.classroom.open
+      || this.pro.open || this.learn.open || this.player.state !== 'idle' || !!this.trail.active;
+  }
+
+  /** While something is open, one extra history entry stands in front of the page, so Back closes it instead of
+   * leaving the app; the address keeps following what is open (writeLink replaces the current entry). */
+  private backArmed = false;
+  private ignoreHashUntil = 0;
+  private armBack(): void {
+    if (this.backArmed || !this.ready || !this.canGoBack) return;
+    history.pushState({ agesBack: true }, '', location.href);
+    this.backArmed = true;
+  }
+  private onPop(): void {
+    if (!this.backArmed) return;
+    this.backArmed = false;
+    // everything was already closed another way: this Back is meant for the page before
+    if (!this.canGoBack) { history.back(); return; }
+    // the step back may also change the hash: that is us, not a new link
+    this.ignoreHashUntil = performance.now() + 400;
+    this.back();
+    this.syncLink();
+    setTimeout(() => this.armBack(), 0);
+  }
+
   private key(e: KeyboardEvent): void {
     this.help.focus.trap(e);
     this.report.focus.trap(e);
@@ -822,20 +885,7 @@ export class App {
       return;
     }
     if (e.key === '/') { this.search.input.focus(); e.preventDefault(); return; }
-    if (e.key === 'Escape') {
-      // popovers and dialogs first, then the story, then the panel's stack one view at a time (a trail before its root)
-      if (this.shell.popOpen) this.shell.pop(null);
-      else if (!this.help.el.hidden) this.help.toggle(false);
-      else if (this.report.open) this.report.toggle(false);
-      else if (this.classroom.open) this.classroom.toggle(false);
-      else if (this.pro.open) this.pro.toggle(false);
-      else if (this.learn.open) this.learn.toggle(false);
-      else if (this.reader.open && this.shell.panel.top === this.card.el) this.reader.close();
-      else if (this.player.state !== 'idle') this.stopStory(true);
-      else if (this.trail.active && (!this.shell.panel.open || this.shell.panel.top === this.path.el)) this.trail.close(true);
-      else this.shell.panel.pop();
-      return;
-    }
+    if (e.key === 'Escape') { this.back(); return; }
     // a dialog is open: the map, timeline and cards behind it don't take keys
     if (modal) return;
     if ((e.key === '[' || e.key === ']') && !e.altKey && !e.metaKey && !e.ctrlKey && this.trail.active) {

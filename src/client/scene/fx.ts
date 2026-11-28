@@ -132,6 +132,8 @@ export class Fx {
   dist = 30;
   /** true when any spawned model changed its scale/rise/visibility on the most recent frame */
   boundsDirty = true;
+  /** models still rising into place (the map renders at full rate meanwhile) */
+  rising = 0;
   private farLod = false;
   private clock = 0;
   /** the journey traveller currently on the map (one per journey, handed from leg to leg) */
@@ -1146,9 +1148,13 @@ export class Fx {
     it.update(0, 0, this.s);
     // the rise uses real time when paused so selected-event models still appear
     const start = performance.now();
+    this.rising++;
     const step = () => {
       grow = Math.min(1, (performance.now() - start) / (RISE * 1000));
+      // the name tag rides up with the model
+      if (it.label) this.boundsDirty = true;
       if (grow < 1 && this.items.includes(it)) requestAnimationFrame(step);
+      else this.rising--;
     };
     requestAnimationFrame(step);
     return g;

@@ -25,8 +25,9 @@ export class Caption {
     this.text = h('p', { class: 'cap-t', 'aria-live': 'polite' });
     this.bar = h('i', { class: 'cap-bar' });
     this.pauseBtn = iconBtn('pause', t('pause'), () => this.onPause());
-    this.speedBtn = h('button', { type: 'button', class: 'ib sp', title: t('speed'), text: '1×', onclick: () => { this.si = (this.si + 1) % this.speeds.length; this.speedBtn.textContent = this.speeds[this.si] + '×'; this.onSpeed(this.speeds[this.si]); } });
-    this.voiceBtn = iconBtn('mute', t('narrate'), () => { this.voice = !this.voice; setIcon(this.voiceBtn, this.voice ? 'sound' : 'mute'); this.voiceBtn.classList.toggle('on', this.voice); this.onVoice(this.voice); });
+    this.speedBtn = h('button', { type: 'button', class: 'ib sp', title: t('speed'), text: '1×', onclick: () => { this.si = (this.si + 1) % this.speeds.length; this.speedBtn.textContent = this.speeds[this.si] + '×'; this.relabel(); this.onSpeed(this.speeds[this.si]); } });
+    this.voiceBtn = iconBtn('mute', t('narrate'), () => { this.voice = !this.voice; setIcon(this.voiceBtn, this.voice ? 'sound' : 'mute'); this.voiceBtn.classList.toggle('on', this.voice); this.voiceBtn.setAttribute('aria-pressed', String(this.voice)); this.onVoice(this.voice); });
+    this.voiceBtn.setAttribute('aria-pressed', 'false');
     this.el = h('div', { class: 'caption', hidden: true },
       this.text,
       h('div', { class: 'cap-ctl' }, this.pauseBtn, this.skipBtn = iconBtn('next', t('skip'), () => this.onSkip()), this.speedBtn, canSpeak ? this.voiceBtn : null, this.stopBtn = iconBtn('stop', t('stop'), () => this.onStop())),
@@ -56,6 +57,7 @@ export class Caption {
     label(this.pauseBtn, t(this.paused ? 'resume' : 'pause'));
     label(this.skipBtn, t('skip'));
     this.speedBtn.title = t('speed');
+    this.speedBtn.setAttribute('aria-label', `${t('speed')} ${this.speeds[this.si]}×`);
     label(this.voiceBtn, t('narrate'));
     label(this.stopBtn, t('stop'));
   }

@@ -5,7 +5,8 @@
  *   an incomplete install leaves the previous worker in place;
  * - the app shell and build files: cache first, so an active worker serves one consistent build;
  * - other pages under the scope: left to the network.
- * Updates wait for existing clients to close before activating and dropping the previous cache for this scope. */
+ * Updates: a complete new version activates at once and drops the previous cache for this scope; the page reloads into
+ * it right away if the visitor has not started, else when they next leave the tab (src/client/main.ts). */
 const VERSION = '__VERSION__';
 const PRECACHE = [/* __PRECACHE__ */];
 const SCOPE = new URL(self.registration.scope);

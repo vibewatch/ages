@@ -62,6 +62,12 @@ const KIND_MODEL: Record<EventKind, ModelRecipe> = {
  * the text, no hero buttons, and a handle that closes it. Shows an event, an era, a place
  * or a person. The Wikipedia reader unfolds to its right (on phones, in its place) and folds back.
  */
+/** Enter / Space on a clickable list row (role=button) act as a click. */
+const keyClick = (e: Event): void => {
+  const k = (e as KeyboardEvent).key;
+  if (k === 'Enter' || k === ' ') { e.preventDefault(); e.stopPropagation(); (e.currentTarget as HTMLElement).click(); }
+};
+
 export class Card {
   readonly el: HTMLElement;
   private body: HTMLElement;
@@ -81,6 +87,7 @@ export class Card {
   reading: Wiki | null = null;
   /** After a subject is shown. */
   onShow: () => void = () => {};
+  private live: HTMLElement;
 
   constructor(private hooks: CardHooks, private progress: Progress, still = false) {
     this.preview = new Preview(still);
@@ -92,7 +99,9 @@ export class Card {
     // phones: the sheet's handle closes it (a tap or a swipe down), standing in for the hero's buttons
     this.grip = h('button', { type: 'button', class: 'sheet-grip', onclick: () => this.hooks.close() });
     this.grip.addEventListener('pointerdown', e => this.grip.setPointerCapture(e.pointerId));
-    this.el = h('aside', { class: 'card', hidden: true }, this.grip, h('div', { class: 'card-main', 'aria-live': 'polite' }, this.hero, this.body));
+    // screen readers hear the new subject's title, not the whole card again on every step
+    this.live = h('p', { class: 'sr-only', 'aria-live': 'polite' });
+    this.el = h('aside', { class: 'card', hidden: true }, this.grip, this.live, h('div', { class: 'card-main' }, this.hero, this.body));
     PHONE.addEventListener('change', () => this.placeHero());
   }
 
@@ -134,6 +143,7 @@ export class Card {
     this.life = o.life ?? null;
     this.el.hidden = false;
     this.render();
+    if (!sameSubject) this.live.textContent = this.body.querySelector('h2')?.textContent ?? '';
     this.body.scrollTop = sameSubject ? prevScroll : 0;
     this.setActive(true);
     this.onShow();
@@ -287,7 +297,7 @@ export class Card {
       showNames ? this.sec(t('namesThrough'), true, h('ul', { class: 'periods' },
         ...names.map(n => h('li', {
           class: year >= n.from && year <= n.to ? 'cur' : '',
-          style: 'cursor:pointer',
+          style: 'cursor:pointer', role: 'button', tabindex: 0, onkeydown: keyClick,
           onclick: () => this.hooks.year?.(Math.round((n.from + Math.min(n.to, 2025)) / 2)),
         }, h('span', { class: 'y', text: this.span(n.from, n.to) }), h('b', { text: tr(n.name, L) }))))) : null,
       p.capital?.length ? this.sec(t('asCapital'), true,
@@ -317,7 +327,7 @@ export class Card {
             }, `${tr(trail.title, L)} (${stopIndex + 1}/${trail.stops.length})`)))) : null,
       notes.length ? this.sec(t('notes'), true, h('ul', { class: 'periods' },
         ...notes.map(n => h('li', {
-          style: 'cursor:pointer',
+          style: 'cursor:pointer', role: 'button', tabindex: 0, onkeydown: keyClick,
           onclick: () => this.hooks.year?.(Math.round((n.from + Math.min(n.to, 2025)) / 2)),
         }, h('span', { class: 'y', text: this.span(n.from, n.to) }), h('span', { text: tr(n.text, L) }))))) : null,
       evs.length ? this.sec(t('nearby'), true, this.evList(evs)) : null,
@@ -362,7 +372,7 @@ export class Card {
         this.wikiBtn({ zh: p.name.zh, en: p.name.en }, tr(p.name, L))),
       jStops.length ? this.sec(t('journey'), true, h('ul', { class: 'periods' },
         ...jStops.map(s => h('li', {
-          style: 'cursor:pointer',
+          style: 'cursor:pointer', role: 'button', tabindex: 0, onkeydown: keyClick,
           onclick: () => this.hooks.year?.(s.year),
         }, h('span', { class: 'y', text: formatYear(s.year, L, { short: true }) }), h('span', { text: `${tr(s.name, L)}${s.title.zh && s.title.zh !== s.name.zh ? ' · ' + tr(s.title, L) : ''}` }))))) : null,
       evs.length ? this.sec(t('events'), true, this.evList(evs)) : null,
@@ -573,7 +583,7 @@ export class Card {
               h('p', { class: 'wl-sum', text: tr(w.summary, L) })))))) : null,
       rulers.length ? this.sec(t('rulers'), true, h('ul', { class: 'periods' },
         ...rulers.map(r => h('li', {
-          style: 'cursor:pointer',
+          style: 'cursor:pointer', role: 'button', tabindex: 0, onkeydown: keyClick,
           onclick: () => this.hooks.year?.(Math.round((r.start + r.end) / 2)),
         }, h('span', { class: 'y', text: this.span(r.start, r.end) }), h('b', { text: tr(r.name, L) }))))) : null,
       journeys.length ? this.sec(t('journeys'), true, h('div', { class: 'acts' }, ...journeys.map(j => this.playJourneyBtn(j)))) : null,

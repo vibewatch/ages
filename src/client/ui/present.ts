@@ -136,7 +136,7 @@ export class Presenter {
   on = false;
 
   constructor(private hooks: PresenterHooks) {
-    this.el = h('section', { class: 'present', hidden: true, 'data-testid': 'presenter', role: 'region', 'aria-live': 'polite' });
+    this.el = h('section', { class: 'present', hidden: true, 'data-testid': 'presenter', role: 'region', 'aria-label': t('pTitle') });
   }
 
   get index(): number { return this.i; }
