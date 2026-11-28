@@ -839,7 +839,7 @@ export const STORIES: Record<string, StoryStep[]> = {
     { do: 'wait', dur: 3.6 },
     { do: 'highlight', polity: 'yuan', dur: 3, par: true },
     banner(116.4, 39.9, '行省制开端', 'Origin of Modern Provinces', '#1e8449', lbl('西藏、台湾正式归属中央管辖', 'Tibet & Taiwan under central administration')),
-    cap('元朝设宣政院直接统辖西藏，设澎湖巡检司管辖澎湖和琉球（台湾），设北庭都元帅府管辖西域。', 'Through the Bureau of Buddhist and Tibetan Affairs and the Penghu Inspection Office, Tibet and Taiwan are administered by the central court.', 4.2),
+    cap('元朝设宣政院直接统辖西藏，设澎湖巡检司管辖澎湖和琉球（台湾），设北庭都元帅府管辖西域。', 'Through the Xuanzheng Yuan (Bureau of Buddhist and Tibetan Affairs) and the Penghu Inspection Office, Tibet and Taiwan are administered by the central court.', 4.2),
   ],
 
   ming_found: [
@@ -1279,7 +1279,7 @@ export const STORIES: Record<string, StoryStep[]> = {
   ],
 
   sept18: [
-    year(1931), title('九一八事变', 'The Mukden Incident', '1931年9月18日 · 中国人民局部抗战的起点', '18 September 1931 · Start of China’s fourteen-year War of Resistance'), fly(123.6, 42.5, 22, 0.85),
+    year(1931), title('九一八事变', 'The September 18 Incident', '1931年9月18日 · 中国人民局部抗战的起点', '18 September 1931 · Start of China’s fourteen-year War of Resistance'), fly(123.6, 42.5, 22, 0.85),
     { do: 'fx', lon: 123.43, lat: 41.85, fx: 'battle', dur: 2.5 },
     banner(123.43, 41.85, '柳条湖事件 · 炮轰北大营', 'Liutiao Lake & Beidaying', JP, lbl('1931年9月18日夜', 'Night of 18 September 1931')),
     cap('1931年9月18日夜，日本关东军炸毁沈阳柳条湖附近南满铁路，反诬中国军队所为，悍然炮轰北大营。', 'Night of 18 September 1931: Japanese Kwantung troops blow up a railway track near Liutiao Lake and shell the Beidaying barracks in Shenyang.'),

@@ -178,7 +178,7 @@ export const TRAILS: Trail[] = [
         event: 'wanganshi',
         year: 1069,
         title: { zh: '北宋王安石变法', en: 'Wang Anshi’s New Policies' },
-        note: { zh: '以青苗法、募役法、方田均税法与保甲法整顿财政军政，尝试以国家信用调控农业与商业。', en: 'Green-Sprout rural loans, hired service, and cadastral surveys sought to Fiscalize state revenue and relieve Song fiscal strains.' },
+        note: { zh: '以青苗法、募役法、方田均税法与保甲法整顿财政军政，尝试以国家信用调控农业与商业。', en: 'Green-Sprout rural loans, hired service, and cadastral surveys sought to raise state revenue and ease the Song’s fiscal strains.' },
       },
       {
         event: 'third_plenum',
@@ -198,7 +198,7 @@ export const TRAILS: Trail[] = [
         event: 'dujiangyan',
         year: -256,
         title: { zh: '都江堰无坝引水工程', en: 'Dujiangyan Irrigation System' },
-        note: { zh: '李冰父子巧借弯道环流分水排沙，两千两百余年持续灌溉成都平原。', en: 'Li Bing’s鱼嘴 (Fish Mouth) levee and spillway harnessed natural river hydraulics without damming the Min River.' },
+        note: { zh: '李冰父子巧借弯道环流分水排沙，两千两百余年持续灌溉成都平原。', en: 'Li Bing’s Fish Mouth (Yuzui) levee and spillway harnessed natural river hydraulics without damming the Min River.' },
       },
       {
         event: 'cailun',
@@ -234,7 +234,7 @@ export const TRAILS: Trail[] = [
         event: 'guoshoujing',
         year: 1280,
         title: { zh: '郭守敬“四海测验”与《授时历》', en: 'Guo Shoujing’s Shoushi Calendar' },
-        note: { zh: '在全国设立27座观测点测定回归年为365.2425日，与现行公历精度相同而早约三百年。', en: 'Surveying 27 observatories from南海 to Siberia, Guo Shoujing fixed the tropical year at 365.2425 days three centuries before the Gregorian calendar.' },
+        note: { zh: '在全国设立27座观测点测定回归年为365.2425日，与现行公历精度相同而早约三百年。', en: 'Surveying from 27 observatories, from the South China Sea to Siberia,, Guo Shoujing fixed the tropical year at 365.2425 days three centuries before the Gregorian calendar.' },
       },
       {
         event: 'ming_science',
@@ -266,7 +266,7 @@ export const TRAILS: Trail[] = [
         event: 'xiaowendi',
         year: 494,
         title: { zh: '北魏迁都洛阳与胡汉交融', en: 'Northern Wei & Hu–Han Synthesis' },
-        note: { zh: '鲜卑拓跋部统一北方后南迁洛阳，胡服骑射与中原礼制汇流，孕育隋唐宏大格局。', en: 'The Tuoba Xianbei court moved from Pingcheng to Luoyang, fusing steppe vitality with Central Plains statecraft.' },
+        note: { zh: '鲜卑拓跋部统一北方后南迁洛阳，孝文帝推行汉化，胡汉交融，孕育隋唐宏大格局。', en: 'The Tuoba Xianbei court moved from Pingcheng to Luoyang, fusing steppe vitality with Central Plains statecraft.' },
       },
       {
         event: 'wencheng',

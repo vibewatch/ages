@@ -39,7 +39,10 @@ function distractors(y: number, r: () => number): number[] {
     if (span >= 5000) d = Math.round(d / 1000) * 1000 || 1000;
     else if (span > 50) d = Math.round(d / 5) * 5 || 5;
     const c = y + d;
-    if (c !== y && c !== 0 && (y < 0) === (c < 0)) out.add(c);
+    // distinct as shown, too: far back, labels round (1.7 million years ago ≈ "c. 1.7 million")
+    const shown = (v: number) => `${formatYear(v, 'zh')}|${formatYear(v, 'en')}`;
+    const taken = [y, ...out].map(shown);
+    if (c !== y && c !== 0 && (y < 0) === (c < 0) && !taken.some(t => t.split('|').some(x => shown(c).split('|').includes(x)))) out.add(c);
   }
   return [...out];
 }
@@ -87,8 +90,11 @@ export function makeQuiz(events: HistEvent[], opts: { n?: number; seed?: number;
       if (chosen.every(c => Math.abs(c.year - x.year) > 3)) chosen.push(x);
     }
     if (chosen.length === 4) {
-      const set = shuffle(chosen, r);
-      return { type: 'order', events: set.map(x => x.id), answer: set.slice().sort((a, b) => a.year - b.year).map(x => x.id),
+      let set = shuffle(chosen, r);
+      const sorted = set.slice().sort((a, b) => a.year - b.year);
+      // never hand out the answer: a shuffle that came out in order is rotated
+      if (set.every((x, i) => x === sorted[i])) set = [...set.slice(1), set[0]];
+      return { type: 'order', events: set.map(x => x.id), answer: sorted.map(x => x.id),
         prompt: { zh: '按时间先后排列这些事件', en: 'Put these events in time order' } };
     }
     return { type: 'when', event: e.id, answer: e.year, options: shuffle([e.year, ...distractors(e.year, r)], r),
@@ -269,8 +275,8 @@ export function periodQuestion(snap: Snapshot): PeriodQuestion | null {
   const r = rng(hash(snap.id));
   const era = eraAt(snap.year);
   const make = (prompt: I18n, right: I18n, wrong: I18n[], why: I18n): PeriodQuestion | null => {
-    const seen = new Set([right.zh]);
-    const picks = shuffle(wrong, r).filter(w => !seen.has(w.zh) && seen.add(w.zh)).slice(0, 3);
+    const seen = new Set([right.zh, `en:${right.en}`]);
+    const picks = shuffle(wrong, r).filter(w => !seen.has(w.zh) && !seen.has(`en:${w.en}`) && !!seen.add(w.zh).add(`en:${w.en}`)).slice(0, 3);
     if (picks.length < 3) return null;
     const options = shuffle([right, ...picks], r);
     return { snap: snap.id, prompt, options, answer: options.indexOf(right), why };

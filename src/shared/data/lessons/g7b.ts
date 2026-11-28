@@ -120,7 +120,7 @@ export const G7B: Lesson[] = [
   {
     id: 'g7b-3', book: 'g7b', unit: 3, minutes: 12,
     title: { zh: '明清：统一多民族国家的巩固与发展', en: 'Ming and Qing: consolidating the unified multi-ethnic state' },
-    blurb: { zh: '明朝加强皇权、郑和下西洋、戚继光抗倭；清朝收复台湾、抗击沙俄、管辖西藏和新疆，君主专制达到顶峰。', en: 'The Ming strengthens the throne, sends Zheng He to sea and fights the pirates; the Qing recovers Taiwan, resists Russia, governs Tibet and Xinjiang and takes autocracy to its peak.' },
+    blurb: { zh: '明朝加强皇权、郑和下西洋、戚继光抗倭；清朝统一台湾、抗击沙俄、管辖西藏和新疆，君主专制达到顶峰。', en: 'The Ming strengthens the throne, sends Zheng He to sea and fights the pirates; the Qing unifies Taiwan, resists Russia, governs Tibet and Xinjiang and takes autocracy to its peak.' },
     steps: [
       {
         year: 1368, at: [116, 34, 55], polity: 'ming',

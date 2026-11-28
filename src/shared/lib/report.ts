@@ -1,4 +1,5 @@
 import { CHAPTERS, type Chapter } from '../data/chapters.ts';
+import { EVENT } from '../data/events.ts';
 import { dueToday, score, summarize, type MasteryRec, type MasterySummary } from './mastery.ts';
 
 /**
@@ -66,6 +67,7 @@ export function makeReport({ mastery, days, scores, now = Date.now() }: ReportIn
     lessonsPassed: lessons.filter(passed).length,
     lessonsTotal: lessons.length,
     chaptersPassed: CHAPTERS.filter(c => passed(`chapter:${c.id}`)).length,
-    review: dueToday(Object.keys(mastery), mastery, now).slice(0, 5),
+    // only events that still exist (a removed one would take a slot and show nothing)
+    review: dueToday(Object.keys(mastery).filter(id => EVENT.has(id)), mastery, now).slice(0, 5),
   };
 }

@@ -176,7 +176,7 @@ export const HS1: Lesson[] = [
       },
       {
         ev: 'xingsheng', polity: 'yuan',
-        body: { zh: '元朝中央设中书省总领全国政务，地方设行省；设宣政院管辖西藏地区，设澎湖巡检司管辖澎湖和台湾。行省制度加强了中央对地方的管辖，是我国省制的开端。', en: 'The Yuan Secretariat ran the whole realm and provinces (xingsheng) governed the regions; the Bureau of Buddhist and Tibetan Affairs ruled Tibet and a police office on Penghu covered Penghu and Taiwan. The provinces tightened central control and began China’s province system.' },
+        body: { zh: '元朝中央设中书省总领全国政务，地方设行省；设宣政院管辖西藏地区，设澎湖巡检司管辖澎湖和台湾。行省制度加强了中央对地方的管辖，是我国省制的开端。', en: 'The Yuan Secretariat ran the whole realm and provinces (xingsheng) governed the regions; the Xuanzheng Yuan (Bureau of Buddhist and Tibetan Affairs) ruled Tibet and a police office on Penghu covered Penghu and Taiwan. The provinces tightened central control and began China’s province system.' },
       },
       { ev: 'song_tech' },
       { ev: 'guoshoujing' },
@@ -207,7 +207,7 @@ export const HS1: Lesson[] = [
       { zh: '宋初“重文轻武”、分化事权，加强了中央集权，消除了割据隐患，但也造成“积贫积弱”。', en: 'Early Song favoured civil over military and split authority, ending warlordism but leaving the state poor and weak.' },
       { zh: '辽宋夏金政权并立，战争与和议交替，民族交融不断加深。', en: 'Liao, Song, Xia and Jin coexisted through war and treaty, deepening ethnic integration.' },
       { zh: '南宋时我国经济重心南移完成。', en: 'Under the Southern Song China’s economic centre completed its shift south.' },
-      { zh: '元朝实行行省制度，设宣政院管辖西藏，奠定了元明清疆域的基础。', en: 'The Yuan introduced provinces and ruled Tibet through the Bureau of Buddhist and Tibetan Affairs, framing the later territory of China.' },
+      { zh: '元朝实行行省制度，设宣政院管辖西藏，奠定了元明清疆域的基础。', en: 'The Yuan introduced provinces and ruled Tibet through the Xuanzheng Yuan (Bureau of Buddhist and Tibetan Affairs), framing the later territory of China.' },
     ],
   },
   {
@@ -246,7 +246,7 @@ export const HS1: Lesson[] = [
       {
         year: 1757, polity: 'qing',
         title: { zh: '统一多民族国家的巩固', en: 'Consolidating the multi-ethnic state' },
-        body: { zh: '清朝收复台湾并设台湾府，抗击沙俄、签订《尼布楚条约》，平定准噶尔和大小和卓叛乱、统一新疆，设驻藏大臣管理西藏。到18世纪中叶，奠定了中国的版图。', en: 'The Qing recovered Taiwan and made it a prefecture, resisted Russia and signed the Treaty of Nerchinsk, crushed the Dzungars and the Khoja revolt to unify Xinjiang, and sent resident ministers to Tibet. By the mid-18th century China’s territory had taken shape.' },
+        body: { zh: '清朝统一台湾并设台湾府，抗击沙俄、签订《尼布楚条约》，平定准噶尔和大小和卓叛乱、统一新疆，设驻藏大臣管理西藏。到18世纪中叶，奠定了中国的版图。', en: 'The Qing unified Taiwan and made it a prefecture, resisted Russia and signed the Treaty of Nerchinsk, crushed the Dzungars and the Khoja revolt to unify Xinjiang, and sent resident ministers to Tibet. By the mid-18th century China’s territory had taken shape.' },
       },
       { ev: 'taiwan_fu' },
       { ev: 'torghut' },
@@ -279,7 +279,7 @@ export const HS1: Lesson[] = [
     ],
     keys: [
       { zh: '明朝废丞相、设内阁，清朝设军机处，君主专制不断强化并达到顶峰。', en: 'The Ming abolished the chancellor and set up the Grand Secretariat; the Qing Grand Council took autocracy to its height.' },
-      { zh: '清朝前期收复台湾、抗击沙俄、统一新疆、加强对西藏的管辖，奠定了中国的版图。', en: 'The early Qing recovered Taiwan, resisted Russia, unified Xinjiang and tightened rule over Tibet, shaping China’s territory.' },
+      { zh: '清朝前期统一台湾、抗击沙俄、统一新疆、加强对西藏的管辖，奠定了中国的版图。', en: 'The early Qing unified Taiwan with the mainland, resisted Russia, unified Xinjiang and tightened rule over Tibet, shaping China’s territory.' },
       { zh: '明清之际黄宗羲、顾炎武、王夫之等批判君主专制，主张经世致用。', en: 'Huang Zongxi, Gu Yanwu and Wang Fuzhi criticised autocracy and called for practical learning.' },
       { zh: '闭关锁国使中国与世界隔绝，逐渐落后于世界潮流。', en: 'The closed-door policy cut China off from the world and left it falling behind.' },
     ],
@@ -291,12 +291,12 @@ export const HS1: Lesson[] = [
     steps: [
       {
         year: 1838, at: [113, 26, 60],
-        title: { zh: '变化中的世界与中国', en: 'A changing world, an unchanging China' },
+        title: { zh: '变化中的世界与中国', en: 'A changing world, and China' },
         body: { zh: '19世纪前期，英国工业革命迅速发展，急需开拓海外市场；清朝仍以自给自足的自然经济为主，政治腐败、军备废弛。英国以鸦片走私扭转对华贸易逆差。', en: 'In the early 19th century industrialising Britain needed new markets, while Qing China still lived on a self-sufficient farm economy, with a corrupt court and neglected armies. Britain turned to smuggling opium to reverse its trade deficit.' },
       },
       {
         ev: 'opium_war',
-        body: { zh: '鸦片战争后清政府被迫签订《南京条约》，割地、赔款、开放五口通商、协定关税，中国的领土主权和关税自主权遭到破坏，开始沦为半殖民地半封建社会。', en: 'After the Opium War the Treaty of Nanjing forced China to cede land, pay indemnities, open five ports and accept fixed tariffs. Its territory and tariff autonomy were breached, and it began to become a semi-colonial, semi-feudal society.' },
+        body: { zh: '鸦片战争后清政府被迫签订《南京条约》，割地、赔款、开放五口通商、协定关税，中国的领土主权和关税自主权遭到破坏，开始沦为半殖民地半封建社会。', en: 'After the Opium War the Treaty of Nanking forced China to cede land, pay indemnities, open five ports and accept fixed tariffs. Its territory and tariff autonomy were breached, and it began to become a semi-colonial, semi-feudal society.' },
       },
       {
         ev: 'taiping',
@@ -350,7 +350,7 @@ export const HS1: Lesson[] = [
   {
     id: 'hs1-6', book: 'hs1', unit: 6, minutes: 12,
     title: { zh: '辛亥革命与中华民国的建立', en: 'The 1911 Revolution and the Republic of China' },
-    blurb: { zh: '清末新政与预备立宪，同盟会与三民主义，武昌起义和中华民国成立，辛亥革命的意义与局限。', en: 'Late Qing reforms, the Revolutionary Alliance and the Three Principles, the Wuchang Uprising and the Republic: what 1911 achieved and what it did not.' },
+    blurb: { zh: '清末新政与预备立宪，同盟会与三民主义，武昌起义和中华民国成立，辛亥革命的意义与局限。', en: 'Late Qing reforms, the Tongmenghui (Revolutionary Alliance) and the Three Principles, the Wuchang Uprising and the Republic: what 1911 achieved and what it did not.' },
     steps: [
       {
         year: 1901, at: [116, 34, 55],
@@ -360,7 +360,7 @@ export const HS1: Lesson[] = [
       { ev: 'keju_end' },
       {
         ev: 'tongmenghui',
-        body: { zh: '1905年中国同盟会在东京成立，是第一个全国性的资产阶级革命政党。孙中山把它的纲领阐发为民族、民权、民生三民主义，成为资产阶级民主革命纲领。', en: 'Founded in Tokyo in 1905, the Revolutionary Alliance was China’s first nationwide bourgeois revolutionary party. Sun Yat-sen set out its programme as the Three Principles of nationalism, democracy and the people’s livelihood.' },
+        body: { zh: '1905年中国同盟会在东京成立，是第一个全国性的资产阶级革命政党。孙中山把它的纲领阐发为民族、民权、民生三民主义，成为资产阶级民主革命纲领。', en: 'Founded in Tokyo in 1905, the Tongmenghui (Revolutionary Alliance) was China’s first nationwide bourgeois revolutionary party. Sun Yat-sen set out its programme as the Three Principles of nationalism, democracy and the people’s livelihood.' },
       },
       { ev: 'jingzhang' },
       { ev: 'huanghuagang' },
@@ -436,7 +436,7 @@ export const HS1: Lesson[] = [
       },
       {
         ev: 'huangpu',
-        body: { zh: '1924年国民党一大召开，标志着第一次国共合作正式形成；同年创办黄埔军校。1926年国民革命军出师北伐，基本推翻了北洋军阀的统治。', en: 'The Guomindang’s first congress in 1924 formalised the first CPC–Guomindang alliance and the Whampoa Military Academy was founded. From 1926 the Northern Expedition largely overthrew the Beiyang warlords.' },
+        body: { zh: '1924年国民党一大召开，标志着第一次国共合作正式形成；同年创办黄埔军校。1926年国民革命军出师北伐，基本推翻了北洋军阀的统治。', en: 'The Kuomintang’s first congress in 1924 formalised the first CPC–Kuomintang alliance and the Whampoa Military Academy was founded. From 1926 the Northern Expedition largely overthrew the Beiyang warlords.' },
       },
       {
         ev: 'nanchang',
@@ -468,7 +468,7 @@ export const HS1: Lesson[] = [
       },
       {
         q: { zh: '遵义会议被称为党的历史上“生死攸关的转折点”，主要因为它？', en: 'Why is the Zunyi Conference called a life-or-death turning point?' },
-        options: [{ zh: '确定了土地革命的总方针', en: 'It set the course of land revolution' }, { zh: '实现了第一次国共合作', en: 'It formed the first CPC–Guomindang alliance' }, { zh: '标志着红军长征的胜利结束', en: 'It marked the end of the Long March' }, { zh: '事实上确立了毛泽东在党中央和红军的领导地位', en: 'It in effect confirmed Mao Zedong’s leadership of the Party and the army' }],
+        options: [{ zh: '确定了土地革命的总方针', en: 'It set the course of land revolution' }, { zh: '实现了第一次国共合作', en: 'It formed the first CPC–Kuomintang alliance' }, { zh: '标志着红军长征的胜利结束', en: 'It marked the end of the Long March' }, { zh: '事实上确立了毛泽东在党中央和红军的领导地位', en: 'It in effect confirmed Mao Zedong’s leadership of the Party and the army' }],
         answer: 3, ev: 'zunyi',
         why: { zh: '遵义会议纠正了“左”倾错误的军事指挥，在最危急的关头挽救了党、挽救了红军、挽救了中国革命；土地革命方针由八七会议确定。', en: 'Zunyi corrected the leftist military command and saved the Party, the Red Army and the revolution at its darkest hour; the land-revolution course was set at the August 7th meeting.' },
       },
@@ -490,7 +490,7 @@ export const HS1: Lesson[] = [
       {
         year: 1931, at: [118, 38, 60],
         title: { zh: '局部抗战的开始', en: 'Resistance begins in the north-east' },
-        body: { zh: '1931年日本发动九一八事变，东北人民和爱国官兵奋起抵抗，中国人民的局部抗战由此开始。中国是世界反法西斯战争中开始最早、持续时间最长的国家。', en: 'Japan’s Mukden Incident of 1931 met resistance from the people and patriotic soldiers of the north-east: China’s local War of Resistance had begun, the earliest and longest fight of the world’s anti-fascist war.' },
+        body: { zh: '1931年日本发动九一八事变，东北人民和爱国官兵奋起抵抗，中国人民的局部抗战由此开始。中国是世界反法西斯战争中开始最早、持续时间最长的国家。', en: 'Japan’s September 18 Incident of 1931 met resistance from the people and patriotic soldiers of the north-east: China’s local War of Resistance had begun, the earliest and longest fight of the world’s anti-fascist war.' },
       },
       { ev: 'sept18' },
       { ev: 'dec9' },
@@ -500,12 +500,12 @@ export const HS1: Lesson[] = [
       },
       {
         ev: 'july7',
-        body: { zh: '七七事变标志着全民族抗战的开始。国民党公布中共中央递交的国共合作宣言，抗日民族统一战线正式形成。', en: 'The Marco Polo Bridge Incident began the nationwide war. When the Guomindang published the CPC’s declaration of cooperation, the Anti-Japanese National United Front was formally established.' },
+        body: { zh: '七七事变标志着全民族抗战的开始。国民党公布中共中央递交的国共合作宣言，抗日民族统一战线正式形成。', en: 'The Marco Polo Bridge Incident began the nationwide war. When the Kuomintang published the CPC’s declaration of cooperation, the Anti-Japanese National United Front was formally established.' },
       },
       {
         year: 1938, at: [114, 33, 50], polity: 'jp_occ',
         title: { zh: '正面战场与敌后战场', en: 'The front line and behind enemy lines' },
-        body: { zh: '国民党军队担负正面战场作战，进行了淞沪、台儿庄等会战；中国共产党领导八路军、新四军开辟敌后战场，建立抗日根据地。两个战场相互配合，构成中国抗战的整体。', en: 'Guomindang armies held the front line in battles such as Shanghai and Taierzhuang; the CPC’s Eighth Route and New Fourth Armies opened a front behind enemy lines and built base areas. The two fronts together made up China’s war.' },
+        body: { zh: '国民党军队担负正面战场作战，进行了淞沪、台儿庄等会战；中国共产党领导八路军、新四军开辟敌后战场，建立抗日根据地。两个战场相互配合，构成中国抗战的整体。', en: 'Kuomintang armies held the front line in battles such as Shanghai and Taierzhuang; the CPC’s Eighth Route and New Fourth Armies opened a front behind enemy lines and built base areas. The two fronts together made up China’s war.' },
       },
       { ev: 'baituan' },
       { ev: 'yuanzheng' },
@@ -517,36 +517,36 @@ export const HS1: Lesson[] = [
       { ev: 'dabieshan' },
       {
         ev: 'sanda',
-        body: { zh: '1946年国民党挑起全面内战。人民解放军由战略防御转入战略进攻，1948年至1949年初进行辽沈、淮海、平津三大战役，基本消灭了国民党军队主力。', en: 'The Guomindang launched all-out civil war in 1946. The People’s Liberation Army went from defence to the offensive, and the Liaoshen, Huaihai and Pingjin campaigns of 1948–49 destroyed the bulk of the Guomindang armies.' },
+        body: { zh: '1946年国民党挑起全面内战。人民解放军由战略防御转入战略进攻，1948年至1949年初进行辽沈、淮海、平津三大战役，基本消灭了国民党军队主力。', en: 'The Kuomintang launched all-out civil war in 1946. The People’s Liberation Army went from defence to the offensive, and the Liaoshen, Huaihai and Pingjin campaigns of 1948–49 destroyed the bulk of the Kuomintang armies.' },
       },
     ],
     checks: [
       {
         q: { zh: '西安事变和平解决的历史意义是？', en: 'What was the significance of the peaceful settlement of the Xi’an Incident?' },
-        options: [{ zh: '成为时局转换的枢纽，十年内战基本结束', en: 'It turned the situation and all but ended ten years of civil war' }, { zh: '标志着全民族抗战的开始', en: 'It began the nationwide War of Resistance' }, { zh: '标志着第一次国共合作的形成', en: 'It formed the first CPC–Guomindang alliance' }, { zh: '粉碎了日军“三个月灭亡中国”的计划', en: 'It foiled Japan’s plan to conquer China in three months' }],
+        options: [{ zh: '成为时局转换的枢纽，十年内战基本结束', en: 'It turned the situation and all but ended ten years of civil war' }, { zh: '标志着全民族抗战的开始', en: 'It began the nationwide War of Resistance' }, { zh: '标志着第一次国共合作的形成', en: 'It formed the first CPC–Kuomintang alliance' }, { zh: '粉碎了日军“三个月灭亡中国”的计划', en: 'It foiled Japan’s plan to conquer China in three months' }],
         answer: 0, ev: 'xian_incident',
         why: { zh: '西安事变和平解决促成国共再度合作；全民族抗战始于七七事变，第一次国共合作形成于1924年，粉碎“三个月灭亡中国”的是淞沪会战。', en: 'It led the parties back to cooperation; the nationwide war began on 7 July 1937, the first alliance dates from 1924, and the Battle of Shanghai foiled the three-month plan.' },
       },
       {
         q: { zh: '台儿庄战役和百团大战分别属于？', en: 'The Battle of Taierzhuang and the Hundred Regiments Offensive belonged to which fronts?' },
-        options: [{ zh: '敌后战场、正面战场', en: 'Behind the lines; the front line' }, { zh: '正面战场、敌后战场', en: 'The front line; behind the lines' }, { zh: '都属于正面战场', en: 'Both the front line' }, { zh: '都属于敌后战场', en: 'Both behind the lines' }],
+        options: [{ zh: '敌后战场、正面战场', en: 'Behind the lines; the front line' }, { zh: '正面战场、敌后战场', en: 'The front line; behind the lines' }, { zh: '都属于正面战场', en: 'Both on the front line' }, { zh: '都属于敌后战场', en: 'Both behind the lines' }],
         answer: 1, ev: 'taierzhuang',
         why: { zh: '台儿庄战役由李宗仁指挥，是正面战场的大胜；百团大战由八路军发动，是敌后战场规模最大的主动出击。', en: 'Taierzhuang, under Li Zongren, was a front-line victory; the Hundred Regiments Offensive was the Eighth Route Army’s largest attack behind enemy lines.' },
       },
       {
         q: { zh: '中国人民抗日战争胜利的历史意义是？', en: 'What was the historical significance of victory in the War of Resistance?' },
-        options: [{ zh: '结束了两千多年的君主专制制度', en: 'It ended two thousand years of monarchy' }, { zh: '推翻了国民党在大陆的统治', en: 'It overthrew Guomindang rule on the mainland' }, { zh: '结束了半殖民地半封建社会', en: 'It ended semi-colonial, semi-feudal society' }, { zh: '是近代以来中国反抗外敌入侵第一次取得完全胜利的民族解放战争', en: 'It was China’s first complete victory over a foreign invader in modern times' }],
+        options: [{ zh: '结束了两千多年的君主专制制度', en: 'It ended two thousand years of monarchy' }, { zh: '推翻了国民党在大陆的统治', en: 'It overthrew Kuomintang rule on the mainland' }, { zh: '结束了半殖民地半封建社会', en: 'It ended semi-colonial, semi-feudal society' }, { zh: '是近代以来中国反抗外敌入侵第一次取得完全胜利的民族解放战争', en: 'It was China’s first complete victory over a foreign invader in modern times' }],
         answer: 3, ev: 'victory1945',
-        why: { zh: '抗战胜利洗雪了近代以来的民族耻辱；结束君主专制的是辛亥革命，推翻国民党统治、结束半殖民地半封建社会的是新民主主义革命的胜利（1949年）。', en: 'Victory wiped out a century of national humiliation; monarchy ended in 1911, and Guomindang rule and the old society ended with the revolution’s victory in 1949.' },
+        why: { zh: '抗战胜利洗雪了近代以来的民族耻辱；结束君主专制的是辛亥革命，推翻国民党统治、结束半殖民地半封建社会的是新民主主义革命的胜利（1949年）。', en: 'Victory wiped out a century of national humiliation; monarchy ended in 1911, and Kuomintang rule and the old society ended with the revolution’s victory in 1949.' },
       },
       { order: ['sept18', 'xian_incident', 'july7', 'victory1945', 'sanda'] },
       { where: 'taierzhuang', tol: 300 },
     ],
     keys: [
-      { zh: '九一八事变是中国人民局部抗战的开始，七七事变是全民族抗战的开始。', en: 'The Mukden Incident began local resistance; the Marco Polo Bridge Incident began the nationwide war.' },
+      { zh: '九一八事变是中国人民局部抗战的开始，七七事变是全民族抗战的开始。', en: 'The September 18 Incident began local resistance; the Marco Polo Bridge Incident began the nationwide war.' },
       { zh: '正面战场与敌后战场相互配合；中国共产党是全民族抗战的中流砥柱。', en: 'The front line and the war behind the lines worked together; the CPC was the mainstay of the nation’s resistance.' },
       { zh: '抗日战争是近代以来中国反抗外敌入侵第一次取得完全胜利的民族解放战争。', en: 'The War of Resistance was China’s first complete victory over a foreign invader in modern times.' },
-      { zh: '三大战役基本消灭了国民党军队主力，渡江战役后国民党在大陆的统治覆灭。', en: 'The three great campaigns destroyed the main Guomindang armies, and after the Yangtze crossing its rule on the mainland collapsed.' },
+      { zh: '三大战役基本消灭了国民党军队主力，渡江战役后国民党在大陆的统治覆灭。', en: 'The three great campaigns destroyed the main Kuomintang armies, and after the Yangtze crossing its rule on the mainland collapsed.' },
     ],
   },
   {

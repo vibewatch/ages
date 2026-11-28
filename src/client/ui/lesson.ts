@@ -73,6 +73,7 @@ export class LessonView {
   start(l: Lesson, resume = false): void {
     this.clearMap();
     const prevGot = resume && Array.isArray(this.got) ? [...this.got] : [];
+    const prevLesson = this.test ? null : this.lesson?.id ?? null;
     this.recall = null;
     this.recalled.clear();
     this.lesson = l;
@@ -81,7 +82,8 @@ export class LessonView {
     if (saved && saved.phase === 'check' && l.checks.length > 0) {
       this.check(saved.seed);
       this.i = Math.min(saved.step, Math.max(0, this.qs.length - 1));
-      const srcGot = Array.isArray(saved.got) && saved.got.length ? saved.got : prevGot;
+      // answers still in memory count only when they are this lesson's (not another lesson's or a unit test's)
+      const srcGot = Array.isArray(saved.got) && saved.got.length ? saved.got : prevLesson === l.id ? prevGot : [];
       this.got = this.qs.map((_, k) => (typeof srcGot[k] === 'boolean' ? srcGot[k] : null));
       // never re-ask a question already answered: go on to the first open one, or to the results
       if (this.got[this.i] != null) {
@@ -331,7 +333,7 @@ export class LessonView {
         ok.disabled = undo.disabled = true;
         const right = picked.every((id, k) => id === q.answer[k]);
         const mKey = q.key ?? `order:${q.answer.join(',')}`;
-        this.progress.answer(mKey, right, q.answer);
+        this.progress.answer(mKey, right, right ? q.answer : q.answer.filter((id, k) => picked[k] !== id)); // a miss counts only for the events out of place
         list.replaceChildren(...q.answer.map((id, k) => h('li', { class: picked[k] === id ? 'ok' : 'bad', text: `${formatYear(EVENT.get(id)!.year, L, { short: true })} · ${tr(EVENT.get(id)!.title, L)}` })));
         out.replaceChildren(this.why(q, right));
         this.answered(right);

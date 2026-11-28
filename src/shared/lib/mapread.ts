@@ -72,8 +72,8 @@ function onMap(x: MapSnap): { p: Polity; k: number }[] {
 
 /** Four options with `right` among them, no two with the same name. */
 function options(right: I18n, wrong: I18n[], r: () => number): { options: I18n[]; answer: number } | null {
-  const seen = new Set([right.zh]);
-  const picks = shuffle(wrong, r).filter(w => !seen.has(w.zh) && seen.add(w.zh)).slice(0, 3);
+  const seen = new Set([right.zh, `en:${right.en}`]);
+  const picks = shuffle(wrong, r).filter(w => !seen.has(w.zh) && !seen.has(`en:${w.en}`) && !!seen.add(w.zh).add(`en:${w.en}`)).slice(0, 3);
   if (picks.length < 3) return null;
   const opts = shuffle([right, ...picks], r);
   return { options: opts, answer: opts.indexOf(right) };
@@ -104,8 +104,8 @@ function polityQuestion(x: MapSnap, r: () => number, polity?: string): MapQuesti
   const nearby = SNAPS.filter(s => s !== x && Math.abs(s.mid - x.mid) <= 300).flatMap(s => onMap(s).map(o => o.p.name));
   // same-map names first: telling neighbours apart is the skill
   const wrong = [...shuffle(same, r).slice(0, 2), ...shuffle(nearby, r)];
-  const seen = new Set([target.p.name.zh]);
-  const picks = wrong.filter(w => !seen.has(w.zh) && seen.add(w.zh)).slice(0, 3);
+  const seen = new Set([target.p.name.zh, `en:${target.p.name.en}`]);
+  const picks = wrong.filter(w => !seen.has(w.zh) && !seen.has(`en:${w.en}`) && !!seen.add(w.zh).add(`en:${w.en}`)).slice(0, 3);
   if (picks.length < 3) return null;
   const opts = shuffle([target.p.name, ...picks], r);
   return {

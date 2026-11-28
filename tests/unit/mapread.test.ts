@@ -118,3 +118,16 @@ describe('读图题 (map-reading questions)', () => {
     }
   });
 });
+
+describe('map question options', () => {
+  it('never show two options with the same name in either language', () => {
+    for (let seed = 1; seed <= 300; seed++) {
+      for (const q of makeMapQuiz({ n: 9, seed })) {
+        if (!('options' in q) || !q.options) continue;
+        const opts = q.options as { zh: string; en: string }[];
+        expect(new Set(opts.map(o => o.zh)).size, q.key).toBe(opts.length);
+        expect(new Set(opts.map(o => o.en)).size, q.key).toBe(opts.length);
+      }
+    }
+  });
+});

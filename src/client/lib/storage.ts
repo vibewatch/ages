@@ -1,4 +1,4 @@
-import { answered, isMasteryMap, seen, type MasteryRec } from '../../shared/lib/mastery.ts';
+import { answered, isMasteryRec, seen, type MasteryRec } from '../../shared/lib/mastery.ts';
 
 /** Small localStorage wrapper (silently in-memory when storage is unavailable, e.g. private mode). */
 const mem = new Map<string, string>();
@@ -60,14 +60,16 @@ export interface Spaced { box: number; due: number | null }
 export const REVIEW_GAPS = [1, 3, 7];
 const DAY = 86_400_000;
 
-const isValidSpaced = (v: unknown): v is Record<string, Spaced> =>
-  !!v && typeof v === 'object' && !Array.isArray(v)
-  && Object.values(v).every(x => !!x && typeof x === 'object' && Number.isInteger((x as Spaced).box) && (x as Spaced).box >= 0
-    && ((x as Spaced).due === null || (typeof (x as Spaced).due === 'number' && Number.isFinite((x as Spaced).due))));
-
-const isValidScores = (v: unknown): v is Record<string, [number, number]> =>
-  !!v && typeof v === 'object' && !Array.isArray(v)
-  && Object.values(v).every(x => Array.isArray(x) && x.length === 2 && x.every(n => typeof n === 'number' && Number.isFinite(n)) && x[0] >= 0 && x[1] > 0 && x[0] <= x[1]);
+const isSpaced = (x: unknown): x is Spaced => !!x && typeof x === 'object' && Number.isInteger((x as Spaced).box) && (x as Spaced).box >= 0
+  && ((x as Spaced).due === null || (typeof (x as Spaced).due === 'number' && Number.isFinite((x as Spaced).due)));
+const isScore = (x: unknown): x is [number, number] =>
+  Array.isArray(x) && x.length === 2 && x.every(n => typeof n === 'number' && Number.isFinite(n)) && x[0] >= 0 && x[1] > 0 && x[0] <= x[1];
+const isMap = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
+/** The valid entries of a saved map: one bad entry (an older version's, a hand-edited backup's) is dropped, not the rest. */
+const entries = <T>(v: unknown, ok: (x: unknown) => x is T): Record<string, T> =>
+  isMap(v) ? Object.fromEntries(Object.entries(v).filter((e): e is [string, T] => ok(e[1]))) : {};
+const loadMap = <T>(k: string, ok: (x: unknown) => x is T): Record<string, T> => entries(load<unknown>(k, {}, isMap), ok);
+const isDay = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n);
 
 const isValidLastLesson = (v: unknown): v is LastLesson | null =>
   v === null || (!!v && typeof v === 'object' && !Array.isArray(v)
@@ -90,10 +92,10 @@ export class Progress {
   mistakes = new Set<string>(strings(load<string[]>('mistakes', [])));
   best = load<number>('quizBest', 0);
   lastLesson = load<LastLesson | null>('lastLesson', null, isValidLastLesson);
-  spaced = load<Record<string, Spaced>>('spaced', {}, isValidSpaced);
-  mastery = load<Record<string, MasteryRec>>('mastery', {}, isMasteryMap);
+  spaced = loadMap('spaced', isSpaced);
+  mastery = loadMap('mastery', isMasteryRec);
   /** days with any learning activity (YYYY-MM-DD), for the streak and the weekly report */
-  days = load<Record<string, number>>('days', {}, v => !!v && typeof v === 'object' && !Array.isArray(v) && Object.values(v).every(n => typeof n === 'number' && Number.isFinite(n)));
+  days = loadMap('days', isDay);
 
   private active(now: number): void {
     const d = new Date(now);
@@ -132,6 +134,13 @@ export class Progress {
     if (this.mistakes.has(id)) return;
     this.mistakes.add(id);
     this.spaced[id] = { box: 0, due: null };
+    save('mistakes', [...this.mistakes]);
+    save('spaced', this.spaced);
+  }
+  /** Forgets mistakes that can no longer be asked (their lesson check or event was removed). */
+  dropMistakes(ids: string[]): void {
+    if (!ids.filter(k => this.mistakes.delete(k)).length) return;
+    for (const k of ids) delete this.spaced[k];
     save('mistakes', [...this.mistakes]);
     save('spaced', this.spaced);
   }
@@ -177,7 +186,7 @@ export class Progress {
   }
   quiz(score: number): void { if (score > this.best) { this.best = score; save('quizBest', score); } }
   /** the course: best result per lesson / unit test (`test:<book>-<unit>`), as [right, asked] */
-  scores = load<Record<string, [number, number]>>('lessons', {}, isValidScores);
+  scores = loadMap('lessons', isScore);
   score(id: string, right: number, n: number): void {
     if (n <= 0) return;
     const b = this.scores[id];
@@ -217,20 +226,20 @@ export class Progress {
       if (!Array.isArray(b.watched) || !b.watched.every(x => typeof x === 'string')) return false;
       if (!Array.isArray(b.learned) || !b.learned.every(x => typeof x === 'string')) return false;
       if (typeof b.quizBest !== 'number' || !Number.isFinite(b.quizBest) || b.quizBest < 0) return false;
-      if (!isValidScores(b.lessons)) return false;
+      if (!isMap(b.lessons)) return false;
       if (b.mistakes !== undefined && (!Array.isArray(b.mistakes) || !b.mistakes.every(x => typeof x === 'string'))) return false;
       if (b.lastLesson !== undefined && !isValidLastLesson(b.lastLesson)) return false;
-      if (b.spaced !== undefined && !isValidSpaced(b.spaced)) return false;
-      if (b.mastery !== undefined && !isMasteryMap(b.mastery)) return false;
+      if (b.spaced !== undefined && !isMap(b.spaced)) return false;
+      if (b.mastery !== undefined && !isMap(b.mastery)) return false;
 
       this.watched = new Set(b.watched);
       this.learned = new Set(b.learned);
       this.mistakes = new Set(b.mistakes ?? []);
       this.best = b.quizBest;
-      this.scores = { ...b.lessons };
+      this.scores = entries(b.lessons, isScore);
       this.lastLesson = b.lastLesson ?? null;
-      this.spaced = { ...(b.spaced ?? {}) };
-      this.mastery = { ...(b.mastery ?? {}) };
+      this.spaced = entries(b.spaced, isSpaced);
+      this.mastery = entries(b.mastery, isMasteryRec);
       if (b.days && typeof b.days === 'object' && !Array.isArray(b.days)) this.days = Object.fromEntries(Object.entries(b.days).filter(([, n]) => typeof n === 'number' && Number.isFinite(n)));
       save('days', this.days);
       save('spaced', this.spaced);

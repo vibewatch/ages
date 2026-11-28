@@ -545,7 +545,7 @@ export const ROC: OwnEra = {
     { id: 'o_roc_4', from: 1925, to: 1926, at: 1925, title: { zh: '奉系入关，孙传芳五省联军、冯玉祥国民军与广州国民政府（1925年）', en: 'Fengtian moves south of the Wall; Sun Chuanfang’s five provinces, Feng Yuxiang’s Guominjun and the Nationalist Government in Guangzhou (1925)' } },
     { id: 'o_roc_5', from: 1927, to: 1928, at: 1927, title: { zh: '国民革命军北伐，国民政府定都南京（1927年）', en: 'The Northern Expedition; the Nationalist Government in Nanjing (1927)' } },
     { id: 'o_roc_6', from: 1929, to: 1930, at: 1929, title: { zh: '东北易帜，全国在形式上统一（1929年 · 易帜在1928年底）', en: 'The Northeast changes flags; China formally reunited (1929: the flags changed at the end of 1928)' } },
-    { id: 'o_roc_7', from: 1931, to: 1931, at: 1931, title: { zh: '九一八事变，日军侵占东北（1931年）', en: 'The Mukden Incident: the Japanese army seizes the Northeast (1931)' } },
+    { id: 'o_roc_7', from: 1931, to: 1931, at: 1931, title: { zh: '九一八事变，日军侵占东北（1931年）', en: 'The September 18 Incident: the Japanese army seizes the Northeast (1931)' } },
     { id: 'o_roc_8', from: 1932, to: 1936, at: 1933, title: { zh: '日本扶植伪满洲国，侵占热河（1933年 · 伪满1932年成立）', en: 'Japan sets up puppet “Manchukuo” and seizes Rehe (1933: “Manchukuo” set up in 1932)' } },
     { id: 'o_roc_9', from: 1937, to: 1944, at: 1940, title: { zh: '全面抗战：日军侵占华北、华东、华中、华南大片国土（1940年）', en: 'The War of Resistance: Japan occupies much of north, east, central and south China (1940)' } },
     { id: 'o_roc_10', from: 1945, to: 1945, at: 1945, title: { zh: '抗日战争胜利，台湾光复（1945年）', en: 'Victory over Japan; Taiwan restored to China (1945)' } },

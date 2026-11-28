@@ -160,6 +160,18 @@ export class Quiz {
   /** asked before a round of 读图题 (a gated build counts and may refuse it) */
   beforeMaps: () => boolean = () => true;
 
+  /** Today's review: mistakes (at most 8 when events are due, so those get asked too), then the due events. Mistakes
+   * that no longer make a question (their lesson check or event is gone) leave the queue instead of haunting it. */
+  private review(seed: number): Question[] {
+    const queued = [...this.progress.mistakes];
+    const missed = makeMistakeQuiz(EVENTS, queued, seed);
+    const built = new Set(missed.map(q => ('key' in q ? q.key : undefined)));
+    const lost = queued.filter(k => !built.has(k));
+    if (lost.length) this.progress.dropMistakes(lost);
+    const due = makeMistakeQuiz(EVENTS, this.extra.map((id, k) => `${k % 2 ? 'where' : 'when'}:${id}`), seed + 1);
+    return [...missed.slice(0, due.length ? 8 : 12), ...due].slice(0, 12);
+  }
+
   /** Starts a round; false when it was refused (读图题 over a gated build's free limit). */
   start(seed = Date.now()): boolean {
     const c = this.chapter;
@@ -170,7 +182,7 @@ export class Quiz {
       : this.mode === 'locate'
       ? makeLocateQuiz(PLACES, { n: 10, seed })
       : this.mode === 'mistakes'
-        ? makeMistakeQuiz(EVENTS, [...this.progress.mistakes, ...this.extra.map((id, k) => `${k % 2 ? 'where' : 'when'}:${id}`)], seed).slice(0, 12)
+        ? this.review(seed)
         : makeQuiz(EVENTS, { n: 9, seed, book: this.book || undefined, era: this.era || undefined });
     this.i = 0;
     this.score = 0;
@@ -375,7 +387,7 @@ export class Quiz {
       check.addEventListener('click', () => {
         const ok = picked.every((id, k) => id === q.answer[k]);
         const mKey = q.key ?? `order:${q.answer.join(',')}`;
-        this.progress.answer(mKey, ok, q.answer);
+        this.progress.answer(mKey, ok, ok ? q.answer : q.answer.filter((id, k) => picked[k] !== id)); // a miss counts only for the events out of place
         list.replaceChildren(...q.answer.map((id, k) => h('li', { class: picked[k] === id ? 'ok' : 'no', text: `${formatYear(EVENT.get(id)!.year, L, { short: true })} · ${tr(EVENT.get(id)!.title, L)}` })));
         check.disabled = true;
         finish(ok, ok ? t('correct') : t('wrong'), ok ? 1 : 0, EVENT.get(q.answer[0]));
@@ -432,7 +444,7 @@ export class Quiz {
       h('p', { class: 'qz-done', text: t('done', { s: this.score, n: max }) }),
       locate ? h('p', { class: 'qz-rank', text: t('rankIs', { r: tr(rankOf(this.score, max), lang) }) }) : null,
       this.mode === 'events' && h('p', { class: 'qz-hint', text: t('best', { n: this.progress.best }) }),
-      h('div', { class: 'qz-row' }, h('button', { type: 'button', class: 'btn primary', text: t('again'), onclick: () => (this.mode === 'mistakes' && this.progress.mistakes.size === 0 ? this.setup() : this.start()) })));
+      h('div', { class: 'qz-row' }, h('button', { type: 'button', class: 'btn primary', text: t('again'), onclick: () => { if (this.mode === 'mistakes') this.extra = []; /* the due events were just asked */ if (this.mode === 'mistakes' && this.progress.mistakes.size === 0) this.setup(); else this.start(); } })));
   }
 
   /** In the new language: the start screen, the current question while unanswered (an answered one keeps its marked

@@ -23,7 +23,7 @@ export const CITIES_EXTRA: Content['cities'] = [
     tag: { zh: '近代新城 · 伪满“新京”', en: 'A modern city · Manchukuo’s “Xinjing”' },
     desc: {
       zh: '清末因放垦和中东铁路兴起的城市。九一八事变后日本扶植伪满洲国，以此为“新京”；抗战胜利后回到中国。',
-      en: 'A city that grew with late-Qing settlement and the Chinese Eastern Railway. After the Mukden Incident Japan made it “Xinjing”, capital of its puppet Manchukuo; it returned to China after the war.',
+      en: 'A city that grew with late-Qing settlement and the Chinese Eastern Railway. After the September 18 Incident Japan made it “Xinjing”, capital of its puppet Manchukuo; it returned to China after the war.',
     },
   },
   {

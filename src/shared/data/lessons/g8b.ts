@@ -253,7 +253,7 @@ export const G8B: Lesson[] = [
       },
       {
         ev: 'liangdan',
-        body: { zh: '1964年我国第一颗原子弹爆炸成功，1967年第一颗氢弹爆炸成功，1970年第一颗人造地球卫星“东方红一号”发射成功。邓稼先被誉为“两弹元勋”。', en: 'China exploded its first atomic bomb in 1964 and its first hydrogen bomb in 1967, and launched its first satellite, Dongfanghong-1, in 1970. Deng Jiaxian is honoured as a founding hero of the bombs and the satellite.' },
+        body: { zh: '1964年我国第一颗原子弹爆炸成功，1967年第一颗氢弹爆炸成功，1970年第一颗人造地球卫星“东方红一号”发射成功。邓稼先被誉为“两弹元勋”。', en: 'China exploded its first atomic bomb in 1964 and its first hydrogen bomb in 1967, and launched its first satellite, Dongfanghong-1, in 1970. Deng Jiaxian is honoured as the founding hero of China’s atomic and hydrogen bombs.' },
       },
       { ev: 'hybrid_rice' },
       { ev: 'gaokao' },
@@ -286,7 +286,7 @@ export const G8B: Lesson[] = [
       { where: 'shenzhou5' },
     ],
     keys: [
-      { zh: '“两弹一星”：1964年原子弹、1967年氢弹、1970年“东方红一号”卫星；邓稼先被誉为“两弹元勋”。', en: '“Two bombs, one satellite”: the atomic bomb in 1964, the hydrogen bomb in 1967 and Dongfanghong-1 in 1970; Deng Jiaxian is honoured as a founding hero of the bombs and the satellite.' },
+      { zh: '“两弹一星”：1964年原子弹、1967年氢弹、1970年“东方红一号”卫星；邓稼先被誉为“两弹元勋”。', en: '“Two bombs, one satellite”: the atomic bomb in 1964, the hydrogen bomb in 1967 and Dongfanghong-1 in 1970; Deng Jiaxian is honoured as the founding hero of China’s atomic and hydrogen bombs.' },
       { zh: '袁隆平培育出籼型杂交水稻，被誉为“杂交水稻之父”；屠呦呦发现青蒿素，2015年获诺贝尔生理学或医学奖。', en: 'Yuan Longping, father of hybrid rice, bred indica hybrid rice; Tu Youyou discovered artemisinin and won the 2015 Nobel Prize in Physiology or Medicine.' },
       { zh: '2003年“神舟五号”载人飞船发射成功，杨利伟成为中国进入太空的第一人。', en: 'Shenzhou 5 flew in 2003 and Yang Liwei became the first Chinese in space.' },
     ],
