@@ -60,8 +60,9 @@ export class Reader {
     // the article's chrome (reading time, "open in Wikipedia", error/retry) is in the UI language: rebuild it from the
     // cached fetch, keeping the reading position
     if (this.open && this.wiki) {
-      const top = this.body.scrollTop;
-      void this.load().then(() => { this.body.scrollTop = top; });
+      const top = this.body.scrollTop, req = this.req;
+      // only if no newer article (or language) was asked for meanwhile
+      void this.load().then(() => { if (this.req === req + 1) this.body.scrollTop = top; });
     }
   }
 

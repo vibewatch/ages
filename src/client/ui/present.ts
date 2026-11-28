@@ -176,6 +176,7 @@ export class Presenter {
 
   render(): void {
     if (!this.on) return;
+    this.el.setAttribute('aria-label', t('pTitle'));
     const L = lang, x = this.item!, n = this.list.items.length;
     const e = x.k === 'e' ? EVENT.get(x.id) : undefined;
     const j = x.k === 'j' ? journey(x.id) : undefined;

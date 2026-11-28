@@ -10,14 +10,24 @@ export function speak(text: string, lang: Lang): Promise<void> {
     try {
       const u = new SpeechSynthesisUtterance(text);
       u.lang = lang === 'zh' ? 'zh-CN' : 'en-US';
-      const v = speechSynthesis.getVoices().find(v => v.lang.replace('_', '-').startsWith(u.lang.slice(0, 2)));
+      // the exact language first (zh-CN, not a Cantonese zh-HK voice that happens to come first), then a Mandarin
+      // (zh-TW) or any English one
+      const voices = speechSynthesis.getVoices(), tag = (v: SpeechSynthesisVoice) => v.lang.replace('_', '-');
+      const v = voices.find(v => tag(v) === u.lang)
+        ?? voices.find(v => (lang === 'zh' ? tag(v) === 'zh-TW' || /^cmn/.test(tag(v)) : tag(v).startsWith('en')));
       if (v) u.voice = v;
       u.rate = lang === 'zh' ? 1.05 : 1;
-      const t = setTimeout(done, 20000);
+      // a safety net for engines that never report the end: long enough for the caption read slowly
+      const t = setTimeout(done, Math.max(20_000, text.length * (lang === 'zh' ? 400 : 120)));
       u.onend = u.onerror = () => { clearTimeout(t); done(); };
       speechSynthesis.speak(u);
     } catch {
       done();
     }
   });
+}
+
+/** Stops any narration; never throws (some WebViews expose speechSynthesis but throw on use). */
+export function hush(): void {
+  try { if (canSpeak()) speechSynthesis.cancel(); } catch { /* nothing to stop */ }
 }

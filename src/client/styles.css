@@ -574,9 +574,9 @@ b.w { font-family: 'Linux Libertine', 'Times New Roman', serif; font-weight: 700
 .menu.pv { display: flex; flex-direction: column; height: calc(var(--bc-t, 760px) - 76px); padding: 4px 0 0; overflow: hidden; }
 .pv .view-body { display: flex; flex-direction: column; }
 .pv-sec { flex: none; padding: 10px 0; }
-.pv-h { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+.pv-h { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin-bottom: 8px; }
 .pv-h h3 { margin: 0; font-size: var(--t-s); font-weight: 700; color: var(--ink); white-space: nowrap; }
-.pv-h small { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--t-2xs); color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.pv-h small { flex: none; white-space: nowrap; font-size: var(--t-2xs); color: var(--ink-3); font-variant-numeric: tabular-nums; }
 .pv-h .seg button { padding: 2px 8px; font-size: var(--t-2xs); }
 .pv-h .seg { margin-left: auto; align-self: center; }
 .pv-top { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; }

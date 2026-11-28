@@ -142,7 +142,7 @@ export class StoryPlayer {
     this.token++;
     this.atlas.fx.clear('story');
     if (this.state !== 'idle') this.set('idle');
-    window.speechSynthesis?.cancel();
+    try { window.speechSynthesis?.cancel(); } catch { /* partial Web Speech: nothing to stop */ }
   }
 }
 

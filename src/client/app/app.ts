@@ -12,9 +12,9 @@ import { phaseAt } from '../../shared/lib/chronicle.ts';
 import { addYears, clampYear } from '../../shared/lib/timeline.ts';
 import { lang, onLang, setLang, t } from '../lib/i18n.ts';
 import { readLink, writeLink } from '../lib/link.ts';
-import { canSpeak, speak } from '../lib/speech.ts';
+import { canSpeak, hush, speak } from '../lib/speech.ts';
 import { load, Progress, save } from '../lib/storage.ts';
-import { Atlas } from '../scene/atlas.ts';
+import { Atlas, type Layers } from '../scene/atlas.ts';
 import { SURFACES, type Surface } from '../scene/terrain.ts';
 import { StoryPlayer } from '../story/player.ts';
 import { Caption } from '../ui/caption.ts';
@@ -80,6 +80,8 @@ export class App {
   /** the learner's own map is on */
   private mine = false;
   private inHashChange = false;
+  /** layer switches saved from an earlier visit */
+  private savedLayers: Partial<Layers> = {};
 
   constructor(private root: HTMLElement, stage: HTMLElement, private lowfx: boolean) {
     this.atlas = new Atlas(stage, lowfx);
@@ -172,6 +174,10 @@ export class App {
     const params = new URLSearchParams(location.search);
     const surface: Surface = SURFACES.includes(params.get('map') as Surface) ? params.get('map') as Surface : SURFACES.includes(surf) ? surf : 'paper';
     this.atlas.setSurface(surface);
+    // the layer switches as the learner left them (applied to the map once it is ready: start())
+    const keep = load<Record<string, unknown>>('layers', {}, v => !!v && typeof v === 'object' && !Array.isArray(v));
+    for (const k of Object.keys(this.atlas.layers) as (keyof Layers)[]) if (typeof keep[k] === 'boolean' && keep[k] !== this.atlas.layers[k]) this.savedLayers[k] = keep[k] as boolean;
+    Object.assign(this.atlas.layers, this.savedLayers);
     this.settings = new SettingsMenu(this.atlas.layers, surface);
     this.hub = new HubMenu();
     this.presenter = new Presenter({
@@ -202,6 +208,7 @@ export class App {
       this.period.setCompare(cmpYear);
     }
     this.timeline.set(year, true, false);
+    for (const [k, on] of Object.entries(this.savedLayers) as [keyof Layers, boolean][]) this.atlas.setLayer(k, on);
     this.atlas.onPin = e => this.openEvent(e);
     this.atlas.onPlace = p => this.openPlace(p);
     this.atlas.onPerson = p => this.openPerson(p);
@@ -422,7 +429,7 @@ export class App {
     this.caption.onSkip = () => this.player.skip();
     this.caption.onStop = () => this.stopStory(true);
     this.caption.onSpeed = v => (this.player.speed = v);
-    this.caption.onVoice = on => { this.player.narrate = on; if (!on) speechSynthesis.cancel(); };
+    this.caption.onVoice = on => { this.player.narrate = on; if (!on) hush(); };
 
     this.learn.onLesson = (l, resume) => this.startLesson(l, resume);
     this.learn.onReviewMistakes = () => {
@@ -440,7 +447,7 @@ export class App {
     this.report.beforeImage = () => { if (this.plan.can('reportImage')) return true; this.report.toggle(false); this.pro.show('reportImage'); return false; };
     this.progress.onMastery = () => this.atlas.repaintMastery();
     this.learn.onTest = (b, u) => { this.leaveForLesson(); this.lesson.startTest(b, u); };
-    this.settings.onChange = (k, on) => this.atlas.setLayer(k, on);
+    this.settings.onChange = (k, on) => { this.atlas.setLayer(k, on); save('layers', this.atlas.layers); };
     this.settings.onSurface = s => { this.atlas.setSurface(s); save('surface', s); };
     this.settings.onHelp = () => { this.shell.pop(null); this.help.toggle(true); };
     this.hub.onPlay = j => this.playJourney(j);

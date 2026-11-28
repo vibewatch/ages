@@ -102,6 +102,7 @@ export class Help {
     this.render();
   }
   render(): void {
+    this.el.setAttribute('aria-label', t('helpTitle'));
     this.el.replaceChildren(h('div', { class: 'modal-box help' },
       h('header', {}, h('h2', { text: t('helpTitle') }), iconBtn('close', t('close'), () => this.toggle(false))),
       h('ul', {}, ...(['helpControls', 'helpTimeline', 'tlHint', 'helpStory', 'helpKeys'] as Key[]).map(k => h('li', { text: t(k) }))),

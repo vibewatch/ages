@@ -25,7 +25,9 @@ issue #11): a historian's review of the `est` dates.
    sea is not crossed. Each seat has a reach (`r`, km), beyond which land stays unclaimed, and capitals have a head
    start (`b`). Borders therefore follow ridges, rivers and deserts. Small specks and enclosed holes are cleaned up, and
    outlines are traced, simplified and smoothed. The output is `public/data/atlas/own.json` (same format as the
-   imported `shapes.json`) and `src/shared/data/gen/own.json` (phases, changes, sources, seat names).
+   imported `shapes.json`), `src/shared/data/gen/own.json` (phases with their change counts, sources, polities; bundled)
+   and `public/data/atlas/own-changes.json` (each phase's changed holdings and the seats' names, fetched when a reader
+   unfolds the list).
 
 ```
 npm run data:territories            # regenerate maps and areas

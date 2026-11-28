@@ -60,7 +60,8 @@ export function parseExtract(text: string): { lead: string[]; sections: WikiSect
 async function api(l: Lang, params: Record<string, string>): Promise<unknown> {
   const q = new URLSearchParams({ action: 'query', format: 'json', formatversion: '2', origin: '*', redirects: '1', ...params });
   if (l === 'zh') q.set('variant', 'zh-cn');
-  const r = await fetch(`https://${HOST[l]}/w/api.php?${q}`);
+  // a stalled network must not leave the reader on its placeholder (and a cached promise) forever
+  const r = await fetch(`https://${HOST[l]}/w/api.php?${q}`, { signal: AbortSignal.timeout(15_000) });
   if (!r.ok) throw new Error('wikipedia ' + r.status);
   return r.json();
 }

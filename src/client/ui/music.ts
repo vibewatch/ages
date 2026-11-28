@@ -38,8 +38,14 @@ export class Music {
           if (++this.fails >= MUSIC.length) { this.fails = 0; this.toggle(false); } else this.next();
         });
         this.audio.src = this.src();
+      } else if (this.audio.error) {
+        // every track failed earlier (offline): start over with a fresh source
+        this.audio.src = this.src();
       }
-      void this.audio.play().catch(() => { this.playing = false; this.relabel(); });
+      const a = this.audio, src = a.src;
+      // a refused play (autoplay policy) turns the button off; a failed source is the error listener's to handle
+      // (it moves on to the next track, which must not then be shown as off)
+      void a.play().catch(() => { if (a.src === src && !a.error) { this.playing = false; this.relabel(); } });
     } else this.audio?.pause();
     this.relabel();
   }
