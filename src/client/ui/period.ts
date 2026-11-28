@@ -5,6 +5,7 @@ import { tr } from '../../shared/data/i18n.ts';
 import { WORKS } from '../../shared/data/corpus.ts';
 import { PLACE, mapName } from '../../shared/data/places.ts';
 import { POLITY } from '../../shared/data/polities.ts';
+import { changesOf, type ChangeFile } from '../../shared/data/own.ts';
 import { snapshotSources } from '../../shared/data/sources.ts';
 import { SNAPSHOTS } from '../../shared/data/territories.ts';
 import type { HistEvent, Lang, Polity, Snapshot, Year } from '../../shared/data/types.ts';
@@ -43,6 +44,15 @@ const stripTitleDate = (s: string): string =>
  *   (The course's 随堂检测 lives in the lesson player, ui/lesson.ts.)
  * Hovering a polity holds its highlight on the map; clicking frames it.
  */
+let changeFile: Promise<ChangeFile> | null = null;
+/** public/data/atlas/own-changes.json, fetched once (a failure is retried next time). */
+function loadChangeFile(): Promise<ChangeFile> {
+  changeFile ??= fetch(import.meta.env.BASE_URL + 'data/atlas/own-changes.json')
+    .then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json() as Promise<ChangeFile>; })
+    .catch(err => { changeFile = null; throw err; });
+  return changeFile;
+}
+
 export class Period {
   readonly stats: HTMLElement;
   readonly line: HTMLElement;
@@ -284,15 +294,7 @@ export class Period {
         h('span', { class: 'pv-src-badge', text: tr(src.badge, L) }),
         h('p', { class: 'pv-src-text', text: tr(src.source, L) }),
         h('p', { class: 'pv-src-note', text: tr(src.uncertainty, L) }),
-        s.changes?.length ? h('details', { class: 'pv-changes', 'data-testid': 'period-changes' },
-          h('summary', { text: t('pvChanges', { n: s.changes.length }) }),
-          h('ul', {}, ...s.changes.map(c => {
-            const name = (id: string | null) => (id ? tr(POLITY.get(id)?.name, L) : t('pvNobody'));
-            return h('li', {},
-              h('b', { text: tr(c.seat, L) }),
-              h('span', { text: ` ${name(c.from)} → ${name(c.to)} · ${formatYear(c.year, L, { short: true })}` }),
-              c.src ? h('small', { text: tr(c.src, L) }) : null);
-          }))) : null),
+        s.changeCount ? this.changeList(s, L) : null),
       worldList.length ? h('div', { class: 'pv-world', 'data-testid': 'period-world' },
         h('span', { class: 'pv-world-h', text: `🌍 ${t('worldSync')}` }),
         ...worldList.map(w => h('p', { class: 'pv-world-item' },
@@ -317,6 +319,25 @@ export class Period {
         type: 'button', class: 'chip link pv-key', 'data-ev': e.id, title: WHY[e.id] ? tr(WHY[e.id], L) : '', onclick: () => this.onEvent(e),
       }, h('small', { text: formatYear(e.year, L, { short: true }) }), ' ', tr(e.title, L)))),
       h('button', { type: 'button', class: 'btn primary pv-ch-go', 'data-act': 'period-learn', onclick: () => this.onLearn(c) }, t('pvLearn')));
+  }
+
+  /** The phase's changed holdings: the summary shows the count, the list loads when it is first unfolded. */
+  private changeList(s: Snapshot, L: Lang): HTMLElement {
+    const list = h('ul', {});
+    const box = h('details', { class: 'pv-changes', 'data-testid': 'period-changes' },
+      h('summary', { text: t('pvChanges', { n: s.changeCount ?? 0 }) }), list);
+    box.addEventListener('toggle', () => {
+      if (!box.open || list.childElementCount) return;
+      list.append(h('li', { class: 'pv-loading', text: '…' }));
+      void loadChangeFile().then(file => {
+        const name = (id: string | null) => (id ? tr(POLITY.get(id)?.name, L) : t('pvNobody'));
+        list.replaceChildren(...changesOf(file, s.id).map(c => h('li', {},
+          h('b', { text: tr(c.seat, L) }),
+          h('span', { text: ` ${name(c.from)} → ${name(c.to)} · ${formatYear(c.year, L, { short: true })}` }),
+          c.src ? h('small', { text: tr(c.src, L) }) : null)));
+      }).catch(() => list.replaceChildren(h('li', { text: t('loadFail') })));
+    });
+    return box;
   }
 
   private renderPolities(s: Snapshot): void {

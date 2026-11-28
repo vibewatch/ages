@@ -154,7 +154,8 @@ function unitOf(s: Seat): { name: { zh: string; en: string }; cat: { zh: string;
   return { name: { zh, en }, cat: k ? { zh: k[1], en: k[2] } : { zh: '治所辖区', en: 'seat and its land' } };
 }
 const snaps: Record<string, { p: [string, null, string | null, LonLat | null, number[]][]; g: RawAdmin[]; f: [] }> = {};
-const meta: { replaces: string; phases: { id: string; from: number; to: number; title: unknown; note?: unknown; changes: [number, string, string | null, string | null, string?][]; cites: string[] }[]; sources: OwnEra['sources']; polities: Polity[] }[] = [];
+type OwnChangeRow = [number, string, string | null, string | null, string?];
+const meta: { replaces: string; phases: { id: string; from: number; to: number; title: unknown; note?: unknown; changes: [number, string, string | null, string | null, string?][]; n?: number; cites: string[] }[]; sources: OwnEra['sources']; polities: Polity[] }[] = [];
 
 for (const era of ERAS) {
   // polities defined by any of our eras (an era may reuse another's neighbours, e.g. 羌 or 百越)
@@ -255,6 +256,12 @@ if (TRY) {
   console.log(`trial: ${Object.keys(snaps).length} phases → .territory-preview/<phase>.png, <phase>-wide.png and ${f}`);
 } else {
   writeFileSync('public/data/atlas/own.json', shapes);
-  writeFileSync('src/shared/data/gen/own.json', JSON.stringify({ eras: meta, seats: seatNames }, null, 0));
+  // the per-phase change lists are only read when someone unfolds them: they load on demand
+  // (public/data/atlas/own-changes.json); the bundle keeps their counts
+  const lists: Record<string, [string, OwnChangeRow[]]> = {};
+  for (const e of meta) for (const p of e.phases) lists[p.id] = [e.replaces, p.changes];
+  writeFileSync('public/data/atlas/own-changes.json', JSON.stringify({ seats: seatNames, phases: lists }));
+  const slim = meta.map(e => ({ ...e, phases: e.phases.map(({ changes, ...p }) => ({ ...p, n: changes.length })) }));
+  writeFileSync('src/shared/data/gen/own.json', JSON.stringify({ eras: slim }, null, 0));
   console.log(`wrote ${Object.keys(snaps).length} phases, ${rings.length} rings, ${(shapes.length / 1024).toFixed(0)} KB`);
 }

@@ -83,8 +83,8 @@ export interface Snapshot {
   admin?: AdminUnit[];
   /** one of our own generated maps (src/shared/data/own.ts) */
   own?: boolean;
-  /** our maps: the holdings that changed since the previous phase, with sources */
-  changes?: { year: Year; seat: I18n; from: string | null; to: string | null; src?: I18n }[];
+  /** our maps: how many holdings changed since the previous phase (the list loads on demand: own.ts changesOf) */
+  changeCount?: number;
   /** our maps: the sources behind the holdings drawn, most cited first */
   cites?: I18n[];
 }

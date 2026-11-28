@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { allocate, fillHoles, trace, type Grid } from '../../scripts/territory/gen.ts';
 import { ERAS_OWN } from '../../src/shared/data/own/index.ts';
 import { holderAt } from '../../src/shared/data/own/types.ts';
-import { OWN_SNAPSHOTS } from '../../src/shared/data/own.ts';
+import { changesOf, OWN_SNAPSHOTS, type ChangeFile } from '../../src/shared/data/own.ts';
 import { POLITY } from '../../src/shared/data/polities.ts';
 import { IMPORTED_SNAPSHOTS } from '../../src/shared/data/corpus.ts';
 
@@ -85,7 +85,10 @@ describe('our own territory data', () => {
     const han = (own.snaps.o_xihan_4.g as [number][]).map(([n]) => names[n * 2]);
     expect(han).toEqual(expect.arrayContaining(['陇西郡', '南郡']));
     // changes after the first phase carry their sources
-    const later = OWN_SNAPSHOTS.slice(1).flatMap(s => s.changes ?? []);
+    const file = JSON.parse(readFileSync('public/data/atlas/own-changes.json', 'utf8')) as ChangeFile;
+    expect(OWN_SNAPSHOTS.every(s => (file.phases[s.id]?.[1].length ?? 0) === s.changeCount)).toBe(true);
+    const later = OWN_SNAPSHOTS.slice(1).flatMap(s => changesOf(file, s.id));
+    expect(later.every(c => !!c.seat.zh && !!c.seat.en)).toBe(true);
     expect(later.length).toBeGreaterThan(20);
     expect(later.every(c => c.src)).toBe(true);
   });
