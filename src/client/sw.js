@@ -5,8 +5,8 @@
  *   an incomplete install leaves the previous worker in place;
  * - the app shell and build files: cache first, so an active worker serves one consistent build;
  * - other pages under the scope: left to the network.
- * Updates: a complete new version activates at once and drops the previous cache for this scope; the page reloads into
- * it right away if the visitor has not started, else when they next leave the tab (src/client/main.ts). */
+ * Updates: a complete new version waits until the page asks it to take over (at once if the visitor has not started,
+ * else when they next leave the tab: src/client/main.ts), then drops the previous cache for this scope. */
 const VERSION = '__VERSION__';
 const PRECACHE = [/* __PRECACHE__ */];
 const SCOPE = new URL(self.registration.scope);
@@ -17,11 +17,16 @@ self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE)
     .then(c => c.addAll([SCOPE.href, ...PRECACHE.map(f => new URL(f, SCOPE).href)]
       .map(u => new Request(u, { cache: 'no-cache' }))))
-    .then(() => self.skipWaiting())
     .catch(async err => {
       try { await caches.delete(CACHE); } catch (cleanupErr) { console.warn('Failed to remove incomplete offline cache.', cleanupErr); }
       throw err;
     }));
+});
+
+// a new version waits while pages of the old one are open (they may still lazy-load the old build's files from the old
+// cache); the page tells it to take over when it is ready to reload (src/client/main.ts)
+self.addEventListener('message', e => {
+  if (e.data === 'skipWaiting') e.waitUntil(self.skipWaiting());
 });
 
 self.addEventListener('activate', e => {

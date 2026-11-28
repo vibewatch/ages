@@ -284,6 +284,7 @@ export class App {
             window.removeEventListener('pointerdown', mark, { capture: true });
             window.removeEventListener('keydown', mark, { capture: true });
             if (!touched) void this.playJourney(s.j);
+            else this.syncLink(); // the visitor moved on: the address shows what they opened instead
           }, 600);
           return;
         }
@@ -475,8 +476,13 @@ export class App {
     this.timeline.onRender = y => { this.chronicle.update(y); this.period.setYear(y); this.path.setYear(y); };
     onLang(l => this.onLang(l));
     window.addEventListener('keydown', e => this.key(e));
-    window.addEventListener('hashchange', () => { if (performance.now() > this.ignoreHashUntil) this.onHash(); });
-    window.addEventListener('popstate', () => this.onPop());
+    window.addEventListener('hashchange', () => {
+      if (performance.now() <= this.ignoreHashUntil) return;
+      // a new link (pasted or followed) starts a new entry: Back from it goes back to the previous link
+      this.backArmed = false;
+      this.onHash();
+    });
+    window.addEventListener('popstate', e => this.onPop(e));
     // after any click or key has opened something, arm Back for it
     for (const ev of ['click', 'keyup'] as const) window.addEventListener(ev, () => setTimeout(() => this.armBack(), 0), true);
   }
@@ -832,13 +838,14 @@ export class App {
     else if (this.reader.open && this.shell.panel.top === this.card.el) this.reader.close();
     else if (this.player.state !== 'idle') this.stopStory(true);
     else if (this.trail.active && (!this.shell.panel.open || this.shell.panel.top === this.path.el)) this.trail.close(true);
+    else if (this.presenter.on && !this.shell.panel.open) this.presenter.stop();
     else this.shell.panel.pop();
   }
 
   /** Something is open that Back can close. */
   private get canGoBack(): boolean {
     return this.shell.popOpen || this.shell.panel.open || !this.help.el.hidden || this.report.open || this.classroom.open
-      || this.pro.open || this.learn.open || this.player.state !== 'idle' || !!this.trail.active;
+      || this.pro.open || this.learn.open || this.player.state !== 'idle' || !!this.trail.active || this.presenter.on;
   }
 
   /** While something is open, one extra history entry stands in front of the page, so Back closes it instead of
@@ -850,13 +857,14 @@ export class App {
     history.pushState({ agesBack: true }, '', location.href);
     this.backArmed = true;
   }
-  private onPop(): void {
-    if (!this.backArmed) return;
+  private onPop(e: PopStateEvent): void {
+    // only a step back off our own entry (now gone: the state we land on is not it) is ours to handle
+    if (!this.backArmed || (e.state as { agesBack?: boolean } | null)?.agesBack) return;
     this.backArmed = false;
-    // everything was already closed another way: this Back is meant for the page before
-    if (!this.canGoBack) { history.back(); return; }
-    // the step back may also change the hash: that is us, not a new link
+    // the step back may also change the hash to the entry's older one: that is us, not a new link
     this.ignoreHashUntil = performance.now() + 400;
+    // everything was already closed another way: this Back is meant for the page before
+    if (!this.canGoBack) { this.syncLink(); history.back(); return; }
     this.back();
     this.syncLink();
     setTimeout(() => this.armBack(), 0);
@@ -884,7 +892,7 @@ export class App {
       e.preventDefault();
       return;
     }
-    if (e.key === '/') { this.search.input.focus(); e.preventDefault(); return; }
+    if (e.key === '/' && !modal) { this.search.input.focus(); e.preventDefault(); return; }
     if (e.key === 'Escape') { this.back(); return; }
     // a dialog is open: the map, timeline and cards behind it don't take keys
     if (modal) return;

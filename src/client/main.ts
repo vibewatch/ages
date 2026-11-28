@@ -27,18 +27,30 @@ function fatal(msg: string, retry: boolean): void {
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   const hadController = !!navigator.serviceWorker.controller;
   let refreshing = false;
-  // a new version took over: reload into it at once if the visitor has not started yet, otherwise the next time they
-  // leave the tab, so a lesson, story or open article is never cut off mid-way
-  let used = false;
-  for (const ev of ['pointerdown', 'keydown'] as const) addEventListener(ev, () => { used = true; }, { once: true, capture: true });
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (!hadController || refreshing) return;
-    const go = () => { if (refreshing) return; refreshing = true; location.reload(); };
+    refreshing = true;
+    location.reload();
+  });
+  // a new version is installed and waiting: let it take over (and reload into it) at once if the visitor has not
+  // started yet, otherwise the next time they leave the tab, so a lesson, story or open article is never cut off
+  let used = false;
+  for (const ev of ['pointerdown', 'keydown'] as const) addEventListener(ev, () => { used = true; }, { once: true, capture: true });
+  const adopt = (w: ServiceWorker | null) => {
+    if (!w || !hadController) return;
+    const go = () => w.postMessage('skipWaiting');
     if (!used) go();
     else document.addEventListener('visibilitychange', () => { if (document.hidden) go(); });
-  });
+  };
   addEventListener('load', () => {
     navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`, { updateViaCache: 'none' })
+      .then(reg => {
+        if (reg.waiting) adopt(reg.waiting);
+        reg.addEventListener('updatefound', () => {
+          const w = reg.installing;
+          w?.addEventListener('statechange', () => { if (w.state === 'installed') adopt(w); });
+        });
+      })
       .catch(err => console.warn('Offline support could not be registered.', err));
   });
 }

@@ -173,7 +173,8 @@ export class Atlas {
     this.host.append(canvas, vignette);
     this.view = new View(canvas, this.geo, this.lowfx);
     // stories, cross-fades and pending years animate: full frame rate while they run
-    this.view.busy = () => this.storyMode || !!this.fade || this.pendingYear !== null || this.hiT >= 0 || (this.fx?.rising ?? 0) > 0
+    // (a held highlight — a lesson step's polity — pulses at full rate for its first seconds, then at the idle rate)
+    this.view.busy = () => this.storyMode || !!this.fade || this.pendingYear !== null || (this.hiT >= 0 && (this.hiDur < 1e8 || this.hiT < 3)) || (this.fx?.rising ?? 0) > 0
       // a story's marks animate; the learner's border sketch (drawing mode) holds still
       || (!this.drawing && (this.fx?.count('story') ?? 0) > 0);
     this.labels = new Labels(this.view, this.host);

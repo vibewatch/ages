@@ -143,7 +143,12 @@ export class Card {
     this.life = o.life ?? null;
     this.el.hidden = false;
     this.render();
-    if (!sameSubject) this.live.textContent = this.body.querySelector('h2')?.textContent ?? '';
+    if (!sameSubject) {
+      // emptied, then filled a moment later, so screen readers notice the change even when the card just appeared
+      const title = this.body.querySelector('h2')?.textContent ?? '';
+      this.live.textContent = '';
+      setTimeout(() => { this.live.textContent = title; }, 60);
+    }
     this.body.scrollTop = sameSubject ? prevScroll : 0;
     this.setActive(true);
     this.onShow();

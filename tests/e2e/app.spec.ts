@@ -585,7 +585,7 @@ test.describe('Ages atlas', () => {
     const path = page.locator('[data-testid=path]');
     if (!(await path.isVisible())) await page.locator('.b-path').click();
     await expect(path.locator('[data-testid=path-mastery]')).toContainText('2 to review');
-    await expect(path.locator('[data-act=path-review]')).toContainText('2 questions');
+    await expect(path.locator('[data-act=path-review]')).toContainText('2 to go');
 
     // my map: every event to know, marked by mastery, without numbers
     await path.locator('[data-act=my-map]').click();

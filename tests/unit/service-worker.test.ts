@@ -63,10 +63,14 @@ describe('offline service worker', () => {
     expect(self.skipWaiting).not.toHaveBeenCalled();
   });
 
-  it('activates immediately once the full precache succeeds', async () => {
-    const { cache, self, dispatch } = harness();
+  it('waits after a full precache until the page asks it to take over', async () => {
+    const { cache, self, dispatch, listeners } = harness();
     await dispatch('install');
     expect(cache.addAll).toHaveBeenCalledOnce();
+    expect(self.skipWaiting).not.toHaveBeenCalled();
+    let done: Promise<unknown> | undefined;
+    listeners.get('message')!({ data: 'skipWaiting', waitUntil: (p: Promise<unknown>) => { done = p; } } as never);
+    await done;
     expect(self.skipWaiting).toHaveBeenCalledOnce();
   });
 
