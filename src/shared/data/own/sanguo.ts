@@ -96,11 +96,11 @@ export const SANGUO: OwnEra = {
   holds,
   phases: [
     { id: 'o_sanguo_1', from: 220, to: 224, at: 223, title: { zh: '三国鼎立，夷陵战后南中叛乱（223年）', en: 'Three Kingdoms: after Yiling, Nanzhong in revolt (223)' } },
-    { id: 'o_sanguo_2', from: 225, to: 237, at: 230, title: { zh: '诸葛亮平南中、取武都阴平，公孙氏据辽东（230年 · 225年平南中，229年取二郡）', en: 'Zhuge Liang pacifies Nanzhong and takes Wudu and Yinping; the Gongsun in Liaodong (230: Nanzhong pacified in 225, Wudu and Yinping taken in 229)' } },
-    { id: 'o_sanguo_3', from: 238, to: 262, at: 250, title: { zh: '司马懿平辽东，三国相持（250年 · 辽东238年平）', en: 'Sima Yi takes Liaodong; the three kingdoms at a standstill (250: Liaodong taken in 238)' } },
-    { id: 'o_sanguo_4', from: 263, to: 265, at: 264, title: { zh: '魏灭蜀，交趾吕兴附魏（264年 · 二事皆在263年）', en: 'Wei conquers Shu; Lü Xing brings Jiaozhi over to Wei (264: both in 263)' } },
+    { id: 'o_sanguo_2', from: 225, to: 237, at: 230, title: { zh: '诸葛亮平南中、取武都阴平，公孙氏据辽东（230年 · 225年平南中，229年取二郡）', en: 'Zhuge Liang pacifies Nanzhong and takes Wudu and Yinping; the Gongsun in Liaodong (230; Nanzhong pacified in 225, Wudu and Yinping taken in 229)' } },
+    { id: 'o_sanguo_3', from: 238, to: 262, at: 250, title: { zh: '司马懿平辽东，三国相持（250年 · 辽东238年平）', en: 'Sima Yi takes Liaodong; the three kingdoms at a standstill (250; Liaodong taken in 238)' } },
+    { id: 'o_sanguo_4', from: 263, to: 265, at: 264, title: { zh: '魏灭蜀，交趾吕兴附魏（264年 · 二事皆在263年）', en: 'Wei conquers Shu; Lü Xing brings Jiaozhi over to Wei (264; both in 263)' } },
     { id: 'o_sanguo_5', from: 266, to: 271, at: 268, title: { zh: '西晋代魏，与吴南北对峙（268年）', en: 'Western Jin replaces Wei and faces Wu (268)' } },
-    { id: 'o_sanguo_6', from: 272, to: 280, at: 278, title: { zh: '陶璜收复交趾，晋灭吴前夕（278年 · 交趾271年收复）', en: 'Tao Huang retakes Jiaozhi; on the eve of Jin’s conquest of Wu (278: Jiaozhi retaken in 271)' } },
+    { id: 'o_sanguo_6', from: 272, to: 280, at: 278, title: { zh: '陶璜收复交趾，晋灭吴前夕（278年 · 交趾271年收复）', en: 'Tao Huang retakes Jiaozhi; on the eve of Jin’s conquest of Wu (278; Jiaozhi retaken in 271)' } },
   ],
   sources: {
     'sgz.wendi': { zh: '《三国志·魏书·文帝纪》', en: 'Sanguozhi, Annals of Emperor Wen of Wei' },

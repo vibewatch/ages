@@ -535,9 +535,9 @@ export const YUAN: OwnEra = {
     { id: 'o_yuan_1', from: 1279, to: 1287, at: 1280, title: { zh: '崖山之后：元一统南北，总制院领吐蕃（1280年）', en: 'After Yashan: the Yuan unites north and south; Tibet under the Zongzhi Yuan (1280)' } },
     { id: 'o_yuan_2', from: 1288, to: 1306, at: 1295, title: { zh: '宣政院辖吐蕃，海都据西北（约1295年）', en: 'Tibet under the Xuanzheng Yuan; Kaidu holds the northwest (c. 1295)' } },
     { id: 'o_yuan_3', from: 1307, to: 1350, at: 1330, title: { zh: '行省制下的大一统（约1330年）', en: 'The unified realm of the branch secretariats (c. 1330)' } },
-    { id: 'o_yuan_4', from: 1351, to: 1359, at: 1358, title: { zh: '红巾军起：宋、天完与张士诚、朱元璋（1358年 · 红巾军1351年起事）', en: 'The Red Turbans rise: Song, Tianwan, Zhang Shicheng and Zhu Yuanzhang (1358: the rising began in 1351)' } },
+    { id: 'o_yuan_4', from: 1351, to: 1359, at: 1358, title: { zh: '红巾军起：宋、天完与张士诚、朱元璋（1358年 · 红巾军1351年起事）', en: 'The Red Turbans rise: Song, Tianwan, Zhang Shicheng and Zhu Yuanzhang (1358; the rising began in 1351)' } },
     { id: 'o_yuan_5', from: 1360, to: 1363, at: 1362, title: { zh: '陈友谅称汉，明玉珍据蜀（1362年）', en: 'Chen Youliang’s Han; Ming Yuzhen holds Sichuan (1362)' } },
-    { id: 'o_yuan_6', from: 1364, to: 1366, at: 1365, title: { zh: '鄱阳湖战后：朱元璋并汉，称吴王（1365年 · 1363年鄱阳湖之战，1364年灭汉、称吴王）', en: 'After Lake Poyang: Zhu Yuanzhang takes Han and is King of Wu (1365: Poyang in 1363; Han ended and King of Wu in 1364)' } },
+    { id: 'o_yuan_6', from: 1364, to: 1366, at: 1365, title: { zh: '鄱阳湖战后：朱元璋并汉，称吴王（1365年 · 1363年鄱阳湖之战，1364年灭汉、称吴王）', en: 'After Lake Poyang: Zhu Yuanzhang takes Han and is King of Wu (1365; Poyang in 1363; Han ended and King of Wu in 1364)' } },
     { id: 'o_yuan_7', from: 1367, to: 1368, at: 1367, title: { zh: '吴灭张士诚、降方国珍，北伐出师（1367年）', en: 'Wu ends Zhang Shicheng, takes Fang Guozhen’s surrender and marches north (1367)' } },
   ],
   sources: {

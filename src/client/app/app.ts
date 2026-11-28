@@ -479,7 +479,7 @@ export class App {
     window.addEventListener('hashchange', () => {
       if (performance.now() <= this.ignoreHashUntil) return;
       // a new link (pasted or followed) starts a new entry: Back from it goes back to the previous link
-      this.backArmed = false;
+      this.backArmed = 0;
       this.onHash();
     });
     window.addEventListener('popstate', e => this.onPop(e));
@@ -850,17 +850,22 @@ export class App {
 
   /** While something is open, one extra history entry stands in front of the page, so Back closes it instead of
    * leaving the app; the address keeps following what is open (writeLink replaces the current entry). */
-  private backArmed = false;
+  /** the number of the armed pair (0: none); the page's own entry under it carries it as `agesBase` */
+  private backArmed = 0;
+  private backSeq = 0;
   private ignoreHashUntil = 0;
   private armBack(): void {
     if (this.backArmed || !this.ready || !this.canGoBack) return;
-    history.pushState({ agesBack: true }, '', location.href);
-    this.backArmed = true;
+    const n = ++this.backSeq;
+    // mark the entry under ours, so a step back onto it can be told from a new link (which also fires popstate)
+    history.replaceState({ ...(history.state ?? {}), agesBase: n }, '', location.href);
+    history.pushState({ agesBack: n }, '', location.href);
+    this.backArmed = n;
   }
   private onPop(e: PopStateEvent): void {
-    // only a step back off our own entry (now gone: the state we land on is not it) is ours to handle
-    if (!this.backArmed || (e.state as { agesBack?: boolean } | null)?.agesBack) return;
-    this.backArmed = false;
+    // only a step back from our entry onto the page's own entry under it is ours to handle
+    if (!this.backArmed || (e.state as { agesBase?: number } | null)?.agesBase !== this.backArmed) return;
+    this.backArmed = 0;
     // the step back may also change the hash to the entry's older one: that is us, not a new link
     this.ignoreHashUntil = performance.now() + 400;
     // everything was already closed another way: this Back is meant for the page before

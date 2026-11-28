@@ -413,11 +413,11 @@ export const SUI: OwnEra = {
   seats,
   holds,
   phases: [
-    { id: 'o_sui_1', from: 581, to: 586, at: 584, title: { zh: '隋初（584年 · 隋、陈隔江对峙，后梁附隋）', en: 'Early Sui (584: Sui and Chen face each other across the Yangtze; the Later Liang a client of Sui)' } },
-    { id: 'o_sui_2', from: 587, to: 588, at: 588, title: { zh: '隋废后梁之后（588年 · 587年江陵入隋，大军临江）', en: 'After Sui ends the Later Liang (588: Jiangling Sui’s since 587; the armies gather on the Yangtze)' } },
-    { id: 'o_sui_3', from: 589, to: 608, at: 600, title: { zh: '南北复归一统（600年 · 589年隋灭陈之后）', en: 'North and south united again (600: after Sui took Chen in 589)' } },
-    { id: 'o_sui_4', from: 609, to: 614, at: 610, title: { zh: '炀帝西巡（610年 · 609年破吐谷浑，置西海、河源、鄯善、且末四郡）', en: 'Emperor Yang in the west (610: in 609 the Tuyuhun broken; Xihai, Heyuan, Shanshan and Qiemo commanderies)' } },
-    { id: 'o_sui_5', from: 615, to: 617, at: 617, title: { zh: '隋末群雄并起（617年 · 李渊入长安，李密据洛口）', en: 'Risings at the end of the Sui (617: Li Yuan takes Chang’an, Li Mi holds Luokou)' } },
+    { id: 'o_sui_1', from: 581, to: 586, at: 584, title: { zh: '隋初（584年 · 隋、陈隔江对峙，后梁附隋）', en: 'Early Sui (584; Sui and Chen face each other across the Yangtze; the Later Liang a client of Sui)' } },
+    { id: 'o_sui_2', from: 587, to: 588, at: 588, title: { zh: '隋废后梁之后（588年 · 587年江陵入隋，大军临江）', en: 'After Sui ends the Later Liang (588; Jiangling Sui’s since 587; the armies gather on the Yangtze)' } },
+    { id: 'o_sui_3', from: 589, to: 608, at: 600, title: { zh: '南北复归一统（600年 · 589年隋灭陈之后）', en: 'North and south united again (600; after Sui took Chen in 589)' } },
+    { id: 'o_sui_4', from: 609, to: 614, at: 610, title: { zh: '炀帝西巡（610年 · 609年破吐谷浑，置西海、河源、鄯善、且末四郡）', en: 'Emperor Yang in the west (610; in 609 the Tuyuhun broken; Xihai, Heyuan, Shanshan and Qiemo commanderies)' } },
+    { id: 'o_sui_5', from: 615, to: 617, at: 617, title: { zh: '隋末群雄并起（617年 · 李渊入长安，李密据洛口）', en: 'Risings at the end of the Sui (617; Li Yuan takes Chang’an, Li Mi holds Luokou)' } },
   ],
   sources: {
     'sus.gaozu': { zh: '《隋书·高祖纪》', en: 'Suishu, Annals of Gaozu (Emperor Wen)' },

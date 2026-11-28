@@ -379,11 +379,11 @@ export const XIJIN: OwnEra = {
   seats,
   holds,
   phases: [
-    { id: 'o_xijin_1', from: 280, to: 299, at: 285, title: { zh: '太康一统（约285年 · 灭吴之后，十九州）', en: 'The Taikang unity (c. 285: after the conquest of Wu, nineteen provinces)' } },
-    { id: 'o_xijin_2', from: 300, to: 305, at: 305, title: { zh: '八王之乱中的分裂（305年 · 刘渊据左国城，李雄据成都）', en: 'Breaking apart in the War of the Eight Princes (305: Liu Yuan at Zuoguo, Li Xiong at Chengdu)' } },
+    { id: 'o_xijin_1', from: 280, to: 299, at: 285, title: { zh: '太康一统（约285年 · 灭吴之后，十九州）', en: 'The Taikang unity (c. 285; after the conquest of Wu, nineteen provinces)' } },
+    { id: 'o_xijin_2', from: 300, to: 305, at: 305, title: { zh: '八王之乱中的分裂（305年 · 刘渊据左国城，李雄据成都）', en: 'Breaking apart in the War of the Eight Princes (305; Liu Yuan at Zuoguo, Li Xiong at Chengdu)' } },
     { id: 'o_xijin_3', from: 306, to: 310, at: 310, title: { zh: '汉都平阳，成称帝于蜀（310年）', en: 'Han rules from Pingyang; Cheng an empire in Shu (310)' } },
-    { id: 'o_xijin_4', from: 311, to: 313, at: 312, title: { zh: '永嘉之乱（312年 · 311年洛阳陷落，石勒据襄国）', en: 'The Yongjia disaster (312: Luoyang fell in 311; Shi Le holds Xiangguo)' } },
-    { id: 'o_xijin_5', from: 314, to: 316, at: 315, title: { zh: '愍帝困守长安（315年 · 西晋最后两年）', en: 'Emperor Min holds out at Chang’an (315: the last years of Western Jin)' } },
+    { id: 'o_xijin_4', from: 311, to: 313, at: 312, title: { zh: '永嘉之乱（312年 · 311年洛阳陷落，石勒据襄国）', en: 'The Yongjia disaster (312; Luoyang fell in 311; Shi Le holds Xiangguo)' } },
+    { id: 'o_xijin_5', from: 314, to: 316, at: 315, title: { zh: '愍帝困守长安（315年 · 西晋最后两年）', en: 'Emperor Min holds out at Chang’an (315; the last years of Western Jin)' } },
   ],
   sources: {
     'js.wudi': { zh: '《晋书·武帝纪》', en: 'Jin shu, Annals of Emperor Wu' },
