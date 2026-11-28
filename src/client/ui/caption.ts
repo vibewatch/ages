@@ -53,7 +53,7 @@ export class Caption {
   /** Button names in the current language (and Pause / Play by state). */
   relabel(): void {
     const label = (b: HTMLElement, s: string) => { b.title = s; b.setAttribute('aria-label', s); };
-    label(this.pauseBtn, t(this.paused ? 'play' : 'pause'));
+    label(this.pauseBtn, t(this.paused ? 'resume' : 'pause'));
     label(this.skipBtn, t('skip'));
     this.speedBtn.title = t('speed');
     label(this.voiceBtn, t('narrate'));

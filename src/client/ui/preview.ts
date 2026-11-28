@@ -103,13 +103,19 @@ export class Preview {
     return this.renderer;
   }
 
+  /** Takes a model off the stand, freeing the geometry copies made for it (the shared library keeps its own). */
+  private drop(m: THREE.Object3D): void {
+    this.turn.remove(m);
+    m.traverse(o => { const g = (o as THREE.Mesh).geometry; if (g?.userData.ownClone) g.dispose(); });
+  }
+
   /** Shows a model (built off-thread through the shared library). */
   async show(recipe: ModelRecipe | null): Promise<void> {
     const key = recipe ? JSON.stringify(recipe) : '';
     if (key === this.key) return;
     this.key = key;
     const id = ++this.req;
-    if (this.model) { this.turn.remove(this.model); this.model = null; }
+    if (this.model) { this.drop(this.model); this.model = null; }
     this.canvas.parentElement?.classList.add('pv-loading');
     this.dirty = true;
     // nothing to show, or it failed (e.g. offline): drop the spinner, and forget the key so reopening retries
@@ -124,6 +130,7 @@ export class Preview {
       const near = mesh.geometry.userData.near as [number, number] | undefined;
       if (near && mesh.geometry.userData.lod) {
         mesh.geometry = mesh.geometry.clone();
+        mesh.geometry.userData.ownClone = true;
         mesh.geometry.setDrawRange(near[0], near[1]);
       }
     });

@@ -55,7 +55,7 @@ export class SearchBox {
     this.list.replaceChildren(...(this.hits.length ? this.hits.map((x, i) => h('li', {
       role: 'option', class: i === this.cur ? 'cur' : '', 'aria-selected': String(i === this.cur),
       onmousedown: (e: Event) => { e.preventDefault(); this.pick(x); },
-    }, h('span', { class: `ty ty-${x.type}`, text: ({ year: '⏱', event: '◆', era: '▬', place: '●', person: '人', journey: '⇢', life: '✦', lesson: '课', trail: '脉' } as const)[x.type] }),
+    }, h('span', { class: `ty ty-${x.type}`, 'aria-hidden': 'true', text: ({ year: '⏱', event: '◆', era: '▬', place: '●', person: '☺', journey: '⇢', life: '✦', lesson: '✎', trail: '⤳' } as const)[x.type] }),
       h('span', { class: 'lb', text: tr(x.label, lang) }, 'sub' in x && x.sub ? h('small', { text: ' ' + tr(x.sub, lang) }) : null),
       'year' in x ? h('span', { class: 'yr', text: formatYear(x.year, lang, { short: true }) }) : null)) : [h('li', { class: 'none', text: t('noHits') })]));
     this.list.hidden = false;

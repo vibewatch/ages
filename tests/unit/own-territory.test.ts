@@ -49,6 +49,9 @@ describe('our own territory data', () => {
   for (const era of ERAS_OWN) {
     const extra = new Set((era.polities ?? []).map(p => p.id));
     it(`${era.replaces}: every seat is held, cited and on the map; phases are in order`, () => {
+      // holdings are keyed by seat id: two seats sharing one would silently share a history
+      const ids = era.seats.map(s => s.id);
+      expect(ids.filter((id, i) => ids.indexOf(id) !== i)).toEqual([]);
       for (const s of era.seats) {
         const h = era.holds[s.id];
         expect(h, s.id).toBeDefined();

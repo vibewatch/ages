@@ -272,7 +272,7 @@ export const LANDMARKS_EARLY: Content['landmarks'] = [
   l('donghan', 21, 195, '孙策渡江攻取江东', 'Sun Ce crosses the Yangtze and takes the lands to the east', site('曲阿（今江苏丹阳）', 'Qu’e (modern Danyang, Jiangsu)', 119.60, 32.00)),
   l('donghan', 22, 198, '曹操围攻下邳，擒杀吕布', 'Cao Cao besieges Xiapi and captures and kills Lü Bu', site('下邳（今江苏睢宁）', 'Xiapi (modern Suining, Jiangsu)', 118.00, 34.10)),
   l('donghan', 23, 205, '张仲景著医书《伤寒杂病论》', 'Zhang Zhongjing writes his Treatise on Cold Damage and Miscellaneous Disorders', site('南阳（今河南南阳）', 'Nanyang (modern Nanyang, Henan)', 112.53, 33.00)),
-  l('donghan', 24, 207, '曹操北征乌桓，在白狼山大破乌桓骑兵', 'Cao Cao marches north against the Wuhuan and routs their horsemen at White Wolf Mountain', LONGCHENG),
+  l('donghan', 24, 207, '曹操北征乌桓，在白狼山大破乌桓骑兵', 'Cao Cao marches north against the Wuhuan and routs their horsemen at White Wolf Mountain', site('柳城（今辽宁朝阳）', 'Liucheng (modern Chaoyang, Liaoning)', 120.45, 41.57)),
   l('donghan', 25, 207, '刘备三顾茅庐，诸葛亮提出隆中对策', 'Liu Bei calls three times on Zhuge Liang, who lays out his Longzhong plan', site('隆中（今湖北襄阳）', 'Longzhong (modern Xiangyang, Hubei)', 112.07, 32.01)),
   l('donghan', 26, 210, '曹操在邺城修建铜雀台', 'Cao Cao builds the Bronze Sparrow Terrace at Ye', YE),
   l('donghan', 27, 215, '合肥之战，张辽击退孙权大军', 'At Hefei, Zhang Liao drives back Sun Quan’s great army', site('合肥（今安徽合肥）', 'Hefei (modern Hefei, Anhui)', 117.27, 31.86)),

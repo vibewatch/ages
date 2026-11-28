@@ -153,6 +153,9 @@ export class Card {
   }
 
   render(): void {
+    // the model's hint follows the language (tip.ts made it the canvas's accessible name)
+    this.preview.canvas.title = t('dragTurn');
+    this.preview.canvas.setAttribute('aria-label', t('dragTurn'));
     this.wiki = null;
     if (this.event) this.renderEvent(this.event);
     else if (this.era) this.renderEra(this.era);
@@ -421,7 +424,8 @@ export class Card {
     const onTrack = !!this.track?.ids.includes(e.id);
     const i = list.indexOf(e);
     const place = e.place ? PLACE.get(e.place) : undefined;
-    const era = ERAS.find(x => x.scope === e.scope && e.year >= x.start && e.year <= x.end && !x.lane) ?? ERAS.find(x => x.scope === e.scope && e.year >= x.start && e.year <= x.end);
+    // in a boundary year (221 BCE: Warring States ends, Qin begins) the new era wins, as on the headline (eraAt)
+    const era = ERAS.findLast(x => x.scope === e.scope && e.year >= x.start && e.year <= x.end && !x.lane) ?? ERAS.findLast(x => x.scope === e.scope && e.year >= x.start && e.year <= x.end);
     const when = formatYear(e.year, L) + (e.end && e.end !== e.year ? ' – ' + formatYear(e.end, L) : '');
     const learned = this.progress.learned.has(e.id);
     const learnBtn = h('button', { type: 'button', class: 'btn ghost' + (learned ? ' on' : ''), 'aria-pressed': String(learned), title: t('markLearned') }, icon('check'), h('span', { text: t('learned') }));

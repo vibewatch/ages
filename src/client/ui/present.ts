@@ -1,5 +1,5 @@
 import type { Chapter } from '../../shared/data/chapters.ts';
-import { EVENT } from '../../shared/data/events.ts';
+import { EVENT, hasStory } from '../../shared/data/events.ts';
 import { tr } from '../../shared/data/i18n.ts';
 import { JOURNEYS, type Journey } from '../../shared/data/corpus.ts';
 import type { HistEvent } from '../../shared/data/types.ts';
@@ -12,7 +12,7 @@ import { ModalFocus, fill, h, icon, iconBtn } from './dom.ts';
 const journey = (id: string): Journey | undefined => JOURNEYS.find(j => j.id === id);
 const itemTitle = (x: PlayItem): string => (x.k === 'e' ? tr(EVENT.get(x.id)?.title, lang) : tr(journey(x.id)?.title, lang));
 const itemSub = (x: PlayItem): string => {
-  if (x.k === 'e') { const e = EVENT.get(x.id); return e ? formatYear(e.year, lang) + (e.story ? ' · ▶' : '') : ''; }
+  if (x.k === 'e') { const e = EVENT.get(x.id); return e ? formatYear(e.year, lang) + (hasStory(e) ? ' · ▶' : '') : ''; }
   const j = journey(x.id);
   return j ? `${t('pJourney')} · ${tr(j.span, lang)}` : '';
 };
@@ -171,7 +171,7 @@ export class Presenter {
   play(): void {
     const x = this.item;
     const e = x?.k === 'e' ? EVENT.get(x.id) : undefined;
-    if (e?.story) this.hooks.play(e);
+    if (e && hasStory(e)) this.hooks.play(e);
   }
 
   render(): void {
@@ -188,7 +188,7 @@ export class Presenter {
       e ? h('p', { class: 'pr-sum', text: tr(e.summary, L) }) : null,
       h('div', { class: 'pr-ctl' },
         iconBtn('prev', t('prev'), () => this.step(-1), 'pr-prev'),
-        e?.story ? h('button', { type: 'button', class: 'btn primary pr-play', 'data-act': 'present-play', onclick: () => this.play() }, icon('play'), h('span', { text: t('pPlay') })) : null,
+        e && hasStory(e) ? h('button', { type: 'button', class: 'btn primary pr-play', 'data-act': 'present-play', onclick: () => this.play() }, icon('play'), h('span', { text: t('pPlay') })) : null,
         iconBtn('next', t('next'), () => this.step(1), 'pr-next'),
         h('button', { type: 'button', class: 'btn ghost pr-exit', 'data-act': 'present-exit', text: t('pExit'), onclick: () => this.stop() })),
       h('i', { class: 'pr-bar', 'aria-hidden': 'true' }, h('b', { style: `width:${((this.i + 1) / n) * 100}%` })));

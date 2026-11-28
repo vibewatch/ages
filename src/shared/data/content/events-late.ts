@@ -24,7 +24,6 @@ const ls = (dyn: string, rows: LRow[]): Content['landmarks'] =>
 // ------------------------------------------------------------------ 元 Yuan (1279–1368)
 
 const YUAN_M = ms('yuan', [
-  [1279, '崖山海战，陆秀夫背负宋帝赵昺投海，南宋灭亡', 'Battle of Yashan — Lu Xiufu leaps into the sea with the boy emperor Zhao Bing, ending the Southern Song', '崖山 · 广东江门新会', 'Yashan · Xinhui, Jiangmen, Guangdong', 113.08, 22.25, true],
   [1281, '忽必烈再征日本，元军舰队遭台风覆没', 'Kublai’s second invasion of Japan — a typhoon wrecks the Yuan fleet', '博多湾 · 日本福冈', 'Hakata Bay · Fukuoka, Japan', 130.35, 33.62],
   [1287, '忽必烈亲征，平定东道诸王乃颜之叛', 'Kublai leads an army in person and crushes the revolt of the eastern prince Nayan', '辽河上游 · 吉林、内蒙古交界', 'upper Liao River · Jilin–Inner Mongolia border', 123.5, 43.5],
   [1288, '改总制院为宣政院，掌管全国宗教事务并直接管辖西藏地区', 'The Xuanzheng Yuan is set up to run Buddhist affairs and govern Tibet directly', '大都 · 北京', 'Dadu · Beijing', 116.39, 39.92],

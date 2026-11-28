@@ -251,9 +251,9 @@ export const QIN: OwnEra = {
   seats,
   holds,
   phases: [
-    { id: 'o_qin_1', from: -221, to: -215, at: -218, title: { zh: '秦并天下，分三十六郡（约前218年）', en: 'Qin unites the realm in 36 commanderies (c. 218 BCE)' } },
-    { id: 'o_qin_2', from: -214, to: -210, at: -212, title: { zh: '北取河南地，南置岭南三郡（约前212年）', en: 'Qin takes the Ordos and founds three commanderies in the far south (c. 212 BCE)' } },
-    { id: 'o_qin_3', from: -209, to: -207, at: -208, title: { zh: '陈胜起事，六国复起（前208年）', en: 'Chen Sheng rises; the old states return (208 BCE)' } },
+    { id: 'o_qin_1', from: -221, to: -215, at: -218, title: { zh: '秦并天下，分三十六郡（约前218年 · 前221年统一）', en: 'Qin unites the realm in 36 commanderies (c. 218 BCE: unification in 221 BCE)' } },
+    { id: 'o_qin_2', from: -214, to: -210, at: -212, title: { zh: '北取河南地，南置岭南三郡（约前212年 · 皆在前214年前后）', en: 'Qin takes the Ordos and founds three commanderies in the far south (c. 212 BCE: both around 214 BCE)' } },
+    { id: 'o_qin_3', from: -209, to: -207, at: -208, title: { zh: '陈胜起事，六国复起（前208年 · 陈胜前209年首义）', en: 'Chen Sheng rises; the old states return (208 BCE: Chen Sheng rose in 209 BCE)' } },
     { id: 'o_qin_4', from: -206, to: -206, at: -206, title: { zh: '项羽分封诸王，汉还定三秦（前206年）', en: 'Xiang Yu shares out kingdoms; Han wins back the Wei valley (206 BCE)' } },
     { id: 'o_qin_5', from: -205, to: -202, at: -203, title: { zh: '楚汉相争（约前203年）', en: 'Chu and Han at war (c. 203 BCE)' } },
   ],

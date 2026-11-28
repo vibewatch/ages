@@ -136,7 +136,7 @@ export const PEOPLE: Content['people'] = [
       'Half-brother of Huo Qubing, named by the dying Emperor Wu to guide the boy emperor Zhao. In nearly twenty years in charge he let the country rest, deposed the unruly Liu He after twenty-seven days and installed Emperor Xuan, preparing the Zhao–Xuan revival.'], true),
   p('wangmang', ['王莽', 'Wang Mang'], ['篡汉建新', 'Usurper who founded the Xin'], 'xihan', [-45, 23],
     ['新莽', '王巨君'], ['王莽', '新莽'],
-    ['外戚出身，以谦恭俭朴博取声望，逐步掌控朝政，公元8年代汉称帝，国号“新”。他托古改制，推行王田、私属和频繁改换币制，造成社会混乱，绿林、赤眉起义后被杀于长安。',
+    ['外戚出身，以谦恭俭朴博取声望，逐步掌控朝政，公元9年代汉称帝，国号“新”。他托古改制，推行王田、私属和频繁改换币制，造成社会混乱，绿林、赤眉起义后被杀于长安。',
       'A consort-clan grandee who built a name for humility and thrift, took control of the court and in 9 CE made himself emperor of a new dynasty, Xin. His reforms in the name of antiquity — state ownership of land, bans on slave sales, coinage changed again and again — threw the realm into chaos, and he was killed in Chang’an as rebels closed in.']),
   // ------------------------------------------------------------------ 东汉 · 三国
   p('liuxiu', ['刘秀', 'Liu Xiu'], ['汉光武帝 · 东汉开国', 'Emperor Guangwu, founder of Eastern Han'], 'donghan', [-5, 57],

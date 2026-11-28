@@ -255,7 +255,7 @@ const seats: Seat[] = [
   S('guiyang', '贵州宣慰司（贵阳）', 'Guizhou Pacification Commission (Guiyang)', 106.71, 26.58, '贵州贵阳'),
   S('shuixi', '水西', 'Shuixi', 105.60, 27.15, '贵州大方', { r: 280 }),
   S('sinan', '思南府', 'Sinan', 108.25, 27.95, '贵州思南'),
-  S('sizhou', '思州府', 'Sizhou', 108.82, 27.17, '贵州岑巩'),
+  S('sizhou_gz', '思州府', 'Sizhou', 108.82, 27.17, '贵州岑巩'),
   S('tongren', '铜仁府', 'Tongren', 109.19, 27.72, '贵州铜仁'),
   S('zhenyuan', '镇远府', 'Zhenyuan', 108.42, 27.05, '贵州镇远'),
   S('liping', '黎平府', 'Liping', 109.13, 26.23, '贵州黎平'),
@@ -521,7 +521,7 @@ h('fuzhou funing jianning shaowu yanping tingzhou xinghua quanzhou zhangzhou', [
 h('guangzhou shaozhou nanxiong lianzhou_g huizhou_g chaozhou zhaoqing luoding gaozhou leizhou lianzhou qinzhou qiongzhou danzhou wanzhou_h yazhou_h', [1368, M, 'ms.taizu']);
 h('guilin pingle liuzhou qingyuan sicheng sien xunzhou wuzhou nanning taiping_g siming tianzhou zhenan yulin_g', [1368, M, 'ms.taizu']);
 // 贵州
-h('sinan sizhou tongren zhenyuan', [1368, M, 'ms.gztusi']);
+h('sinan sizhou_gz tongren zhenyuan', [1368, M, 'ms.gztusi']);
 h('guiyang liping duyun', [1368, LW, 'est'], [1372, M, 'ms.gztusi']);
 h('shuixi', [1368, LW, 'est'], [1372, M, 'ms.gztusi'], [1622, 'ming_shean', 'ms.gztusi'], [1629, M, 'ms.gztusi']);
 h('anshun puan', [1368, LW, 'ms.bzlwem'], [1382, M, 'ms.fuyd']);
@@ -672,9 +672,9 @@ export const MING: OwnEra = {
   holds,
   phases: [
     { id: 'o_ming_1', from: 1368, to: 1369, at: 1368, title: { zh: '明朝建立，徐达北伐克大都（1368年）', en: 'The Ming founded; Xu Da marches north and takes Dadu (1368)' } },
-    { id: 'o_ming_2', from: 1370, to: 1371, at: 1370, title: { zh: '明定山西、陕西，李文忠克应昌（1370年）', en: 'Ming takes Shanxi and Shaanxi; Li Wenzhong takes Yingchang (1370)' } },
-    { id: 'o_ming_3', from: 1372, to: 1381, at: 1375, title: { zh: '平夏收蜀，置辽东都司与乌思藏、朵甘卫（约1375年）', en: 'Xia ended and Sichuan taken; Liaodong and the Tibetan commands set up (c. 1375)' } },
-    { id: 'o_ming_4', from: 1382, to: 1387, at: 1385, title: { zh: '傅友德平云南（约1385年）', en: 'Fu Youde conquers Yunnan (c. 1385)' } },
+    { id: 'o_ming_2', from: 1370, to: 1371, at: 1370, title: { zh: '明定山西、陕西，李文忠克应昌（1370年 · 山西、陕西1368–1369年平定）', en: 'Ming takes Shanxi and Shaanxi; Li Wenzhong takes Yingchang (1370: Shanxi and Shaanxi taken in 1368–1369)' } },
+    { id: 'o_ming_3', from: 1372, to: 1381, at: 1375, title: { zh: '平夏收蜀，置辽东都司与乌思藏、朵甘卫（约1375年 · 1371年平夏）', en: 'Xia ended and Sichuan taken; Liaodong and the Tibetan commands set up (c. 1375: Xia ended in 1371)' } },
+    { id: 'o_ming_4', from: 1382, to: 1387, at: 1385, title: { zh: '傅友德平云南（约1385年 · 1381–1382年平定）', en: 'Fu Youde conquers Yunnan (c. 1385: conquered 1381–1382)' } },
     { id: 'o_ming_5', from: 1388, to: 1406, at: 1395, title: { zh: '捕鱼儿海之后：洪武疆域，北元分为鞑靼、瓦剌（约1395年）', en: 'After Buyur Lake: the Hongwu realm; the Northern Yuan splits into Tatars and Oirats (c. 1395)' } },
     { id: 'o_ming_6', from: 1407, to: 1427, at: 1410, title: { zh: '永乐：设交趾布政司、奴儿干都司与哈密卫（约1410年）', en: 'Yongle: Jiaozhi province, the Nurgan command and the Hami guard (c. 1410)' } },
     { id: 'o_ming_7', from: 1428, to: 1448, at: 1440, title: { zh: '罢交趾，开平内迁，三征麓川，瓦剌兴起（约1440年）', en: 'Jiaozhi given up, Kaiping withdrawn, war on Luchuan, the Oirats rise (c. 1440)' } },
@@ -682,9 +682,9 @@ export const MING: OwnEra = {
     { id: 'o_ming_9', from: 1522, to: 1572, at: 1550, title: { zh: '嘉靖：弃哈密、关西诸卫，俺答雄踞河套、青海（约1550年）', en: 'Jiajing: Hami and the western guards given up; Altan Khan holds the Ordos and Kokonor (c. 1550)' } },
     { id: 'o_ming_10', from: 1573, to: 1615, at: 1590, title: { zh: '万历：俺答封贡之后，东吁缅甸夺孟养、木邦（约1590年）', en: 'Wanli: after Altan Khan’s tribute peace; Toungoo Burma takes Mengyang and Mubang (c. 1590)' } },
     { id: 'o_ming_11', from: 1616, to: 1626, at: 1622, title: { zh: '后金崛起：萨尔浒战后辽沈、广宁失陷，奢安之乱（1622年）', en: 'The Later Jin rises: after Sarhu, Liaoyang, Shenyang and Guangning fall; the She–An rising (1622)' } },
-    { id: 'o_ming_12', from: 1627, to: 1640, at: 1637, title: { zh: '皇太极改国号清，漠南蒙古归清（1637年）', en: 'Hong Taiji proclaims the Qing; the Inner Mongols go over to the Qing (1637)' } },
+    { id: 'o_ming_12', from: 1627, to: 1640, at: 1637, title: { zh: '皇太极改国号清，漠南蒙古归清（1637年 · 1636年改国号）', en: 'Hong Taiji proclaims the Qing; the Inner Mongols go over to the Qing (1637: the Qing proclaimed in 1636)' } },
     { id: 'o_ming_13', from: 1641, to: 1643, at: 1643, title: { zh: '松锦战后：李自成据襄阳、西安，张献忠据武昌（1643年）', en: 'After Songshan–Jinzhou: Li Zicheng holds Xiangyang and Xi’an, Zhang Xianzhong Wuchang (1643)' } },
-    { id: 'o_ming_14', from: 1644, to: 1644, at: 1644, title: { zh: '甲申之变：大顺入北京，大西据四川（1644年）', en: '1644: the Shun take Beijing and the Xi hold Sichuan' } },
+    { id: 'o_ming_14', from: 1644, to: 1644, at: 1644, title: { zh: '甲申之变：大顺入北京，大西据四川（1644年）', en: 'The Jiashen crisis: the Shun take Beijing and the Xi hold Sichuan (1644)' } },
   ],
   sources: {
     'ms.taizu': { zh: '《明史·太祖纪》', en: 'Mingshi, Annals of Taizu' },

@@ -97,7 +97,7 @@ export class ReportView {
       t('mastLine', { m: ms.mastered, p: ms.practised, d: ms.due + ms.weak, n: ms.total }),
       t('rpDone', { c: r.chaptersPassed, l: r.lessonsPassed, n: r.lessonsTotal }),
       ...(r.review.length ? [`${t('rpReview')}: ${r.review.map(id => EVENT.get(id)).filter(e => !!e).map(e => tr(e!.title, L)).join(L === 'zh' ? '、' : ', ')}`] : []),
-      `Ages · ${location.origin}`,
+      `${t('brand')} · ${location.origin}`,
     ].join('\n');
   }
 
@@ -107,7 +107,10 @@ export class ReportView {
       if (navigator.share) { await navigator.share({ title: t('rpTitle'), text }); return; }
       await navigator.clipboard.writeText(text);
       msg.textContent = t('rpCopied');
-    } catch { msg.textContent = t('rpCopied'); }
+    } catch (e) {
+      // a cancelled share sheet is not an error; a refused clipboard is — say so rather than claim "copied"
+      msg.textContent = (e as Error)?.name === 'AbortError' ? '' : t('rpCopyFail');
+    }
   }
 
   /** Draws the report on a portrait canvas (1080 × 1350) — the picture a parent receives. */

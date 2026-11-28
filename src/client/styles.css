@@ -697,7 +697,8 @@ b.w { font-family: 'Linux Libertine', 'Times New Roman', serif; font-weight: 700
   border-top-color: var(--zhu); border-radius: 50%; animation: spin 0.9s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
-.hero-tag { position: absolute; left: 10px; top: 8px; display: flex; flex-direction: row; gap: 6px; align-items: center; pointer-events: none; }
+.hero-tag { position: absolute; left: 10px; top: 8px; max-width: calc(100% - 170px); display: flex; flex-wrap: wrap; gap: 3px 6px; align-items: center; pointer-events: none; }
+.hero-tag .cat-idx { white-space: nowrap; }
 .type-chip { display: inline-flex; align-items: center; gap: 5px; padding: 2px 7px; font-size: var(--t-2xs); font-weight: 600; color: #fff; background: var(--k); border-radius: 0; }
 .cat-idx { font-size: var(--t-2xs); color: var(--ink-3); font-variant-numeric: tabular-nums; }
 .cat-idx small { font-size: var(--t-2xs); }
@@ -1571,7 +1572,7 @@ i.seen { color: var(--k-economy); font-style: normal; margin-left: auto; }
 .tl-ch.cur { color: var(--zhu); border-top-color: var(--zhu); font-weight: 600; }
 .tl.zoomed .tl-chapters, .tl.zoomed .tl-bands, .tl.zoomed .tl-dots, .tl.zoomed .tl-phases, .tl.zoomed .tl-axis, .tl.zoomed .tl-curve { overflow: hidden; }
 .tl.zoomed .tl-dots { overflow: visible; clip-path: inset(-4px 0 -4px 0); }
-.tl-zoom { padding: 0 10px; height: 28px; border-radius: var(--r-pill); font-size: var(--t-xs); white-space: nowrap; }
+.tl-zoom, .tl-ctl > .tl-zoom { width: auto; flex: none; padding: 0 10px; height: 28px; border-radius: var(--r-pill); font-size: var(--t-xs); white-space: nowrap; }
 .tl-zoom { color: var(--ink-2); box-shadow: inset 0 0 0 1px var(--card-line, rgba(0, 0, 0, 0.12)); }
 .tl-zoom:hover { color: var(--zhu); }
 .tl-thumb[hidden] { display: none; }

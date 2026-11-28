@@ -1228,7 +1228,7 @@ const L: Record<string, E[]> = {
     ['guiyang', '顺元城', 'Shunyuan', 1279, 1368, 'm', '顺元宣慰司驻地，即后来的贵阳城。', 'Seat of the Shunyuan pacification office, the later Guiyang.'],
     ['zunyi', '播州', 'Bozhou', 1279, 1368, 'm'],
     ['cd', '成都路', 'Chengdu Circuit', 1279, 1368, '', '四川行省治所。', 'Seat of Sichuan province.'],
-    ['cq', '重庆路', 'Chongqing Circuit', 1279, 1368, '', '1363年明玉珍在此称帝，国号大夏。', 'Ming Yuzhen proclaimed his Great Xia here in 1363.'],
+    ['cq', '重庆路', 'Chongqing Circuit', 1279, 1368, '', '1362年明玉珍在此称帝，国号大夏。', 'Ming Yuzhen proclaimed his Great Xia here in 1362.'],
     ['santai', '潼川府', 'Tongchuan Prefecture', 1279, 1368, 'm'],
     ['langzhong', '保宁府', 'Baoning Prefecture', 1279, 1368, 'm'],
     ['leshan', '嘉定府路', 'Jiading Circuit', 1279, 1368, 'm'],

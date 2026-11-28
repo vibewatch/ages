@@ -66,6 +66,12 @@ const DYN_NAMES_EN: Record<string, string> = {
   jin: 'Jin', sui: 'Sui', tang: 'Tang', song: 'Song', yuan: 'Yuan', ming: 'Ming', qing: 'Qing',
 };
 
+/** Which span of the boot strip (夏 商 周 … 清) an era lights. */
+const BOOT_DYN: Record<string, string> = {
+  wzhou: 'zhou', chunqiu: 'zhou', zhanguo: 'zhou', whan: 'han', xin: 'han', ehan: 'han', sanguo: 'three_kingdoms',
+  wjin: 'jin', ejin: 'jin', nanbei: 'jin', wudai: 'song', bsong: 'song', nsong: 'song', liao: 'song', xixia: 'song', jin: 'song',
+};
+
 const COLORS: Record<DustMote['hue'], [number, number, number]> = {
   gold: [246, 208, 118],
   amber: [214, 162, 82],
@@ -105,6 +111,8 @@ export class BootIntro {
   private bcCapEl: HTMLElement | null;
   private dynSpans: HTMLElement[] = [];
   private raf = 0;
+  /** Removes the boot canvas's window listeners once the boot screen is gone. */
+  private unlisten = new AbortController();
   private scattering = false;
   private scatterT = 0;
   private pointer = { x: -9999, y: -9999 };
@@ -156,16 +164,8 @@ export class BootIntro {
   }
 
   private highlightDynasty(era: Era): void {
-    for (const s of this.dynSpans) {
-      const k = s.dataset.era ?? '';
-      const match =
-        k === era.id ||
-        (era.id.includes('han') && k === 'han') ||
-        (era.id.includes('song') && k === 'song') ||
-        ((era.id.includes('zhou') || era.id === 'spring_autumn' || era.id === 'warring_states') && k === 'zhou') ||
-        ((era.id.includes('jin') || era.id === 'north_south' || era.id === 'sixteen_kingdoms') && k === 'jin');
-      s.classList.toggle('hi', match);
-    }
+    const k = BOOT_DYN[era.id] ?? era.id;
+    for (const s of this.dynSpans) s.classList.toggle('hi', s.dataset.era === k);
   }
 
   private updateChronicleBadge(era: Era, displayYear: Year): void {
@@ -216,11 +216,11 @@ export class BootIntro {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
     resize();
-    window.addEventListener('resize', resize, { passive: true });
+    window.addEventListener('resize', resize, { passive: true, signal: this.unlisten.signal });
     window.addEventListener('pointermove', e => {
       this.pointer.x = e.clientX;
       this.pointer.y = e.clientY;
-    }, { passive: true });
+    }, { passive: true, signal: this.unlisten.signal });
 
     const W = () => window.innerWidth;
     const H = () => window.innerHeight;
@@ -513,6 +513,7 @@ export class BootIntro {
     const removeDelay = this.lowfx ? 300 : 1350;
     setTimeout(() => {
       if (this.raf) cancelAnimationFrame(this.raf);
+      this.unlisten.abort();
       boot.remove();
     }, removeDelay);
   }

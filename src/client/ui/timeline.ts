@@ -7,7 +7,7 @@ import { reignAt, regionalReignsAt } from '../../shared/data/corpus.ts';
 import { STOPS, stepStop } from '../../shared/lib/chronicle.ts';
 import { realmArea } from '../../shared/data/areas.ts';
 import { SNAPSHOTS } from '../../shared/data/territories.ts';
-import { clampYear, eraAt, formatYear, normYear, rulerAt, tToYear, ticks, yearToT, YEAR_MAX, YEAR_MIN } from '../../shared/lib/timeline.ts';
+import { addYears, clampYear, eraAt, formatYear, normYear, rulerAt, tToYear, ticks, yearToT, YEAR_MAX, YEAR_MIN } from '../../shared/lib/timeline.ts';
 import { lang, t } from '../lib/i18n.ts';
 import { load, save } from '../lib/storage.ts';
 import { h, iconBtn, setIcon } from './dom.ts';
@@ -255,8 +255,8 @@ export class Timeline {
     this.track.addEventListener('pointercancel', end);
     this.track.addEventListener('keydown', e => {
       const step = this.year < -10000 ? 50000 : this.year < -1000 ? 50 : this.year < 1800 ? 10 : 1;
-      if (e.key === 'ArrowRight' || e.key === 'ArrowUp') { this.set(this.year + step * (e.shiftKey ? 10 : 1), true); e.preventDefault(); e.stopPropagation(); }
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') { this.set(this.year - step * (e.shiftKey ? 10 : 1), true); e.preventDefault(); e.stopPropagation(); }
+      if (e.key === 'ArrowRight' || e.key === 'ArrowUp') { this.set(addYears(this.year, step * (e.shiftKey ? 10 : 1)), true); e.preventDefault(); e.stopPropagation(); }
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') { this.set(addYears(this.year, -step * (e.shiftKey ? 10 : 1)), true); e.preventDefault(); e.stopPropagation(); }
     });
     let last = 0, raf = 0, playT = 0;
     const tick = (now: number) => {
@@ -360,7 +360,8 @@ function zoomTicks(a: Year, b: Year, w: number): Year[] {
   const steps = [1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 5000, 10_000, 50_000, 100_000, 200_000, 500_000];
   const step = steps.find(s => span / s <= want) ?? 1_000_000;
   const out: Year[] = [];
-  for (let y = Math.ceil(a / step) * step; y <= b; y += step) out.push(y === 0 ? 1 : y);
+  // a tick at 0 stands for 1 CE — unless the step is so fine that 1 is a tick of its own
+  for (let y = Math.ceil(a / step) * step; y <= b; y += step) if (y !== 0 || step > 1) out.push(y === 0 ? 1 : y);
   return out;
 }
 

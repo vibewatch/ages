@@ -9,7 +9,7 @@ import { journeyStory } from '../../shared/data/stories.ts';
 import { TRAIL } from '../../shared/data/trails.ts';
 import type { Era, HistEvent, Lesson, Place, Wiki, Year } from '../../shared/data/types.ts';
 import { phaseAt } from '../../shared/lib/chronicle.ts';
-import { clampYear } from '../../shared/lib/timeline.ts';
+import { addYears, clampYear } from '../../shared/lib/timeline.ts';
 import { lang, onLang, setLang, t } from '../lib/i18n.ts';
 import { readLink, writeLink } from '../lib/link.ts';
 import { canSpeak, speak } from '../lib/speech.ts';
@@ -806,7 +806,9 @@ export class App {
     this.pro.focus.trap(e);
     this.learn.focus.trap(e);
     const tag = (e.target as HTMLElement).tagName;
-    if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+    const modal = !this.help.el.hidden || this.report.open || this.classroom.open || this.pro.open || this.learn.open;
+    // typing goes to the field — except Esc inside a dialog's field, which still closes the dialog
+    if ((tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') && !(modal && e.key === 'Escape')) return;
     // presenting: arrows and a clicker's Page Up / Down move through the playlist, P plays the story, Esc leaves
     if (this.presenter.on && !e.altKey && !e.metaKey && !e.ctrlKey) {
       const k = e.key;
@@ -834,6 +836,8 @@ export class App {
       else this.shell.panel.pop();
       return;
     }
+    // a dialog is open: the map, timeline and cards behind it don't take keys
+    if (modal) return;
     if ((e.key === '[' || e.key === ']') && !e.altKey && !e.metaKey && !e.ctrlKey && this.trail.active) {
       this.trail.step(e.key === ']' ? 1 : -1);
       e.preventDefault();
@@ -857,7 +861,7 @@ export class App {
         const next = this.card.neighbor(dir);
         if (next) this.openEvent(next);
       } else if (this.player.state === 'idle' && !this.quiz.open) {
-        if (e.shiftKey) { this.timeline.setPlaying(false); this.timeline.set(this.timeline.year + dir * 10, true); } else this.timeline.step(dir);
+        if (e.shiftKey) { this.timeline.setPlaying(false); this.timeline.set(addYears(this.timeline.year, dir * 10), true); } else this.timeline.step(dir);
       }
       e.preventDefault();
     }

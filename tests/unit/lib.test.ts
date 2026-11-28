@@ -15,7 +15,7 @@ import { PLACE } from '../../src/shared/data/places.ts';
 import { TRAIL, TRAILS, trailsForEvent, trailsForPlace } from '../../src/shared/data/trails.ts';
 import { WORLD_MILESTONES, eventWorldLink, worldForRange } from '../../src/shared/data/world-sync.ts';
 import { parseYearQuery, search } from '../../src/shared/lib/search.ts';
-import { ANCHORS, clampYear, eraAt, formatYear, rulerAt, tToYear, ticks, yearToT } from '../../src/shared/lib/timeline.ts';
+import { addYears, ANCHORS, clampYear, eraAt, formatYear, rulerAt, tToYear, ticks, yearToT } from '../../src/shared/lib/timeline.ts';
 
 describe('timeline', () => {
   it('maps years monotonically onto [0,1] and back', () => {
@@ -317,3 +317,13 @@ describe('mistake review quiz', () => {
   });
 });
 
+
+describe('addYears', () => {
+  it('steps across the missing year 0', () => {
+    expect(addYears(5, -10)).toBe(-6);
+    expect(addYears(-1, 1)).toBe(1);
+    expect(addYears(1, -1)).toBe(-1);
+    expect(addYears(-221, 10)).toBe(-211);
+    expect(addYears(1900, 10)).toBe(1910);
+  });
+});

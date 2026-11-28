@@ -1,6 +1,6 @@
 import { chapterOfLesson, type Chapter } from '../../shared/data/chapters.ts';
 import { BOOKS, unitOf } from '../../shared/data/curriculum.ts';
-import { EVENT } from '../../shared/data/events.ts';
+import { EVENT, hasStory } from '../../shared/data/events.ts';
 import { tr } from '../../shared/data/i18n.ts';
 import { LESSON } from '../../shared/data/lessons/index.ts';
 import type { Book, HistEvent, Lesson, LessonStep, Year } from '../../shared/data/types.ts';
@@ -83,6 +83,12 @@ export class LessonView {
       this.i = Math.min(saved.step, Math.max(0, this.qs.length - 1));
       const srcGot = Array.isArray(saved.got) && saved.got.length ? saved.got : prevGot;
       this.got = this.qs.map((_, k) => (typeof srcGot[k] === 'boolean' ? srcGot[k] : null));
+      // never re-ask a question already answered: go on to the first open one, or to the results
+      if (this.got[this.i] != null) {
+        const open = this.got.findIndex(g => g == null);
+        if (open >= 0) this.i = open;
+        else this.phase = 'done';
+      }
     } else {
       this.phase = 'steps';
       this.i = saved ? Math.min(saved.step, Math.max(0, l.steps.length - 1)) : 0;
@@ -234,7 +240,7 @@ export class LessonView {
       s.src ? h('p', { class: 'ls-src', 'data-testid': 'lesson-src' }, h('span', { text: t('lsSource') }), h('cite', { text: tr(s.src, L) })) : null,
       e ? h('div', { class: 'ls-acts' },
         // see it: the step's story is its main action
-        e.story ? h('button', { type: 'button', class: 'btn ls-watch', 'data-act': 'watch', onclick: () => this.hooks.play(e) }, h('i', { text: '▶' }), h('span', { text: t('lsWatch') })) : null,
+        hasStory(e) ? h('button', { type: 'button', class: 'btn ls-watch', 'data-act': 'watch', onclick: () => this.hooks.play(e) }, h('i', { text: '▶' }), h('span', { text: t('lsWatch') })) : null,
         h('button', { type: 'button', class: 'btn ghost', 'data-act': 'more', text: t('lsMore'), onclick: () => this.hooks.open(e) })) : null);
     const last = this.i === this.lesson!.steps.length - 1;
     fill(this.nav,

@@ -94,3 +94,9 @@ export function ticks(width: number): Year[] {
   }
   return out;
 }
+
+/** Steps n years from y in historical numbering, where 1 BCE (−1) is followed by 1 CE (there is no year 0). */
+export function addYears(y: Year, n: number): Year {
+  const astro = (y < 0 ? y + 1 : y) + n; // astronomical: 1 BCE = 0
+  return astro <= 0 ? astro - 1 : astro;
+}
